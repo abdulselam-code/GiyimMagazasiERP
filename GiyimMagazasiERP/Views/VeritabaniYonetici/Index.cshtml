@@ -110,8 +110,13 @@
             </div>
 
             <div>
-                <span>Toplam ürün</span>
+                <span>Toplam ürün çeşidi</span>
                 <strong>@Model.Istatistikler.ToplamUrunSayisi</strong>
+            </div>
+
+            <div>
+                <span>Toplam stok adedi</span>
+                <strong>@Model.Istatistikler.ToplamStokAdedi</strong>
             </div>
 
             <div>
@@ -134,7 +139,7 @@
     <section class="db-main">
         <header class="db-topbar">
             <div class="db-topbar-left">
-                <strong>GiyimERP — Veritabanı Yöneticisi v1.0</strong>
+                <strong>GiyimERP - Veritabanı Yöneticisi v1.0</strong>
                 <span>SQL Server şema, sorgu ve tablo inceleme çalışma alanı</span>
             </div>
 
@@ -178,7 +183,6 @@
                 </div>
             }
 
-            <!-- ŞEMA GÖRÜNÜMÜ -->
             <section id="schemaPanel" class="db-panel active">
                 <div class="db-panel-header">
                     <div>
@@ -249,7 +253,6 @@
                 </div>
             </section>
 
-            <!-- SQL EDİTÖRÜ -->
             <section id="sqlPanel" class="db-panel">
                 <div class="db-panel-header">
                     <div>
@@ -347,7 +350,6 @@
                 }
             </section>
 
-            <!-- KAYITLI SORGULAR -->
             <section id="queriesPanel" class="db-panel">
                 <div class="db-panel-header">
                     <div>
@@ -444,7 +446,6 @@
                 }
             </section>
 
-            <!-- TABLO TARAYICI -->
             <section id="tableBrowserPanel" class="db-panel">
                 <div class="db-panel-header">
                     <div>
@@ -528,7 +529,6 @@
                 }
             </section>
 
-            <!-- İLİŞKİ HARİTASI -->
             <section id="relationsPanel" class="db-panel">
                 <div class="db-panel-header db-relation-panel-header">
                     <div>
@@ -552,7 +552,6 @@
                 </article>
 
                 <div class="db-relation-module-grid">
-                    <!-- ÜRÜN YÖNETİMİ -->
                     <article class="db-relation-module-card product">
                         <header class="db-relation-module-head">
                             <div>
@@ -572,7 +571,6 @@
                                 </div>
 
                                 <code>FK: Urunler.KategoriId</code>
-
                                 <p>Bir kategoriye birden fazla ürün bağlı olabilir.</p>
                             </div>
 
@@ -585,7 +583,6 @@
                                 </div>
 
                                 <code>FK: Urunler.TedarikciId</code>
-
                                 <p>Bir tedarikçi birden fazla ürün sağlayabilir.</p>
                             </div>
 
@@ -598,7 +595,6 @@
                                 </div>
 
                                 <code>FK: SatisDetaylari.UrunId</code>
-
                                 <p>Bir ürün farklı satış detaylarında yer alabilir.</p>
                             </div>
 
@@ -611,13 +607,11 @@
                                 </div>
 
                                 <code>FK: StokHareketleri.UrunId</code>
-
                                 <p>Bir ürünün stok giriş ve çıkış hareketleri takip edilir.</p>
                             </div>
                         </div>
                     </article>
 
-                    <!-- SATIŞ YÖNETİMİ -->
                     <article class="db-relation-module-card sales">
                         <header class="db-relation-module-head">
                             <div>
@@ -637,7 +631,6 @@
                                 </div>
 
                                 <code>FK: Satislar.MusteriId</code>
-
                                 <p>Bir müşteri birden fazla satış kaydına sahip olabilir.</p>
                             </div>
 
@@ -650,7 +643,6 @@
                                 </div>
 
                                 <code>FK: Satislar.PersonelId</code>
-
                                 <p>Bir personel birden fazla satış işlemi yapabilir.</p>
                             </div>
 
@@ -663,7 +655,6 @@
                                 </div>
 
                                 <code>FK: SatisDetaylari.SatisId</code>
-
                                 <p>Bir satışın içinde bir veya birden fazla ürün kalemi olabilir.</p>
                             </div>
 
@@ -676,13 +667,11 @@
                                 </div>
 
                                 <code>FK: FinansHareketleri.SatisId</code>
-
                                 <p>Bir satış gerçekleştiğinde finans hareketi oluşabilir.</p>
                             </div>
                         </div>
                     </article>
 
-                    <!-- FİNANS YÖNETİMİ -->
                     <article class="db-relation-module-card finance">
                         <header class="db-relation-module-head">
                             <div>
@@ -702,7 +691,6 @@
                                 </div>
 
                                 <code>FK: FinansHareketleri.SatisId</code>
-
                                 <p>Satıştan doğan gelir hareketi finans tablosunda takip edilir.</p>
                             </div>
 
@@ -715,13 +703,11 @@
                                 </div>
 
                                 <code>FK: FinansHareketleri.KullaniciId</code>
-
                                 <p>Finans hareketini hangi kullanıcının oluşturduğu tutulur.</p>
                             </div>
                         </div>
                     </article>
 
-                    <!-- STOK YÖNETİMİ -->
                     <article class="db-relation-module-card stock">
                         <header class="db-relation-module-head">
                             <div>
@@ -741,7 +727,6 @@
                                 </div>
 
                                 <code>FK: StokHareketleri.UrunId</code>
-
                                 <p>Bir ürün için birden fazla stok hareketi tutulabilir.</p>
                             </div>
                         </div>
@@ -755,7 +740,6 @@
                 </article>
             </section>
 
-            <!-- İSTATİSTİKLER -->
             <section id="statsPanel" class="db-panel">
                 <div class="db-panel-header">
                     <div>
@@ -773,9 +757,15 @@
                     </article>
 
                     <article class="db-stat-card catalog">
-                        <span class="db-stat-mark">UR</span>
-                        <p>Toplam Ürün</p>
+                        <span class="db-stat-mark">UC</span>
+                        <p>Toplam Ürün Çeşidi</p>
                         <strong>@Model.Istatistikler.ToplamUrunSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card catalog">
+                        <span class="db-stat-mark">SA</span>
+                        <p>Toplam Stok Adedi</p>
+                        <strong>@Model.Istatistikler.ToplamStokAdedi</strong>
                     </article>
 
                     <article class="db-stat-card customer">

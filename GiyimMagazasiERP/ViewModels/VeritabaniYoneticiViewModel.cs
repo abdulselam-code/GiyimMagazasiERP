@@ -19,6 +19,7 @@ public class VeritabaniIstatistikViewModel
 {
     public int ToplamTabloSayisi { get; set; }
     public int ToplamUrunSayisi { get; set; }
+    public int ToplamStokAdedi { get; set; }
     public int ToplamMusteriSayisi { get; set; }
     public int ToplamPersonelSayisi { get; set; }
     public int ToplamSatisSayisi { get; set; }

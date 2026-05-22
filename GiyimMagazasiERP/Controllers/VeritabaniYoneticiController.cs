@@ -1,11 +1,9 @@
 ﻿using System.Data;
-using System.Data.Common;
 using System.Text.RegularExpressions;
 using GiyimMagazasiERP.Data;
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace GiyimMagazasiERP.Controllers;
 
@@ -127,26 +125,36 @@ public class VeritabaniYoneticiController : Controller
             Istatistikler = new VeritabaniIstatistikViewModel
             {
                 ToplamTabloSayisi = 10,
+
                 ToplamUrunSayisi = await _context.Urunler.CountAsync(),
+
+                ToplamStokAdedi = await _context.Urunler
+            .SumAsync(x => (int?)x.StokMiktari) ?? 0,
+
                 ToplamMusteriSayisi = await _context.Musteriler.CountAsync(),
                 ToplamPersonelSayisi = await _context.Personeller.CountAsync(),
                 ToplamSatisSayisi = await _context.Satislar.CountAsync(),
+
                 KritikStokSayisi = await _context.Urunler
-                    .CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
+            .CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
+
                 ToplamGelir = toplamGelir,
                 ToplamGider = toplamGider,
                 NetKazanc = toplamGelir - toplamGider
             },
+
             SemaTablolari = SemaTablolariGetir(),
+
             KayitliSorgular = KayitliSqlSorgulari()
-                .Select(x => new KayitliSorguViewModel
-                {
-                    Kod = x.Kod,
-                    Baslik = x.Baslik,
-                    Aciklama = x.Aciklama,
-                    Kategori = x.Kategori
-                })
-                .ToList(),
+        .Select(x => new KayitliSorguViewModel
+        {
+            Kod = x.Kod,
+            Baslik = x.Baslik,
+            Aciklama = x.Aciklama,
+            Kategori = x.Kategori
+        })
+        .ToList(),
+
             TabloTarayiciTablolari = TabloAdlari.ToList()
         };
     }
@@ -278,36 +286,47 @@ public class VeritabaniYoneticiController : Controller
             || ad.Contains("gelir")
             || ad.Contains("gider")
             || ad.Contains("kazanc")
-            || ad.Contains("sermaye");
+            || ad.Contains("sermaye")
+            || ad.Contains("toplam")
+            || ad.Contains("net");
     }
 
     private static List<KayitliSqlSorgu> KayitliSqlSorgulari()
     {
         return new List<KayitliSqlSorgu>
         {
-            new("kritik-stok", "Kritik Stoktaki Ürünler", "Minimum stok seviyesindeki ürünler.", "Stok",
+            new("kritik-stok", "Kritik Stoktaki Ürünler", "Minimum stok seviyesinde veya altında kalan ürünleri gösterir.", "Stok",
                 """
-                SELECT U.UrunAdi, U.Barkod, K.KategoriAdi, U.StokMiktari, U.MinimumStok
+                SELECT U.UrunAdi AS Urun,
+                       U.Barkod,
+                       U.StokMiktari,
+                       U.MinimumStok,
+                       K.KategoriAdi AS Kategori
                 FROM Urunler U
                 INNER JOIN Kategoriler K ON K.Id = U.KategoriId
-                WHERE U.AktifMi = 1 AND U.StokMiktari <= U.MinimumStok
-                ORDER BY U.StokMiktari
+                WHERE U.AktifMi = 1
+                  AND U.StokMiktari <= U.MinimumStok
+                ORDER BY U.StokMiktari ASC, U.UrunAdi ASC
                 """),
 
-            new("en-cok-satilan", "En Çok Satılan Ürünler", "Satılan adet ve tutar sıralaması.", "Satış",
+            new("stok-cikis-hareketleri", "Stok Çıkış Hareketleri", "Satış nedeniyle oluşan stok çıkış hareketlerini listeler.", "Stok",
                 """
-                SELECT TOP (10) U.UrunAdi,
-                       SUM(SD.Adet) AS ToplamAdet,
-                       SUM(SD.ToplamTutar) AS ToplamSatisTutari
-                FROM SatisDetaylari SD
-                INNER JOIN Urunler U ON U.Id = SD.UrunId
-                GROUP BY U.UrunAdi
-                ORDER BY ToplamAdet DESC, ToplamSatisTutari DESC
+                SELECT SH.Tarih,
+                       U.UrunAdi AS Urun,
+                       SH.HareketTipi,
+                       SH.Miktar,
+                       SH.Aciklama
+                FROM StokHareketleri SH
+                INNER JOIN Urunler U ON U.Id = SH.UrunId
+                WHERE SH.HareketTipi = 'SatisCikis'
+                ORDER BY SH.Tarih DESC, SH.Id DESC
                 """),
 
-            new("hic-satilmayan", "Hiç Satılmayan Ürünler", "Satış detayında bulunmayan ürünler.", "Stok",
+            new("hic-satilmayan", "Hiç Satılmayan Ürünler", "Satış detayında bulunmayan ürünleri listeler.", "Stok",
                 """
-                SELECT U.UrunAdi, U.Barkod, U.StokMiktari
+                SELECT U.UrunAdi,
+                       U.Barkod,
+                       U.StokMiktari
                 FROM Urunler U
                 WHERE NOT EXISTS
                 (
@@ -318,152 +337,94 @@ public class VeritabaniYoneticiController : Controller
                 ORDER BY U.UrunAdi
                 """),
 
-            new("gunluk-satis", "Günlük Satış Özeti", "Günlük satış sayısı ve net satış.", "Satış",
+            new("en-cok-satilan", "En Çok Satılan Ürünler", "Ürün bazında toplam satılan adet ve satış tutarını gösterir.", "Satış",
+                """
+                SELECT TOP (10)
+                       U.UrunAdi AS Urun,
+                       SUM(SD.Adet) AS ToplamAdet,
+                       SUM(SD.ToplamTutar) AS ToplamSatisTutari
+                FROM SatisDetaylari SD
+                INNER JOIN Urunler U ON U.Id = SD.UrunId
+                GROUP BY U.UrunAdi
+                ORDER BY ToplamAdet DESC, ToplamSatisTutari DESC
+                """),
+
+            new("sepetli-satis-detaylari", "Sepetli Satış Detayları", "Bir satışın içinde hangi ürünlerden kaç adet satıldığını gösterir.", "Satış",
+                """
+                SELECT S.Id AS SatisId,
+                       S.SatisTarihi,
+                       ISNULL(M.AdSoyad, 'Kayıtsız Müşteri') AS Musteri,
+                       P.AdSoyad AS Personel,
+                       U.UrunAdi AS Urun,
+                       SD.Adet,
+                       SD.BirimFiyat,
+                       SD.ToplamTutar AS SatirToplami,
+                       S.OdemeTipi
+                FROM Satislar S
+                INNER JOIN SatisDetaylari SD ON SD.SatisId = S.Id
+                INNER JOIN Urunler U ON U.Id = SD.UrunId
+                INNER JOIN Personeller P ON P.Id = S.PersonelId
+                LEFT JOIN Musteriler M ON M.Id = S.MusteriId
+                ORDER BY S.SatisTarihi DESC, S.Id DESC, SD.Id ASC
+                """),
+
+            new("cok-urunlu-satislar", "Çok Ürünlü Satışlar", "Birden fazla ürün içeren satışları listeler.", "Satış",
+                """
+                SELECT S.Id AS SatisId,
+                       S.SatisTarihi,
+                       ISNULL(M.AdSoyad, 'Kayıtsız Müşteri') AS Musteri,
+                       COUNT(SD.Id) AS UrunKalemSayisi,
+                       SUM(SD.Adet) AS ToplamAdet,
+                       S.NetTutar
+                FROM Satislar S
+                INNER JOIN SatisDetaylari SD ON SD.SatisId = S.Id
+                LEFT JOIN Musteriler M ON M.Id = S.MusteriId
+                GROUP BY S.Id,
+                         S.SatisTarihi,
+                         M.AdSoyad,
+                         S.NetTutar
+                HAVING COUNT(SD.Id) > 1
+                ORDER BY S.SatisTarihi DESC, S.Id DESC
+                """),
+
+            new("gunluk-satis", "Günlük Satış Özeti", "Günlük satış sayısı ve tutar özetini gösterir.", "Satış",
                 """
                 SELECT CAST(SatisTarihi AS DATE) AS Tarih,
                        COUNT(*) AS SatisSayisi,
-                       SUM(NetTutar) AS ToplamNetSatis
+                       SUM(ToplamTutar) AS ToplamSatis,
+                       SUM(IndirimTutari) AS ToplamIndirim,
+                       SUM(NetTutar) AS NetSatis
                 FROM Satislar
                 GROUP BY CAST(SatisTarihi AS DATE)
                 ORDER BY Tarih DESC
                 """),
 
-            new("aylik-satis", "Aylık Satış Özeti", "Aylık satış performansı.", "Satış",
-    """
-    SELECT YEAR(SatisTarihi) AS Yil,
-           MONTH(SatisTarihi) AS Ay,
-           COUNT(*) AS SatisSayisi,
-           SUM(ToplamTutar) AS ToplamSatisTutari,
-           SUM(IndirimTutari) AS ToplamIndirim,
-           SUM(NetTutar) AS NetSatis
-    FROM Satislar
-    GROUP BY YEAR(SatisTarihi), MONTH(SatisTarihi)
-    ORDER BY Yil DESC, Ay DESC
-    """),
-
-new("yillik-satis", "Yıllık Satış Özeti", "Yıllık satış performansı.", "Satış",
-    """
-    SELECT YEAR(SatisTarihi) AS Yil,
-           COUNT(*) AS SatisSayisi,
-           SUM(ToplamTutar) AS ToplamSatisTutari,
-           SUM(IndirimTutari) AS ToplamIndirim,
-           SUM(NetTutar) AS NetSatis
-    FROM Satislar
-    GROUP BY YEAR(SatisTarihi)
-    ORDER BY Yil DESC
-    """),
-
-            new("gelir-gider", "Gelir-Gider Özeti", "Günlük finans özeti.", "Finans",
+            new("aylik-satis", "Aylık Satış Özeti", "Ay bazında satış sayısı, toplam satış, indirim ve net satış tutarını gösterir.", "Satış",
                 """
-                SELECT CAST(Tarih AS DATE) AS Tarih,
-                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS Gelir,
-                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS Gider
-                FROM FinansHareketleri
-                GROUP BY CAST(Tarih AS DATE)
-                ORDER BY Tarih DESC
-                """),
-            new("aylik-gelir-gider", "Aylık Gelir-Gider Özeti", "Aylık gelir, gider ve net kazanç.", "Finans",
-    """
-    SELECT YEAR(Tarih) AS Yil,
-           MONTH(Tarih) AS Ay,
-           SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
-           SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
-           SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
-    FROM FinansHareketleri
-    GROUP BY YEAR(Tarih), MONTH(Tarih)
-    ORDER BY Yil DESC, Ay DESC
-    """),
-
-new("yillik-gelir-gider", "Yıllık Gelir-Gider Özeti", "Yıllık gelir, gider ve net kazanç.", "Finans",
-    """
-    SELECT YEAR(Tarih) AS Yil,
-           SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
-           SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
-           SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
-    FROM FinansHareketleri
-    GROUP BY YEAR(Tarih)
-    ORDER BY Yil DESC
-    """),
-
-new("gider-kategorileri", "Gider Kategorileri Raporu", "Giderleri kategori bazında özetler.", "Finans",
-    """
-    SELECT Kategori AS GiderKategorisi,
-           SUM(Tutar) AS ToplamTutar,
-           COUNT(*) AS HareketSayisi
-    FROM FinansHareketleri
-    WHERE HareketTipi = 'Gider'
-    GROUP BY Kategori
-    ORDER BY ToplamTutar DESC
-    """),
-
-new("en-yuksek-giderler", "En Yüksek Giderler", "Tutarı en yüksek gider hareketleri.", "Finans",
-    """
-    SELECT TOP (10) Tarih,
-           Kategori,
-           Aciklama,
-           Tutar
-    FROM FinansHareketleri
-    WHERE HareketTipi = 'Gider'
-    ORDER BY Tutar DESC, Tarih DESC
-    """),
-
-            new("net-kazanc", "Net Kazanç Özeti", "Toplam gelir gider farkı.", "Finans",
-                """
-                SELECT SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
-                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
-                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
-                FROM FinansHareketleri
+                SELECT YEAR(SatisTarihi) AS Yil,
+                       MONTH(SatisTarihi) AS Ay,
+                       COUNT(*) AS SatisSayisi,
+                       SUM(ToplamTutar) AS ToplamSatis,
+                       SUM(IndirimTutari) AS ToplamIndirim,
+                       SUM(NetTutar) AS NetSatis
+                FROM Satislar
+                GROUP BY YEAR(SatisTarihi), MONTH(SatisTarihi)
+                ORDER BY Yil DESC, Ay DESC
                 """),
 
-            new("en-cok-musteri", "En Çok Alışveriş Yapan Müşteriler", "Harcaması yüksek müşteriler.", "Müşteri",
+            new("yillik-satis", "Yıllık Satış Özeti", "Yıl bazında satış sayısı, toplam satış, indirim ve net satış tutarını gösterir.", "Satış",
                 """
-                SELECT TOP (10) AdSoyad, ToplamHarcama, SadakatPuani, IndirimOrani
-                FROM Musteriler
-                ORDER BY ToplamHarcama DESC
+                SELECT YEAR(SatisTarihi) AS Yil,
+                       COUNT(*) AS SatisSayisi,
+                       SUM(ToplamTutar) AS ToplamSatis,
+                       SUM(IndirimTutari) AS ToplamIndirim,
+                       SUM(NetTutar) AS NetSatis
+                FROM Satislar
+                GROUP BY YEAR(SatisTarihi)
+                ORDER BY Yil DESC
                 """),
 
-            new("musteri-urun", "Müşteri Hangi Ürünü En Çok Alıyor", "Müşteri ürün adet analizi.", "Müşteri",
-                """
-                SELECT TOP (15) M.AdSoyad AS MusteriAdi,
-                       U.UrunAdi,
-                       SUM(SD.Adet) AS ToplamAdet
-                FROM SatisDetaylari SD
-                INNER JOIN Satislar S ON S.Id = SD.SatisId
-                INNER JOIN Musteriler M ON M.Id = S.MusteriId
-                INNER JOIN Urunler U ON U.Id = SD.UrunId
-                GROUP BY M.AdSoyad, U.UrunAdi
-                ORDER BY ToplamAdet DESC
-                """),
-
-            new("personel-performans", "Personel Satış Performansı", "Personel satış sonucu.", "Personel",
-                """
-                SELECT P.AdSoyad AS PersonelAdi,
-                       COUNT(S.Id) AS SatisSayisi,
-                       ISNULL(SUM(S.NetTutar), 0) AS ToplamSatisTutari,
-                       P.PrimOrani
-                FROM Personeller P
-                LEFT JOIN Satislar S ON S.PersonelId = P.Id
-                GROUP BY P.AdSoyad, P.PrimOrani
-                ORDER BY ToplamSatisTutari DESC
-                """),
-
-            new("tedarikci-urun", "Tedarikçi Ürün Raporu", "Tedarikçi ürün sayıları.", "Tedarikçi",
-                """
-                SELECT T.FirmaAdi, COUNT(U.Id) AS UrunSayisi
-                FROM Tedarikciler T
-                LEFT JOIN Urunler U ON U.TedarikciId = T.Id
-                GROUP BY T.FirmaAdi
-                ORDER BY UrunSayisi DESC
-                """),
-
-            new("tedarikci-indirim", "Tedarikçi İndirim Raporu", "Tedarikçi indirim oranları.", "Tedarikçi",
-                """
-                SELECT FirmaAdi, IndirimOrani, AktifMi
-                FROM Tedarikciler
-                ORDER BY IndirimOrani DESC
-                """),
-
-            new("kategori-satis", "Kategori Bazlı Satış", "Kategori satış analizi.", "Satış",
+            new("kategori-satis", "Kategori Bazlı Satış", "Kategori bazında satış adet ve tutar analizini gösterir.", "Satış",
                 """
                 SELECT K.KategoriAdi,
                        SUM(SD.Adet) AS ToplamAdet,
@@ -475,7 +436,7 @@ new("en-yuksek-giderler", "En Yüksek Giderler", "Tutarı en yüksek gider harek
                 ORDER BY ToplamSatisTutari DESC
                 """),
 
-            new("beden-satis", "Beden Bazlı Satış", "Beden satış dağılımı.", "Satış",
+            new("beden-satis", "Beden Bazlı Satış", "Bedenlere göre satış dağılımını gösterir.", "Satış",
                 """
                 SELECT U.Beden,
                        SUM(SD.Adet) AS ToplamAdet,
@@ -486,7 +447,7 @@ new("en-yuksek-giderler", "En Yüksek Giderler", "Tutarı en yüksek gider harek
                 ORDER BY ToplamAdet DESC
                 """),
 
-            new("renk-satis", "Renk Bazlı Satış", "Renk satış dağılımı.", "Satış",
+            new("renk-satis", "Renk Bazlı Satış", "Renklere göre satış dağılımını gösterir.", "Satış",
                 """
                 SELECT U.Renk,
                        SUM(SD.Adet) AS ToplamAdet,
@@ -497,13 +458,184 @@ new("en-yuksek-giderler", "En Yüksek Giderler", "Tutarı en yüksek gider harek
                 ORDER BY ToplamAdet DESC
                 """),
 
-            new("baslangic-sermayesi", "Başlangıç Sermayesi Raporu", "Sermaye giriş kayıtları.", "Finans",
+            new("gelir-gider", "Gelir-Gider Özeti", "Günlük finans özetini gösterir.", "Finans",
                 """
-                SELECT Tarih, Kategori, Tutar, Aciklama
+                SELECT CAST(Tarih AS DATE) AS Tarih,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
+                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
+                FROM FinansHareketleri
+                GROUP BY CAST(Tarih AS DATE)
+                ORDER BY Tarih DESC
+                """),
+
+            new("aylik-gelir-gider", "Aylık Gelir-Gider Özeti", "Ay bazında gelir, gider ve net kazancı gösterir.", "Finans",
+                """
+                SELECT YEAR(Tarih) AS Yil,
+                       MONTH(Tarih) AS Ay,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
+                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
+                FROM FinansHareketleri
+                GROUP BY YEAR(Tarih), MONTH(Tarih)
+                ORDER BY Yil DESC, Ay DESC
+                """),
+
+            new("yillik-gelir-gider", "Yıllık Gelir-Gider Özeti", "Yıl bazında gelir, gider ve net kazancı gösterir.", "Finans",
+                """
+                SELECT YEAR(Tarih) AS Yil,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
+                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
+                FROM FinansHareketleri
+                GROUP BY YEAR(Tarih)
+                ORDER BY Yil DESC
+                """),
+
+            new("net-kazanc", "Net Kazanç Özeti", "Toplam gelir, toplam gider ve net kazancı gösterir.", "Finans",
+                """
+                SELECT SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE 0 END) AS ToplamGelir,
+                       SUM(CASE WHEN HareketTipi = 'Gider' THEN Tutar ELSE 0 END) AS ToplamGider,
+                       SUM(CASE WHEN HareketTipi = 'Gelir' THEN Tutar ELSE -Tutar END) AS NetKazanc
+                FROM FinansHareketleri
+                """),
+
+            new("gider-kategorileri", "Gider Kategorileri Raporu", "Giderleri kategori bazında gruplar.", "Finans",
+                """
+                SELECT Kategori AS GiderKategorisi,
+                       COUNT(*) AS HareketSayisi,
+                       SUM(Tutar) AS ToplamGider
+                FROM FinansHareketleri
+                WHERE HareketTipi = 'Gider'
+                GROUP BY Kategori
+                ORDER BY ToplamGider DESC, GiderKategorisi ASC
+                """),
+
+            new("en-yuksek-giderler", "En Yüksek Giderler", "Tutarı en yüksek gider hareketlerini listeler.", "Finans",
+                """
+                SELECT TOP (10)
+                       Tarih,
+                       Kategori,
+                       Aciklama,
+                       Tutar
+                FROM FinansHareketleri
+                WHERE HareketTipi = 'Gider'
+                ORDER BY Tutar DESC, Tarih DESC
+                """),
+
+            new("personel-maasi-giderleri", "Personel Maaşı Giderleri", "Personel maaşı kategorisindeki giderleri listeler.", "Finans / Personel",
+                """
+                SELECT Tarih,
+                       Aciklama,
+                       Tutar
+                FROM FinansHareketleri
+                WHERE HareketTipi = 'Gider'
+                  AND Kategori = 'Personel Maaşı'
+                ORDER BY Tarih DESC, Tutar DESC
+                """),
+
+            new("isletme-sabit-giderleri", "İşletme Sabit Giderleri", "Düzenli işletme giderlerini listeler.", "Finans",
+                """
+                SELECT Tarih,
+                       Kategori,
+                       Aciklama,
+                       Tutar
+                FROM FinansHareketleri
+                WHERE HareketTipi = 'Gider'
+                  AND Kategori IN
+                  (
+                      'Kira',
+                      'Kira Gideri',
+                      'Elektrik Gideri',
+                      'Su Gideri',
+                      'İnternet Gideri',
+                      'Internet Gideri',
+                      'Temizlik Gideri'
+                  )
+                ORDER BY Tarih DESC, Tutar DESC
+                """),
+
+            new("baslangic-sermayesi", "Başlangıç Sermayesi Raporu", "Sermaye giriş kayıtlarını gösterir.", "Finans",
+                """
+                SELECT Tarih,
+                       Kategori,
+                       Tutar,
+                       Aciklama
                 FROM FinansHareketleri
                 WHERE HareketTipi = 'Gelir'
                   AND Kategori = 'Baslangic Sermayesi'
                 ORDER BY Tarih DESC
+                """),
+
+            new("en-cok-musteri", "En Çok Alışveriş Yapan Müşteriler", "Toplam harcaması yüksek müşterileri listeler.", "Müşteri",
+                """
+                SELECT TOP (10)
+                       AdSoyad,
+                       ToplamHarcama,
+                       SadakatPuani,
+                       IndirimOrani
+                FROM Musteriler
+                ORDER BY ToplamHarcama DESC
+                """),
+
+            new("musteri-alisveris-ozeti", "Müşteri Bazlı Alışveriş Özeti", "Müşteri satış ve harcama özetini gösterir.", "Müşteri",
+                """
+                SELECT M.AdSoyad AS Musteri,
+                       COUNT(DISTINCT S.Id) AS SatisSayisi,
+                       ISNULL(SUM(SD.Adet), 0) AS ToplamUrunAdedi,
+                       M.ToplamHarcama
+                FROM Musteriler M
+                LEFT JOIN Satislar S ON S.MusteriId = M.Id
+                LEFT JOIN SatisDetaylari SD ON SD.SatisId = S.Id
+                GROUP BY M.Id,
+                         M.AdSoyad,
+                         M.ToplamHarcama
+                ORDER BY M.ToplamHarcama DESC, ToplamUrunAdedi DESC
+                """),
+
+            new("musteri-urun", "Müşteri Hangi Ürünü En Çok Alıyor", "Müşteri ürün adet analizini gösterir.", "Müşteri",
+                """
+                SELECT TOP (15)
+                       M.AdSoyad AS MusteriAdi,
+                       U.UrunAdi,
+                       SUM(SD.Adet) AS ToplamAdet
+                FROM SatisDetaylari SD
+                INNER JOIN Satislar S ON S.Id = SD.SatisId
+                INNER JOIN Musteriler M ON M.Id = S.MusteriId
+                INNER JOIN Urunler U ON U.Id = SD.UrunId
+                GROUP BY M.AdSoyad, U.UrunAdi
+                ORDER BY ToplamAdet DESC
+                """),
+
+            new("personel-performans", "Personel Satış Performansı", "Personel satış performansını gösterir.", "Personel",
+                """
+                SELECT P.AdSoyad AS PersonelAdi,
+                       COUNT(DISTINCT S.Id) AS SatisSayisi,
+                       ISNULL(SUM(S.NetTutar), 0) AS ToplamSatisTutari,
+                       P.PrimOrani
+                FROM Personeller P
+                LEFT JOIN Satislar S ON S.PersonelId = P.Id
+                GROUP BY P.AdSoyad, P.PrimOrani
+                ORDER BY ToplamSatisTutari DESC
+                """),
+
+            new("tedarikci-urun", "Tedarikçi Ürün Raporu", "Tedarikçi ürün sayılarını gösterir.", "Tedarikçi",
+                """
+                SELECT T.FirmaAdi,
+                       COUNT(U.Id) AS UrunSayisi
+                FROM Tedarikciler T
+                LEFT JOIN Urunler U ON U.TedarikciId = T.Id
+                GROUP BY T.FirmaAdi
+                ORDER BY UrunSayisi DESC
+                """),
+
+            new("tedarikci-indirim", "Tedarikçi İndirim Raporu", "Tedarikçi indirim oranlarını gösterir.", "Tedarikçi",
+                """
+                SELECT FirmaAdi,
+                       IndirimOrani,
+                       AktifMi
+                FROM Tedarikciler
+                ORDER BY IndirimOrani DESC
                 """)
         };
     }
