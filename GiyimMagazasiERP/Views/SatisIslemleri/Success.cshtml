@@ -2,12 +2,21 @@
 
 @{
     ViewData["Title"] = "Satış Başarılı";
-    var detay = Model.SatisDetaylari.FirstOrDefault();
+
+    const decimal kdvOrani = 20m;
+
+    var urunSayisi = Model.SatisDetaylari.Count;
+    var toplamAdet = Model.SatisDetaylari.Sum(x => x.Adet);
+
+    var kdvDahilGenelToplam = Model.NetTutar;
+    var kdvHaricTutar = kdvDahilGenelToplam / 1.20m;
+    var kdvTutari = kdvDahilGenelToplam - kdvHaricTutar;
 }
 
 <div class="container py-4">
     <div class="alert alert-success border-0 shadow-sm">
         <h1 class="h4 fw-bold mb-2">Satış Başarıyla Tamamlandı</h1>
+
         <p class="mb-0">
             Satış, stok ve finans kayıtları sisteme işlendi.
         </p>
@@ -15,53 +24,206 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <h2 class="h5 fw-bold mb-4">Satış Özeti</h2>
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Satış Özeti</h2>
 
-            <dl class="row mb-0">
-                <dt class="col-sm-4">Satış No</dt>
-                <dd class="col-sm-8">#@Model.Id</dd>
+                    <p class="text-muted mb-0">
+                        Çoklu ürün satışı başarıyla oluşturuldu.
+                    </p>
+                </div>
 
-                <dt class="col-sm-4">Satış Tarihi</dt>
-                <dd class="col-sm-8">@Model.SatisTarihi.ToString("dd/MM/yyyy")</dd>
+                <span class="badge text-bg-primary px-3 py-2">
+                    KDV Dahil Satış
+                </span>
+            </div>
 
-                <dt class="col-sm-4">Müşteri</dt>
-                <dd class="col-sm-8">
-                    @(Model.Musteri is null ? "Kayıtsız Müşteri" : Model.Musteri.AdSoyad)
-                </dd>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-3">
+                            Satış Bilgileri
+                        </h3>
 
-                <dt class="col-sm-4">Personel</dt>
-                <dd class="col-sm-8">@Model.Personel.AdSoyad</dd>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Satış No</dt>
+                            <dd class="col-sm-7">#@Model.Id</dd>
 
-                <dt class="col-sm-4">Ürün</dt>
-                <dd class="col-sm-8">@(detay?.Urun.UrunAdi ?? "-")</dd>
+                            <dt class="col-sm-5">Satış Tarihi</dt>
+                            <dd class="col-sm-7">
+                                @Model.SatisTarihi.ToString("dd/MM/yyyy HH:mm")
+                            </dd>
 
-                <dt class="col-sm-4">Adet</dt>
-                <dd class="col-sm-8">@(detay?.Adet ?? 0)</dd>
+                            <dt class="col-sm-5">Müşteri</dt>
+                            <dd class="col-sm-7">
+                                @(Model.Musteri?.AdSoyad ?? "Kayıtsız Müşteri")
+                            </dd>
 
-                <dt class="col-sm-4">Birim Fiyat</dt>
-                <dd class="col-sm-8">
-                    @((detay?.BirimFiyat ?? 0).ToString("N2")) TL
-                </dd>
+                            <dt class="col-sm-5">Personel</dt>
+                            <dd class="col-sm-7">
+                                @Model.Personel.AdSoyad
+                            </dd>
 
-                <dt class="col-sm-4">Toplam Tutar</dt>
-                <dd class="col-sm-8">@Model.ToplamTutar.ToString("N2") TL</dd>
+                            <dt class="col-sm-5">Ödeme Tipi</dt>
+                            <dd class="col-sm-7">
+                                @Model.OdemeTipi
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
 
-                <dt class="col-sm-4">İndirim Tutarı</dt>
-                <dd class="col-sm-8">@Model.IndirimTutari.ToString("N2") TL</dd>
+                <div class="col-lg-6">
+                    <div class="border rounded-3 p-3 h-100">
+                        <h3 class="h6 fw-bold text-uppercase text-muted mb-3">
+                            Sepet Özeti
+                        </h3>
 
-                <dt class="col-sm-4">Net Tutar</dt>
-                <dd class="col-sm-8 fw-bold text-success">
-                    @Model.NetTutar.ToString("N2") TL
-                </dd>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-6">Satılan Ürün Kalemi</dt>
+                            <dd class="col-sm-6">
+                                @urunSayisi
+                            </dd>
 
-                <dt class="col-sm-4">Ödeme Tipi</dt>
-                <dd class="col-sm-8">@Model.OdemeTipi</dd>
-            </dl>
+                            <dt class="col-sm-6">Toplam Adet</dt>
+                            <dd class="col-sm-6">
+                                @toplamAdet
+                            </dd>
+
+                            <dt class="col-sm-6">Ara Toplam</dt>
+                            <dd class="col-sm-6">
+                                @Model.ToplamTutar.ToString("N2") TL
+                            </dd>
+
+                            <dt class="col-sm-6">İndirim Tutarı</dt>
+                            <dd class="col-sm-6">
+                                @Model.IndirimTutari.ToString("N2") TL
+                            </dd>
+
+                            <dt class="col-sm-6">KDV Dahil Genel Toplam</dt>
+                            <dd class="col-sm-6 fw-bold text-success">
+                                @Model.NetTutar.ToString("N2") TL
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
 
             <div class="mt-4">
-                <a asp-action="Create" class="btn btn-success">Yeni Satış Yap</a>
-                <a asp-controller="Satislar" asp-action="Index" class="btn btn-outline-secondary">
-                    Satış Listesi
+                <h3 class="h5 fw-bold mb-3">Satılan Ürünler</h3>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ürün Adı</th>
+                                <th>Barkod</th>
+                                <th>Beden</th>
+                                <th>Renk</th>
+                                <th class="text-end">Birim Fiyat</th>
+                                <th class="text-end">Adet</th>
+                                <th class="text-end">Ara Toplam</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var detay in Model.SatisDetaylari)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">
+                                        @detay.Urun.UrunAdi
+                                    </td>
+
+                                    <td>
+                                        @detay.Urun.Barkod
+                                    </td>
+
+                                    <td>
+                                        @detay.Urun.Beden
+                                    </td>
+
+                                    <td>
+                                        @detay.Urun.Renk
+                                    </td>
+
+                                    <td class="text-end">
+                                        @detay.BirimFiyat.ToString("N2") TL
+                                    </td>
+
+                                    <td class="text-end">
+                                        @detay.Adet
+                                    </td>
+
+                                    <td class="text-end fw-semibold">
+                                        @detay.ToplamTutar.ToString("N2") TL
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row justify-content-end mt-4">
+                <div class="col-lg-5">
+                    <div class="border rounded-3 p-3 bg-light">
+                        <h3 class="h6 fw-bold mb-3">KDV Özeti</h3>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Ara Toplam</span>
+                            <strong>@Model.ToplamTutar.ToString("N2") TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Yapılan İndirim</span>
+                            <strong>@Model.IndirimTutari.ToString("N2") TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Oranı</span>
+                            <strong>%@kdvOrani.ToString("N0")</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Hariç Tutar</span>
+                            <strong>@kdvHaricTutar.ToString("N2") TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Tutarı</span>
+                            <strong>@kdvTutari.ToString("N2") TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center py-3 fs-5">
+                            <span class="fw-bold">KDV Dahil Genel Toplam</span>
+
+                            <strong class="text-success">
+                                @kdvDahilGenelToplam.ToString("N2") TL
+                            </strong>
+                        </div>
+
+                        <p class="small text-muted mb-0">
+                            Genel Toplam KDV dahildir.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex flex-wrap gap-2">
+                <a asp-action="Create" class="btn btn-success">
+                    Yeni Satış Yap
+                </a>
+
+                <a asp-controller="Satislar"
+                   asp-action="Index"
+                   class="btn btn-outline-secondary">
+                    Satış Listesine Dön
+                </a>
+
+                <a asp-controller="Faturalar"
+                   asp-action="Detay"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-outline-primary">
+                    Fatura Görüntüle
                 </a>
             </div>
         </div>
