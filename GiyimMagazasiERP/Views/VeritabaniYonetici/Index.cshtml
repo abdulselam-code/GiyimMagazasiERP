@@ -447,14 +447,57 @@
             </section>
 
             <section id="tableBrowserPanel" class="db-panel">
-                <div class="db-panel-header">
+                <div class="db-panel-header db-table-browser-header">
                     <div>
                         <p class="db-kicker">Table Browser</p>
                         <h1>Tablo Tarayıcı</h1>
                         <p>
-                            Tabloları okuma amaçlı görüntüle. Seçilen tablonun ilk 50 kaydı listelenir.
+                            Tabloları okuma amaçlı görüntüle. Gösterilecek kayıt sayısını seçebilirsin.
                         </p>
                     </div>
+
+                    <form asp-controller="VeritabaniYonetici"
+                          asp-action="Index"
+                          method="get"
+                          class="db-table-limit-form">
+                        @if (!string.IsNullOrWhiteSpace(Model.SeciliTablo))
+                        {
+                            <input type="hidden" name="tablo" value="@Model.SeciliTablo" />
+                        }
+
+                        <label for="tableLimit">Kayıt Sayısı</label>
+
+                        <select id="tableLimit"
+                                name="limit"
+                                onchange="this.form.submit()">
+                            @if (Model.TabloTarayiciLimit == "50")
+                            {
+                                <option value="50" selected>50</option>
+                            }
+                            else
+                            {
+                                <option value="50">50</option>
+                            }
+
+                            @if (Model.TabloTarayiciLimit == "100")
+                            {
+                                <option value="100" selected>100</option>
+                            }
+                            else
+                            {
+                                <option value="100">100</option>
+                            }
+
+                            @if (Model.TabloTarayiciLimit == "all")
+                            {
+                                <option value="all" selected>Tümü</option>
+                            }
+                            else
+                            {
+                                <option value="all">Tümü</option>
+                            }
+                        </select>
+                    </form>
                 </div>
 
                 <article class="db-browser-card">
@@ -464,12 +507,21 @@
                             <a asp-controller="VeritabaniYonetici"
                                asp-action="Index"
                                asp-route-tablo="@tablo"
+                               asp-route-limit="@Model.TabloTarayiciLimit"
                                class="db-browser-item">
                                 <span>▤</span>
 
                                 <div>
                                     <strong>@tablo</strong>
-                                    <small>İlk 50 kayıt</small>
+
+                                    @if (Model.TabloTarayiciLimit == "all")
+                                    {
+                                        <small>Tüm kayıtlar</small>
+                                    }
+                                    else
+                                    {
+                                        <small>İlk @Model.TabloTarayiciLimit kayıt</small>
+                                    }
                                 </div>
                             </a>
                         }
@@ -482,7 +534,15 @@
                         <div class="db-result-header">
                             <div>
                                 <h2>@Model.SonucTablosu.Baslik</h2>
-                                <p>@Model.SonucTablosu.KayitSayisi kayıt getirildi.</p>
+
+                                @if (!string.IsNullOrWhiteSpace(Model.SonucTablosu.KayitBilgisi))
+                                {
+                                    <p>@Model.SonucTablosu.KayitBilgisi</p>
+                                }
+                                else
+                                {
+                                    <p>@Model.SonucTablosu.KayitSayisi kayıt getirildi.</p>
+                                }
                             </div>
                         </div>
 

@@ -30,9 +30,11 @@ public class VeritabaniYoneticiController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? raporKod, string? tablo)
+    public async Task<IActionResult> Index(string? raporKod, string? tablo, string? limit)
     {
         var model = await ModelOlustur();
+
+        model.TabloTarayiciLimit = LimitDegeriniGetir(limit);
 
         if (!string.IsNullOrWhiteSpace(raporKod))
         {
@@ -62,15 +64,28 @@ public class VeritabaniYoneticiController : Controller
                 return View(model);
             }
 
-            var sql = $"SELECT TOP (50) * FROM [{tablo}] ORDER BY Id DESC";
+            var gecerliLimit = LimitDegeriniGetir(limit);
+
+            model.SeciliTablo = tablo;
+            model.TabloTarayiciLimit = gecerliLimit;
+
+            var toplamKayitSayisi = await TabloKayitSayisiniGetir(tablo);
+            var sql = TabloTarayiciSqlOlustur(tablo, gecerliLimit);
 
             model.SonucTablosu = await SqlSonucuGetir(
                 sql,
                 $"{tablo} Tablo Tarayıcı",
-                "Bu tabloda kayıt bulunamadı.");
+                "Bu tabloda kayıt bulunamadı.",
+                gecerliLimit == "all" ? null : LimitSatirSayisiniGetir(gecerliLimit));
+
+            model.SonucTablosu.ToplamKayitSayisi = toplamKayitSayisi;
+            model.SonucTablosu.KayitBilgisi = TabloKayitBilgisiOlustur(
+                toplamKayitSayisi,
+                model.SonucTablosu.KayitSayisi,
+                gecerliLimit);
 
             model.BasariMesaji =
-                $"{tablo} tablosundan ilk 50 kayıt görüntülendi. {model.SonucTablosu.KayitSayisi} kayıt getirildi.";
+                $"{tablo} tablosu görüntülendi. {model.SonucTablosu.KayitSayisi} kayıt getirildi.";
         }
 
         return View(model);
@@ -129,14 +144,14 @@ public class VeritabaniYoneticiController : Controller
                 ToplamUrunSayisi = await _context.Urunler.CountAsync(),
 
                 ToplamStokAdedi = await _context.Urunler
-            .SumAsync(x => (int?)x.StokMiktari) ?? 0,
+                    .SumAsync(x => (int?)x.StokMiktari) ?? 0,
 
                 ToplamMusteriSayisi = await _context.Musteriler.CountAsync(),
                 ToplamPersonelSayisi = await _context.Personeller.CountAsync(),
                 ToplamSatisSayisi = await _context.Satislar.CountAsync(),
 
                 KritikStokSayisi = await _context.Urunler
-            .CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
+                    .CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
 
                 ToplamGelir = toplamGelir,
                 ToplamGider = toplamGider,
@@ -146,23 +161,87 @@ public class VeritabaniYoneticiController : Controller
             SemaTablolari = SemaTablolariGetir(),
 
             KayitliSorgular = KayitliSqlSorgulari()
-        .Select(x => new KayitliSorguViewModel
-        {
-            Kod = x.Kod,
-            Baslik = x.Baslik,
-            Aciklama = x.Aciklama,
-            Kategori = x.Kategori
-        })
-        .ToList(),
+                .Select(x => new KayitliSorguViewModel
+                {
+                    Kod = x.Kod,
+                    Baslik = x.Baslik,
+                    Aciklama = x.Aciklama,
+                    Kategori = x.Kategori
+                })
+                .ToList(),
 
-            TabloTarayiciTablolari = TabloAdlari.ToList()
+            TabloTarayiciTablolari = TabloAdlari.ToList(),
+            TabloTarayiciLimit = "50"
         };
+    }
+
+    private static string LimitDegeriniGetir(string? limit)
+    {
+        if (string.Equals(limit, "100", StringComparison.OrdinalIgnoreCase))
+            return "100";
+
+        if (string.Equals(limit, "all", StringComparison.OrdinalIgnoreCase))
+            return "all";
+
+        return "50";
+    }
+
+    private static int LimitSatirSayisiniGetir(string limit)
+    {
+        return limit == "100" ? 100 : 50;
+    }
+
+    private static string TabloTarayiciSqlOlustur(string tablo, string limit)
+    {
+        if (limit == "all")
+            return $"SELECT * FROM [{tablo}] ORDER BY Id DESC";
+
+        return $"SELECT TOP ({limit}) * FROM [{tablo}] ORDER BY Id DESC";
+    }
+
+    private async Task<int> TabloKayitSayisiniGetir(string tablo)
+    {
+        var sql = $"SELECT COUNT(*) FROM [{tablo}]";
+
+        var connection = _context.Database.GetDbConnection();
+        var baglantiAcildiMi = connection.State != ConnectionState.Open;
+
+        if (baglantiAcildiMi)
+            await connection.OpenAsync();
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.CommandTimeout = 15;
+
+            var sonuc = await command.ExecuteScalarAsync();
+
+            return sonuc is null ? 0 : Convert.ToInt32(sonuc);
+        }
+        finally
+        {
+            if (baglantiAcildiMi)
+                await connection.CloseAsync();
+        }
+    }
+
+    private static string TabloKayitBilgisiOlustur(
+        int toplamKayitSayisi,
+        int gosterilenKayitSayisi,
+        string limit)
+    {
+        if (limit == "all")
+            return $"Tüm {toplamKayitSayisi} kayıt gösteriliyor.";
+
+        return $"Toplam {toplamKayitSayisi} kayıttan {gosterilenKayitSayisi} kayıt gösteriliyor.";
     }
 
     private async Task<DinamikSonucTablosuViewModel> SqlSonucuGetir(
         string sql,
         string baslik,
-        string bosKayitMesaji)
+        string bosKayitMesaji,
+        int? maksimumSatirSayisi = 200)
     {
         var sonuc = new DinamikSonucTablosuViewModel
         {
@@ -189,8 +268,14 @@ public class VeritabaniYoneticiController : Controller
                 sonuc.Sutunlar.Add(reader.GetName(i));
             }
 
-            while (await reader.ReadAsync() && sonuc.Satirlar.Count < 200)
+            while (await reader.ReadAsync())
             {
+                if (maksimumSatirSayisi.HasValue &&
+                    sonuc.Satirlar.Count >= maksimumSatirSayisi.Value)
+                {
+                    break;
+                }
+
                 var satir = new Dictionary<string, string>();
 
                 for (var i = 0; i < reader.FieldCount; i++)

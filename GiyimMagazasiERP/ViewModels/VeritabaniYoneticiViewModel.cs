@@ -12,6 +12,9 @@ public class VeritabaniYoneticiViewModel
     public List<KayitliSorguViewModel> KayitliSorgular { get; set; } = new();
     public List<string> TabloTarayiciTablolari { get; set; } = new();
 
+    public string TabloTarayiciLimit { get; set; } = "50";
+    public string? SeciliTablo { get; set; }
+
     public DinamikSonucTablosuViewModel? SonucTablosu { get; set; }
 }
 
@@ -62,4 +65,7 @@ public class DinamikSonucTablosuViewModel
     public List<Dictionary<string, string>> Satirlar { get; set; } = new();
 
     public int KayitSayisi => Satirlar.Count;
+
+    public int? ToplamKayitSayisi { get; set; }
+    public string? KayitBilgisi { get; set; }
 }

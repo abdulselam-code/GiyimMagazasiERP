@@ -1618,3 +1618,50 @@
         align-items: flex-start;
     }
 }
+.db-table-browser-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.db-table-limit-form {
+    min-width: 170px;
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+    .db-table-limit-form label {
+        color: #cbd5e1;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .db-table-limit-form select {
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 10px;
+        background: #0f172a;
+        color: #f8fafc;
+        outline: none;
+    }
+
+        .db-table-limit-form select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.18);
+        }
+
+@media (max-width: 768px) {
+    .db-table-browser-header {
+        flex-direction: column;
+    }
+
+    .db-table-limit-form {
+        width: 100%;
+    }
+}
