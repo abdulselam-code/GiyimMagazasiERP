@@ -1,0 +1,93 @@
+﻿@model GiyimMagazasiERP.Models.Personel
+
+@{
+    ViewData["Title"] = "Personel Düzenle";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Personel Düzenle</h1>
+
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="AdSoyad" class="form-label">Ad Soyad</label>
+                        <input asp-for="AdSoyad" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Telefon" class="form-label">Telefon</label>
+                        <input asp-for="Telefon" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Pozisyon" class="form-label">Pozisyon</label>
+                        <input asp-for="Pozisyon" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Departman" class="form-label">Departman</label>
+                        <input asp-for="Departman" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="IseBaslamaTarihi" class="form-label">İşe Başlama Tarihi</label>
+                        <input asp-for="IseBaslamaTarihi" type="date" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Maas" class="form-label">Maaş</label>
+                        <input asp-for="Maas" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="PrimOrani" class="form-label">Prim Oranı</label>
+                        <input asp-for="PrimOrani" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="MesaiSaati" class="form-label">Mesai Saati</label>
+                        <input asp-for="MesaiSaati" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="IzinGunu" class="form-label">İzin Günü</label>
+                        <input asp-for="IzinGunu" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="GirisSaati" class="form-label">Giriş Saati</label>
+                        <input asp-for="GirisSaati" type="time" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="CikisSaati" class="form-label">Çıkış Saati</label>
+                        <input asp-for="CikisSaati" type="time" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input asp-for="AktifMi" class="form-check-input" />
+                            <label asp-for="AktifMi" class="form-check-label">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-warning">Güncelle</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

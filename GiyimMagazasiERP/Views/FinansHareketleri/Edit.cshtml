@@ -1,0 +1,63 @@
+﻿@model GiyimMagazasiERP.Models.FinansHareketi
+
+@{
+    ViewData["Title"] = "Finans Hareketi Düzenle";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Finans Hareketi Düzenle</h1>
+
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="KullaniciId" class="form-label">Kullanıcı</label>
+                        <select asp-for="KullaniciId" asp-items="ViewBag.KullaniciId" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SatisId" class="form-label">Satış</label>
+                        <select asp-for="SatisId" asp-items="ViewBag.SatisId" class="form-select">
+                            <option value="">Satışa bağlı değil</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="HareketTipi" class="form-label">Hareket Tipi</label>
+                        <select asp-for="HareketTipi" asp-items="ViewBag.HareketTipleri" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Kategori" class="form-label">Kategori</label>
+                        <input asp-for="Kategori" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Tutar" class="form-label">Tutar</label>
+                        <input asp-for="Tutar" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Tarih" class="form-label">Tarih</label>
+                        <input asp-for="Tarih" type="datetime-local" class="form-control" />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Aciklama" class="form-label">Açıklama</label>
+                        <textarea asp-for="Aciklama" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-warning">Güncelle</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

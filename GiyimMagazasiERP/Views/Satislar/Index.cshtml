@@ -1,0 +1,242 @@
+﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.Satis>
+
+@{
+    ViewData["Title"] = "Satışlar";
+
+    var oncekiSayfa = Model.Page - 1;
+    var sonrakiSayfa = Model.Page + 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Satışlar</h1>
+            <p class="text-muted mb-0">Mağaza satış kayıtları ve fatura görüntüleme işlemleri</p>
+        </div>
+
+        <a asp-controller="SatisIslemleri"
+           asp-action="Create"
+           class="btn btn-success">
+            Yeni Satış Yap
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-lg-7">
+                    <label for="arama" class="form-label">Satış Ara</label>
+
+                    <input type="text"
+                           id="arama"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control"
+                           placeholder="Müşteri, personel veya ödeme tipi ara" />
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
+
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        @if (Model.PageSize == 5)
+                        {
+                            <option value="5" selected>5</option>
+                        }
+                        else
+                        {
+                            <option value="5">5</option>
+                        }
+
+                        @if (Model.PageSize == 10)
+                        {
+                            <option value="10" selected>10</option>
+                        }
+                        else
+                        {
+                            <option value="10">10</option>
+                        }
+
+                        @if (Model.PageSize == 25)
+                        {
+                            <option value="25" selected>25</option>
+                        }
+                        else
+                        {
+                            <option value="25">25</option>
+                        }
+
+                        @if (Model.PageSize == 50)
+                        {
+                            <option value="50" selected>50</option>
+                        }
+                        else
+                        {
+                            <option value="50">50</option>
+                        }
+
+                        @if (Model.PageSize == 100)
+                        {
+                            <option value="100" selected>100</option>
+                        }
+                        else
+                        {
+                            <option value="100">100</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            Ara
+                        </button>
+
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">
+                            Temizle
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="text-muted small">
+            @if (!string.IsNullOrWhiteSpace(Model.Arama))
+            {
+                <span>
+                    Arama sonucu <strong>@Model.TotalCount</strong> kayıt bulundu.
+                </span>
+            }
+            else
+            {
+                <span>
+                    Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
+                </span>
+            }
+        </div>
+
+        <div class="text-muted small">
+            Sayfa <strong>@Model.Page</strong> /
+            <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Satış Tarihi</th>
+                            <th>Müşteri</th>
+                            <th>Personel</th>
+                            <th>Toplam Tutar</th>
+                            <th>İndirim Tutarı</th>
+                            <th>Net Tutar</th>
+                            <th>Ödeme Tipi</th>
+                            <th>Fatura</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var satis in Model.Items)
+                            {
+                                <tr>
+                                    <td>@satis.SatisTarihi.ToString("dd/MM/yyyy")</td>
+
+                                    <td>
+                                        @if (satis.Musteri is not null)
+                                        {
+                                            @satis.Musteri.AdSoyad
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">
+                                                Kayıtsız Müşteri
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>@satis.Personel.AdSoyad</td>
+                                    <td>@satis.ToplamTutar.ToString("N2") TL</td>
+                                    <td>@satis.IndirimTutari.ToString("N2") TL</td>
+
+                                    <td class="fw-semibold text-success">
+                                        @satis.NetTutar.ToString("N2") TL
+                                    </td>
+
+                                    <td>
+                                        <span class="badge text-bg-primary">
+                                            @satis.OdemeTipi
+                                        </span>
+                                    </td>
+
+                                    <td class="text-nowrap">
+                                        <a asp-controller="Faturalar"
+                                           asp-action="Detay"
+                                           asp-route-id="@satis.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Fatura Görüntüle
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    Kayıt bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="mt-4" aria-label="Satış sayfalama">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@oncekiSayfa"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-arama="@Model.Arama">
+                    Önceki
+                </a>
+            </li>
+
+            @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
+            {
+                <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@sayfaNo"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-arama="@Model.Arama">
+                        @sayfaNo
+                    </a>
+                </li>
+            }
+
+            <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@sonrakiSayfa"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-arama="@Model.Arama">
+                    Sonraki
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>

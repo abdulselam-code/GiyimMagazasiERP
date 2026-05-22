@@ -1,0 +1,499 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* ERP koyu üst menü */
+.erp-top-navbar {
+    min-height: 66px;
+}
+
+.erp-navbar-inner {
+    width: 100%;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.erp-navbar-brand {
+    white-space: nowrap;
+    letter-spacing: 0;
+}
+
+.erp-navbar-menu {
+    gap: 4px;
+    flex-wrap: nowrap;
+}
+
+.erp-menu-link {
+    white-space: nowrap;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.78) !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+    .erp-menu-link:hover,
+    .erp-menu-link:focus {
+        color: #fff !important;
+        background: rgba(29, 78, 216, 0.32);
+    }
+
+    .erp-menu-link.active {
+        color: #fff !important;
+        background: rgba(59, 130, 246, 0.42);
+    }
+
+.erp-dropdown-menu {
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: #171d25;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+}
+
+    .erp-dropdown-menu .dropdown-item {
+        border-radius: 8px;
+        color: rgba(255, 255, 255, 0.82);
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+        .erp-dropdown-menu .dropdown-item:hover,
+        .erp-dropdown-menu .dropdown-item:focus {
+            color: #fff;
+            background: rgba(29, 78, 216, 0.34);
+        }
+
+        .erp-dropdown-menu .dropdown-item.active {
+            color: #fff;
+            background: rgba(59, 130, 246, 0.48);
+        }
+
+/* Hamburger modunda menü düzgün açılsın */
+@media (max-width: 767.98px) {
+    .erp-navbar-inner {
+        max-width: none;
+    }
+
+    .erp-navbar-menu {
+        width: 100%;
+        gap: 6px;
+        padding-top: 12px;
+        flex-wrap: nowrap;
+    }
+
+    .erp-menu-link {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .erp-dropdown-menu {
+        width: 100%;
+        margin-top: 4px;
+    }
+}
+
+/* Home ERP ana sayfa tasarımı */
+.home-erp-page {
+    background: #f4f7fb;
+}
+
+.home-container-wide {
+    max-width: 1320px;
+}
+
+.home-hero {
+    padding: 54px 0;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(13, 25, 50, 0.98), rgba(18, 66, 118, 0.94)), linear-gradient(90deg, #0d1b2f, #1d4ed8);
+}
+
+.home-hero-content {
+    max-width: 820px;
+}
+
+.home-kicker {
+    display: inline-flex;
+    margin-bottom: 14px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.12);
+    color: #dbeafe;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.home-hero h1 {
+    margin: 0 0 14px;
+    font-size: clamp(2rem, 3vw, 3.35rem);
+    line-height: 1.08;
+    font-weight: 800;
+}
+
+.home-hero-lead {
+    margin-bottom: 10px;
+    color: #dbeafe;
+    font-size: 1.22rem;
+    font-weight: 600;
+}
+
+.home-hero-text {
+    max-width: 760px;
+    margin-bottom: 22px;
+    color: rgba(239, 246, 255, 0.86);
+    font-size: 1rem;
+}
+
+.home-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.home-action-btn {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 11px;
+    font-weight: 600;
+}
+
+.home-primary-action {
+    box-shadow: 0 16px 32px rgba(25, 135, 84, 0.28);
+}
+
+.home-system-panel {
+    padding: 24px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.13);
+    box-shadow: 0 24px 65px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(10px);
+}
+
+.home-system-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+    .home-system-panel-head span {
+        color: #bfdbfe;
+        font-size: 0.88rem;
+    }
+
+    .home-system-panel-head h2 {
+        margin: 3px 0 0;
+        font-size: 1.35rem;
+        font-weight: 700;
+    }
+
+.home-live-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: #d1fae5 !important;
+    background: rgba(25, 135, 84, 0.34);
+    border: 1px solid rgba(167, 243, 208, 0.28);
+    font-weight: 700;
+}
+
+.home-system-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+    margin-bottom: 18px;
+}
+
+    .home-system-mini-grid div {
+        min-height: 88px;
+        display: grid;
+        align-content: center;
+        gap: 4px;
+        padding: 14px;
+        border-radius: 15px;
+        background: rgba(4, 12, 28, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .home-system-mini-grid span {
+        color: #bfdbfe;
+        font-size: 0.86rem;
+    }
+
+    .home-system-mini-grid strong {
+        font-size: 1.55rem;
+    }
+
+    .home-system-mini-grid .warning strong {
+        color: #fde68a;
+    }
+
+.home-system-flow {
+    display: grid;
+    grid-template-columns: repeat(7, auto);
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 15px;
+}
+
+    .home-system-flow div {
+        padding: 7px 9px;
+        border-radius: 10px;
+        color: #eff6ff;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .home-system-flow span {
+        color: #93c5fd;
+    }
+
+.home-system-panel p {
+    margin: 0;
+    color: rgba(239, 246, 255, 0.84);
+}
+
+.home-section {
+    padding-top: 34px;
+}
+
+.home-section-heading {
+    margin-bottom: 17px;
+}
+
+    .home-section-heading h2 {
+        margin: 0 0 5px;
+        color: #132238;
+        font-size: 1.55rem;
+        font-weight: 800;
+    }
+
+    .home-section-heading p {
+        margin: 0;
+        color: #64748b;
+    }
+
+.home-stat-card {
+    min-height: 128px;
+    display: grid;
+    align-content: center;
+    gap: 8px;
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid #dbe4ef;
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+    .home-stat-card span {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .home-stat-card strong {
+        color: #102033;
+        font-size: 1.55rem;
+        overflow-wrap: anywhere;
+    }
+
+.home-stat-success {
+    border-left: 5px solid #198754;
+}
+
+    .home-stat-success strong {
+        color: #198754;
+    }
+
+.home-stat-danger {
+    border-left: 5px solid #dc3545;
+}
+
+    .home-stat-danger strong {
+        color: #dc3545;
+    }
+
+.home-stat-warning {
+    border-left: 5px solid #f59e0b;
+}
+
+    .home-stat-warning strong {
+        color: #b45309;
+    }
+
+.home-stat-profit {
+    border-left: 5px solid #6f42c1;
+}
+
+    .home-stat-profit strong {
+        color: #5b21b6;
+    }
+
+/* Home sistem kapsamı */
+.home-scope-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.home-scope-card {
+    min-height: 230px;
+    display: grid;
+    align-content: space-between;
+    gap: 18px;
+    padding: 22px;
+    border-radius: 20px;
+    border: 1px solid #dbe4ef;
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+    .home-scope-card:hover {
+        transform: translateY(-3px);
+        border-color: #8bbcff;
+        box-shadow: 0 22px 48px rgba(15, 23, 42, 0.13);
+    }
+
+.home-scope-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+    .home-scope-head h3 {
+        margin: 0 0 7px;
+        color: #132238;
+        font-size: 1.22rem;
+        font-weight: 800;
+    }
+
+    .home-scope-head p {
+        margin: 0;
+        color: #64748b;
+    }
+
+.home-scope-icon {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    border: 1px solid;
+    font-size: 0.88rem;
+    font-weight: 900;
+}
+
+.home-scope-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.home-scope-sales {
+    border-left: 5px solid #0d6efd;
+}
+
+    .home-scope-sales .home-scope-icon {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border-color: #93c5fd;
+    }
+
+.home-scope-stock {
+    border-left: 5px solid #f59e0b;
+}
+
+    .home-scope-stock .home-scope-icon {
+        color: #a16207;
+        background: #fefce8;
+        border-color: #fde047;
+    }
+
+.home-scope-finance {
+    border-left: 5px solid #198754;
+}
+
+    .home-scope-finance .home-scope-icon {
+        color: #166534;
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+
+.home-scope-analysis {
+    border-left: 5px solid #6f42c1;
+}
+
+    .home-scope-analysis .home-scope-icon {
+        color: #6b21a8;
+        background: #faf5ff;
+        border-color: #d8b4fe;
+    }
+
+@media (max-width: 768px) {
+    .home-hero {
+        padding: 38px 0;
+    }
+
+        .home-hero h1 {
+            font-size: 2rem;
+        }
+
+    .home-system-flow {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+
+        .home-system-flow span {
+            display: none;
+        }
+
+    .home-scope-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .home-scope-head {
+        flex-direction: column;
+    }
+}

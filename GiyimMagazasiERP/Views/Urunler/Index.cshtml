@@ -1,0 +1,253 @@
+﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.Urun>
+
+@{
+    ViewData["Title"] = "Ürünler";
+
+    var oncekiSayfa = Model.Page - 1;
+    var sonrakiSayfa = Model.Page + 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Ürünler</h1>
+            <p class="text-muted mb-0">Ürün, stok, kategori ve tedarikçi yönetimi</p>
+        </div>
+
+        <a asp-action="Create" class="btn btn-primary">Yeni Ürün</a>
+    </div>
+
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-lg-7">
+                    <label for="arama" class="form-label">Ürün Ara</label>
+                    <input type="text"
+                           id="arama"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control"
+                           placeholder="Ürün adı, barkod, beden, renk, kategori veya tedarikçi ara" />
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        @if (Model.PageSize == 5)
+                        {
+                            <option value="5" selected>5</option>
+                        }
+                        else
+                        {
+                            <option value="5">5</option>
+                        }
+
+                        @if (Model.PageSize == 10)
+                        {
+                            <option value="10" selected>10</option>
+                        }
+                        else
+                        {
+                            <option value="10">10</option>
+                        }
+
+                        @if (Model.PageSize == 25)
+                        {
+                            <option value="25" selected>25</option>
+                        }
+                        else
+                        {
+                            <option value="25">25</option>
+                        }
+
+                        @if (Model.PageSize == 50)
+                        {
+                            <option value="50" selected>50</option>
+                        }
+                        else
+                        {
+                            <option value="50">50</option>
+                        }
+
+                        @if (Model.PageSize == 100)
+                        {
+                            <option value="100" selected>100</option>
+                        }
+                        else
+                        {
+                            <option value="100">100</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            Ara
+                        </button>
+
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">
+                            Temizle
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="text-muted small">
+            @if (!string.IsNullOrWhiteSpace(Model.Arama))
+            {
+                <span>
+                    Arama sonucu <strong>@Model.TotalCount</strong> kayıt bulundu.
+                </span>
+            }
+            else
+            {
+                <span>
+                    Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
+                </span>
+            }
+        </div>
+
+        <div class="text-muted small">
+            Sayfa <strong>@Model.Page</strong> / <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ürün Adı</th>
+                            <th>Barkod</th>
+                            <th>Kategori</th>
+                            <th>Tedarikçi</th>
+                            <th>Beden</th>
+                            <th>Renk</th>
+                            <th>Alış</th>
+                            <th>Satış</th>
+                            <th>Stok</th>
+                            <th>Minimum</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var urun in Model.Items)
+                            {
+                                <tr class="@(urun.StokMiktari <= urun.MinimumStok ? "table-warning" : "")">
+                                    <td class="fw-semibold">
+                                        @urun.UrunAdi
+
+                                        @if (urun.StokMiktari <= urun.MinimumStok)
+                                        {
+                                            <span class="badge text-bg-warning ms-1">
+                                                Kritik Stok
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>@urun.Barkod</td>
+                                    <td>@urun.Kategori.KategoriAdi</td>
+                                    <td>@urun.Tedarikci.FirmaAdi</td>
+                                    <td>@urun.Beden</td>
+                                    <td>@urun.Renk</td>
+                                    <td>@urun.AlisFiyati.ToString("N2") TL</td>
+                                    <td>@urun.SatisFiyati.ToString("N2") TL</td>
+                                    <td>@urun.StokMiktari</td>
+                                    <td>@urun.MinimumStok</td>
+
+                                    <td>
+                                        <span class="badge @(urun.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                                            @(urun.AktifMi ? "Aktif" : "Pasif")
+                                        </span>
+                                    </td>
+
+                                    <td class="text-nowrap">
+                                        <a asp-action="Details"
+                                           asp-route-id="@urun.Id"
+                                           class="btn btn-sm btn-outline-info">
+                                            Detay
+                                        </a>
+
+                                        <a asp-action="Edit"
+                                           asp-route-id="@urun.Id"
+                                           class="btn btn-sm btn-outline-warning">
+                                            Düzenle
+                                        </a>
+
+                                        <a asp-action="Delete"
+                                           asp-route-id="@urun.Id"
+                                           class="btn btn-sm btn-outline-danger">
+                                            Sil
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="12" class="text-center text-muted py-4">
+                                    Kayıt bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="mt-4" aria-label="Ürün sayfalama">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@oncekiSayfa"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-arama="@Model.Arama">
+                    Önceki
+                </a>
+            </li>
+
+            @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
+            {
+                <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@sayfaNo"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-arama="@Model.Arama">
+                        @sayfaNo
+                    </a>
+                </li>
+            }
+
+            <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-page="@sonrakiSayfa"
+                   asp-route-pageSize="@Model.PageSize"
+                   asp-route-arama="@Model.Arama">
+                    Sonraki
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>

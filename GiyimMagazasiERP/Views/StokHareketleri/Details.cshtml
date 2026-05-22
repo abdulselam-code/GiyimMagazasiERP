@@ -1,0 +1,33 @@
+﻿@model GiyimMagazasiERP.Models.StokHareketi
+
+@{
+    ViewData["Title"] = "Stok Hareketi Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Stok Hareketi Detayı</h1>
+
+            <dl class="row">
+                <dt class="col-sm-3">Tarih</dt>
+                <dd class="col-sm-9">@Model.Tarih.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-3">Ürün</dt>
+                <dd class="col-sm-9">@Model.Urun.UrunAdi</dd>
+
+                <dt class="col-sm-3">Hareket Tipi</dt>
+                <dd class="col-sm-9">@Model.HareketTipi</dd>
+
+                <dt class="col-sm-3">Miktar</dt>
+                <dd class="col-sm-9">@Model.Miktar</dd>
+
+                <dt class="col-sm-3">Açıklama</dt>
+                <dd class="col-sm-9">@(Model.Aciklama ?? "-")</dd>
+            </dl>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+</div>

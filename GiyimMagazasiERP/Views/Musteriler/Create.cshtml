@@ -1,0 +1,54 @@
+﻿@model GiyimMagazasiERP.Models.Musteri
+
+@{
+    ViewData["Title"] = "Yeni Müşteri";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Yeni Müşteri Ekle</h1>
+
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="AdSoyad" class="form-label">Ad Soyad</label>
+                        <input asp-for="AdSoyad" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Telefon" class="form-label">Telefon</label>
+                        <input asp-for="Telefon" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="SadakatPuani" class="form-label">Sadakat Puanı</label>
+                        <input asp-for="SadakatPuani" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="IndirimOrani" class="form-label">İndirim Oranı</label>
+                        <input asp-for="IndirimOrani" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="ToplamHarcama" class="form-label">Toplam Harcama</label>
+                        <input asp-for="ToplamHarcama" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

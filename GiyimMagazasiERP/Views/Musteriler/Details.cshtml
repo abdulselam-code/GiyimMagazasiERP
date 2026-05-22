@@ -1,0 +1,39 @@
+﻿@model GiyimMagazasiERP.Models.Musteri
+
+@{
+    ViewData["Title"] = "Müşteri Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Müşteri Detayı</h1>
+
+            <dl class="row">
+                <dt class="col-sm-3">Ad Soyad</dt>
+                <dd class="col-sm-9">@Model.AdSoyad</dd>
+
+                <dt class="col-sm-3">Telefon</dt>
+                <dd class="col-sm-9">@(Model.Telefon ?? "-")</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">@(Model.Email ?? "-")</dd>
+
+                <dt class="col-sm-3">Sadakat Puanı</dt>
+                <dd class="col-sm-9">@Model.SadakatPuani</dd>
+
+                <dt class="col-sm-3">İndirim Oranı</dt>
+                <dd class="col-sm-9">% @Model.IndirimOrani.ToString("N2")</dd>
+
+                <dt class="col-sm-3">Toplam Harcama</dt>
+                <dd class="col-sm-9">@Model.ToplamHarcama.ToString("N2") TL</dd>
+
+                <dt class="col-sm-3">Kayıt Tarihi</dt>
+                <dd class="col-sm-9">@Model.KayitTarihi.ToString("dd/MM/yyyy")</dd>
+            </dl>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+</div>

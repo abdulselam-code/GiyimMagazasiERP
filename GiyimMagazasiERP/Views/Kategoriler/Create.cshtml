@@ -1,0 +1,31 @@
+﻿@model GiyimMagazasiERP.Models.Kategori
+
+@{
+    ViewData["Title"] = "Yeni Kategori";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Yeni Kategori Ekle</h1>
+
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="KategoriAdi" class="form-label">Kategori Adı</label>
+                    <input asp-for="KategoriAdi" class="form-control" />
+                    <span asp-validation-for="KategoriAdi" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Aciklama" class="form-label">Açıklama</label>
+                    <textarea asp-for="Aciklama" class="form-control" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,69 @@
+﻿@model GiyimMagazasiERP.Models.Satis
+
+@{
+    ViewData["Title"] = "Satış Başarılı";
+    var detay = Model.SatisDetaylari.FirstOrDefault();
+}
+
+<div class="container py-4">
+    <div class="alert alert-success border-0 shadow-sm">
+        <h1 class="h4 fw-bold mb-2">Satış Başarıyla Tamamlandı</h1>
+        <p class="mb-0">
+            Satış, stok ve finans kayıtları sisteme işlendi.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-4">Satış Özeti</h2>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Satış No</dt>
+                <dd class="col-sm-8">#@Model.Id</dd>
+
+                <dt class="col-sm-4">Satış Tarihi</dt>
+                <dd class="col-sm-8">@Model.SatisTarihi.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-4">Müşteri</dt>
+                <dd class="col-sm-8">
+                    @(Model.Musteri is null ? "Kayıtsız Müşteri" : Model.Musteri.AdSoyad)
+                </dd>
+
+                <dt class="col-sm-4">Personel</dt>
+                <dd class="col-sm-8">@Model.Personel.AdSoyad</dd>
+
+                <dt class="col-sm-4">Ürün</dt>
+                <dd class="col-sm-8">@(detay?.Urun.UrunAdi ?? "-")</dd>
+
+                <dt class="col-sm-4">Adet</dt>
+                <dd class="col-sm-8">@(detay?.Adet ?? 0)</dd>
+
+                <dt class="col-sm-4">Birim Fiyat</dt>
+                <dd class="col-sm-8">
+                    @((detay?.BirimFiyat ?? 0).ToString("N2")) TL
+                </dd>
+
+                <dt class="col-sm-4">Toplam Tutar</dt>
+                <dd class="col-sm-8">@Model.ToplamTutar.ToString("N2") TL</dd>
+
+                <dt class="col-sm-4">İndirim Tutarı</dt>
+                <dd class="col-sm-8">@Model.IndirimTutari.ToString("N2") TL</dd>
+
+                <dt class="col-sm-4">Net Tutar</dt>
+                <dd class="col-sm-8 fw-bold text-success">
+                    @Model.NetTutar.ToString("N2") TL
+                </dd>
+
+                <dt class="col-sm-4">Ödeme Tipi</dt>
+                <dd class="col-sm-8">@Model.OdemeTipi</dd>
+            </dl>
+
+            <div class="mt-4">
+                <a asp-action="Create" class="btn btn-success">Yeni Satış Yap</a>
+                <a asp-controller="Satislar" asp-action="Index" class="btn btn-outline-secondary">
+                    Satış Listesi
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

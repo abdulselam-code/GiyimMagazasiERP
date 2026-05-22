@@ -1,0 +1,31 @@
+﻿@model GiyimMagazasiERP.Models.FinansHareketi
+
+@{
+    ViewData["Title"] = "Finans Hareketi Sil";
+}
+
+<div class="container py-4">
+    <div class="card border-danger shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold text-danger">Finans Hareketi Sil</h1>
+            <p>Bu finans hareketini silmek istediğine emin misin?</p>
+
+            <dl class="row">
+                <dt class="col-sm-3">Kategori</dt>
+                <dd class="col-sm-9">@Model.Kategori</dd>
+
+                <dt class="col-sm-3">Tip</dt>
+                <dd class="col-sm-9">@Model.HareketTipi</dd>
+
+                <dt class="col-sm-3">Tutar</dt>
+                <dd class="col-sm-9">@Model.Tutar.ToString("N2") TL</dd>
+            </dl>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="Id" />
+                <button type="submit" class="btn btn-danger">Evet, Sil</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+            </form>
+        </div>
+    </div>
+</div>

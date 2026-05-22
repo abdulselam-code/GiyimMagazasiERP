@@ -1,0 +1,27 @@
+﻿@model GiyimMagazasiERP.Models.Kategori
+
+@{
+    ViewData["Title"] = "Kategori Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Kategori Detayı</h1>
+
+            <dl class="row">
+                <dt class="col-sm-3">Kategori Adı</dt>
+                <dd class="col-sm-9">@Model.KategoriAdi</dd>
+
+                <dt class="col-sm-3">Açıklama</dt>
+                <dd class="col-sm-9">@(Model.Aciklama ?? "-")</dd>
+
+                <dt class="col-sm-3">Ürün Sayısı</dt>
+                <dd class="col-sm-9">@Model.Urunler.Count</dd>
+            </dl>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+</div>

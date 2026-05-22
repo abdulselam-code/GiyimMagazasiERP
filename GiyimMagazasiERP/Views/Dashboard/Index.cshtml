@@ -1,0 +1,392 @@
+﻿@using System.Text.Json
+@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .dashboard-chart-card {
+        border: 0;
+        box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.10);
+    }
+
+    .dashboard-chart-box {
+        position: relative;
+        min-height: 330px;
+    }
+
+        .dashboard-chart-box.small-chart {
+            min-height: 300px;
+        }
+
+    @@media (max-width: 768px) {
+        .dashboard-chart-box,
+        .dashboard-chart-box.small-chart {
+            min-height: 280px;
+        }
+    }
+</style>
+
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="h3 fw-bold">Giyim Mağazası ERP Dashboard</h1>
+        <p class="text-muted mb-0">
+            Satış, stok, müşteri, personel ve finans genel görünümü
+        </p>
+    </div>
+
+    <!-- ÖZET KARTLARI -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Ürün</p>
+                    <h2 class="fw-bold mb-0">@Model.ToplamUrunSayisi</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Müşteri</p>
+                    <h2 class="fw-bold mb-0">@Model.ToplamMusteriSayisi</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Personel</p>
+                    <h2 class="fw-bold mb-0">@Model.ToplamPersonelSayisi</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Satış</p>
+                    <h2 class="fw-bold mb-0">@Model.ToplamSatisSayisi</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Gelir</p>
+                    <h2 class="fw-bold text-success mb-0">
+                        @Model.ToplamGelir.ToString("N2") TL
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Gider</p>
+                    <h2 class="fw-bold text-danger mb-0">
+                        @Model.ToplamGider.ToString("N2") TL
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Kritik Stoktaki Ürün</p>
+                    <h2 class="fw-bold text-warning-emphasis mb-0">
+                        @Model.KritikStokSayisi
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAFİKLER -->
+    <div class="mb-3">
+        <h2 class="h4 fw-bold mb-1">Grafik Analizleri</h2>
+        <p class="text-muted mb-0">
+            Veritabanındaki mevcut satış, finans ve stok kayıtlarından oluşturulan grafikler
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="card dashboard-chart-card h-100">
+                <div class="card-body">
+                    <h3 class="h5 fw-bold mb-1">Günlük Satış Grafiği</h3>
+                    <p class="text-muted small">Günlere göre toplam net satış tutarı</p>
+
+                    <div class="dashboard-chart-box">
+                        <canvas id="gunlukSatisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card dashboard-chart-card h-100">
+                <div class="card-body">
+                    <h3 class="h5 fw-bold mb-1">Gelir-Gider Grafiği</h3>
+                    <p class="text-muted small">Toplam gelir ve toplam gider karşılaştırması</p>
+
+                    <div class="dashboard-chart-box">
+                        <canvas id="gelirGiderChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="card dashboard-chart-card h-100">
+                <div class="card-body">
+                    <h3 class="h5 fw-bold mb-1">Kategori Bazlı Satış</h3>
+                    <p class="text-muted small">Kategorilere göre toplam satış tutarı</p>
+
+                    <div class="dashboard-chart-box small-chart">
+                        <canvas id="kategoriSatisChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-7">
+            <div class="card dashboard-chart-card h-100">
+                <div class="card-body">
+                    <h3 class="h5 fw-bold mb-1">En Çok Satılan Ürünler</h3>
+                    <p class="text-muted small">Ürün adına göre toplam satılan adet</p>
+
+                    <div class="dashboard-chart-box small-chart">
+                        <canvas id="enCokSatilanUrunChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card dashboard-chart-card">
+                <div class="card-body">
+                    <h3 class="h5 fw-bold mb-1">Kritik Stok Grafiği</h3>
+                    <p class="text-muted small">
+                        Kritik stok seviyesindeki ürünlerin mevcut stok miktarı
+                    </p>
+
+                    <div class="dashboard-chart-box small-chart">
+                        <canvas id="kritikStokChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const tlFormatla = (deger) =>
+        new Intl.NumberFormat("tr-TR", {
+        style: "currency",
+        currency: "TRY"
+        }).format(deger);
+
+        const gunlukSatisEtiketleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.GunlukSatisEtiketleri));
+
+        const gunlukSatisTutarlar =
+        @Html.Raw(JsonSerializer.Serialize(Model.GunlukSatisTutarlar));
+
+        const gelirGiderEtiketleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.GelirGiderEtiketleri));
+
+        const gelirGiderTutarlar =
+        @Html.Raw(JsonSerializer.Serialize(Model.GelirGiderTutarlar));
+
+        const kategoriSatisEtiketleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.KategoriSatisEtiketleri));
+
+        const kategoriSatisTutarlar =
+        @Html.Raw(JsonSerializer.Serialize(Model.KategoriSatisTutarlar));
+
+        const enCokSatilanUrunEtiketleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.EnCokSatilanUrunEtiketleri));
+
+        const enCokSatilanUrunAdetleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.EnCokSatilanUrunAdetleri));
+
+        const kritikStokEtiketleri =
+        @Html.Raw(JsonSerializer.Serialize(Model.KritikStokEtiketleri));
+
+        const kritikStokMiktarlari =
+        @Html.Raw(JsonSerializer.Serialize(Model.KritikStokMiktarlari));
+
+        new Chart(document.getElementById("gunlukSatisChart"), {
+        type: "line",
+        data: {
+        labels: gunlukSatisEtiketleri,
+        datasets: [{
+        label: "Net Satış",
+        data: gunlukSatisTutarlar,
+        borderColor: "#0d6efd",
+        backgroundColor: "rgba(13, 110, 253, 0.18)",
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+        tooltip: {
+        callbacks: {
+        label: (context) => `Net Satış: ${tlFormatla(context.raw)}`
+        }
+        }
+        },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: {
+        callback: (value) => tlFormatla(value)
+        }
+        }
+        }
+        }
+        });
+
+        new Chart(document.getElementById("gelirGiderChart"), {
+        type: "bar",
+        data: {
+        labels: gelirGiderEtiketleri,
+        datasets: [{
+        label: "Tutar",
+        data: gelirGiderTutarlar,
+        backgroundColor: [
+        "rgba(25, 135, 84, 0.75)",
+        "rgba(220, 53, 69, 0.75)"
+        ],
+        borderColor: [
+        "#198754",
+        "#dc3545"
+        ],
+        borderWidth: 1
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+        legend: {
+        display: false
+        },
+        tooltip: {
+        callbacks: {
+        label: (context) => `Tutar: ${tlFormatla(context.raw)}`
+        }
+        }
+        },
+        scales: {
+        y: {
+        beginAtZero: true,
+        ticks: {
+        callback: (value) => tlFormatla(value)
+        }
+        }
+        }
+        }
+        });
+
+        new Chart(document.getElementById("kategoriSatisChart"), {
+        type: "doughnut",
+        data: {
+        labels: kategoriSatisEtiketleri,
+        datasets: [{
+        label: "Satış Tutarı",
+        data: kategoriSatisTutarlar,
+        backgroundColor: [
+        "#0d6efd",
+        "#198754",
+        "#ffc107",
+        "#dc3545",
+        "#6f42c1",
+        "#0dcaf0"
+        ],
+        borderWidth: 2,
+        borderColor: "#ffffff"
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+        tooltip: {
+        callbacks: {
+        label: (context) =>
+        `${context.label}: ${tlFormatla(context.raw)}`
+        }
+        }
+        }
+        }
+        });
+
+        new Chart(document.getElementById("enCokSatilanUrunChart"), {
+        type: "bar",
+        data: {
+        labels: enCokSatilanUrunEtiketleri,
+        datasets: [{
+        label: "Satılan Adet",
+        data: enCokSatilanUrunAdetleri,
+        backgroundColor: "rgba(111, 66, 193, 0.72)",
+        borderColor: "#6f42c1",
+        borderWidth: 1
+        }]
+        },
+        options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+        x: {
+        beginAtZero: true
+        }
+        }
+        }
+        });
+
+        new Chart(document.getElementById("kritikStokChart"), {
+        type: "bar",
+        data: {
+        labels: kritikStokEtiketleri,
+        datasets: [{
+        label: "Stok Miktarı",
+        data: kritikStokMiktarlari,
+        backgroundColor: "rgba(255, 193, 7, 0.75)",
+        borderColor: "#ffc107",
+        borderWidth: 1
+        }]
+        },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+        legend: {
+        display: false
+        }
+        },
+        scales: {
+        y: {
+        beginAtZero: true
+        }
+        }
+        }
+        });
+    </script>
+}

@@ -1,0 +1,28 @@
+﻿@model GiyimMagazasiERP.Models.Kategori
+
+@{
+    ViewData["Title"] = "Kategori Sil";
+}
+
+<div class="container py-4">
+    <div class="card border-danger shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold text-danger">Kategori Sil</h1>
+            <p>Bu kategoriyi silmek istediğine emin misin?</p>
+
+            <dl class="row">
+                <dt class="col-sm-3">Kategori</dt>
+                <dd class="col-sm-9">@Model.KategoriAdi</dd>
+
+                <dt class="col-sm-3">Ürün Sayısı</dt>
+                <dd class="col-sm-9">@Model.Urunler.Count</dd>
+            </dl>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="Id" />
+                <button type="submit" class="btn btn-danger">Evet, Sil</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Vazgeç</a>
+            </form>
+        </div>
+    </div>
+</div>

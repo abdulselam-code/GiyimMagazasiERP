@@ -1,0 +1,49 @@
+﻿@model GiyimMagazasiERP.Models.Personel
+
+@{
+    ViewData["Title"] = "Personel Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Personel Detayı</h1>
+
+            <dl class="row">
+                <dt class="col-sm-3">Ad Soyad</dt>
+                <dd class="col-sm-9">@Model.AdSoyad</dd>
+
+                <dt class="col-sm-3">Telefon</dt>
+                <dd class="col-sm-9">@(Model.Telefon ?? "-")</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">@(Model.Email ?? "-")</dd>
+
+                <dt class="col-sm-3">Pozisyon</dt>
+                <dd class="col-sm-9">@Model.Pozisyon</dd>
+
+                <dt class="col-sm-3">Maaş</dt>
+                <dd class="col-sm-9">@Model.Maas.ToString("N2") TL</dd>
+
+                <dt class="col-sm-3">Prim Oranı</dt>
+                <dd class="col-sm-9">% @Model.PrimOrani.ToString("N2")</dd>
+
+                <dt class="col-sm-3">Giriş - Çıkış</dt>
+                <dd class="col-sm-9">
+                    @(Model.GirisSaati?.ToString(@"hh\:mm") ?? "-")
+                    -
+                    @(Model.CikisSaati?.ToString(@"hh\:mm") ?? "-")
+                </dd>
+
+                <dt class="col-sm-3">Departman</dt>
+                <dd class="col-sm-9">@Model.Departman</dd>
+
+                <dt class="col-sm-3">İşe Başlama</dt>
+                <dd class="col-sm-9">@Model.IseBaslamaTarihi.ToString("dd/MM/yyyy")</dd>
+            </dl>
+
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+</div>

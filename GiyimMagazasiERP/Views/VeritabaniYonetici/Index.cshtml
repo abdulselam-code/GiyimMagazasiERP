@@ -1,0 +1,860 @@
+﻿@model GiyimMagazasiERP.ViewModels.VeritabaniYoneticiViewModel
+
+@{
+    ViewData["Title"] = "Veritabanı Yöneticisi";
+}
+
+<link rel="stylesheet" href="~/css/db-panel.css" asp-append-version="true" />
+
+<div class="db-shell">
+    <aside class="db-sidebar">
+        <div class="db-brand">
+            <div class="db-brand-mark">
+                <span>DB</span>
+            </div>
+
+            <div class="db-brand-copy">
+                <h2>GiyimERP DB</h2>
+                <p>Veritabanı Yöneticisi</p>
+            </div>
+        </div>
+
+        <section class="db-side-section">
+            <span class="db-side-title">Çalışma Alanı</span>
+
+            <nav class="db-nav">
+                <button type="button" class="db-nav-item active" data-panel="schemaPanel">
+                    Şema Görünümü
+                </button>
+
+                <button type="button" class="db-nav-item" data-panel="sqlPanel">
+                    SQL Editörü
+                </button>
+
+                <button type="button" class="db-nav-item" data-panel="queriesPanel">
+                    Kayıtlı Sorgular
+                </button>
+
+                <button type="button" class="db-nav-item" data-panel="tableBrowserPanel">
+                    Tablo Tarayıcı
+                </button>
+
+                <button type="button" class="db-nav-item" data-panel="relationsPanel">
+                    İlişki Haritası
+                </button>
+
+                <button type="button" class="db-nav-item" data-panel="statsPanel">
+                    İstatistikler
+                </button>
+            </nav>
+        </section>
+
+        <section class="db-side-section">
+            <span class="db-side-title">Sabitlenmiş Sorgular</span>
+
+            <div class="db-pinned-queries">
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   asp-route-raporKod="kritik-stok">
+                    Kritik stoktaki ürünler
+                </a>
+
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   asp-route-raporKod="en-cok-satilan">
+                    En çok satılan ürünler
+                </a>
+
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   asp-route-raporKod="gelir-gider">
+                    Gelir-Gider Özeti
+                </a>
+
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   asp-route-raporKod="personel-performans">
+                    Personel Performansı
+                </a>
+
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   asp-route-raporKod="musteri-urun">
+                    Müşteri Analizi
+                </a>
+            </div>
+        </section>
+
+        <section class="db-side-section db-side-tables">
+            <span class="db-side-title">Tüm Tablolar</span>
+
+            <div class="db-table-shortcuts">
+                @foreach (var tablo in Model.TabloTarayiciTablolari)
+                {
+                    <a asp-controller="VeritabaniYonetici"
+                       asp-action="Index"
+                       asp-route-tablo="@tablo">
+                        <span>@tablo</span>
+                        <small>Table</small>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <section class="db-side-summary">
+            <h3>Veritabanı Özeti</h3>
+
+            <div>
+                <span>Toplam tablo</span>
+                <strong>@Model.Istatistikler.ToplamTabloSayisi</strong>
+            </div>
+
+            <div>
+                <span>Toplam ürün</span>
+                <strong>@Model.Istatistikler.ToplamUrunSayisi</strong>
+            </div>
+
+            <div>
+                <span>Toplam müşteri</span>
+                <strong>@Model.Istatistikler.ToplamMusteriSayisi</strong>
+            </div>
+
+            <div>
+                <span>Toplam satış</span>
+                <strong>@Model.Istatistikler.ToplamSatisSayisi</strong>
+            </div>
+
+            <div>
+                <span>Kritik stok</span>
+                <strong class="db-warning-value">@Model.Istatistikler.KritikStokSayisi</strong>
+            </div>
+        </section>
+    </aside>
+
+    <section class="db-main">
+        <header class="db-topbar">
+            <div class="db-topbar-left">
+                <strong>GiyimERP — Veritabanı Yöneticisi v1.0</strong>
+                <span>SQL Server şema, sorgu ve tablo inceleme çalışma alanı</span>
+            </div>
+
+            <div class="db-topbar-right">
+                <div class="db-connection">
+                    <i></i>
+                    <span>SQL Server bağlantısı aktif</span>
+                </div>
+
+                <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="db-btn db-btn-muted">
+                    Ana Panele Dön
+                </a>
+
+                <a asp-controller="VeritabaniYonetici"
+                   asp-action="Index"
+                   class="db-btn db-btn-primary">
+                    Yenile
+                </a>
+            </div>
+        </header>
+
+        <main class="db-workspace">
+            <div class="db-use-note">
+                Bu panel, veritabanı şemasını incelemek, güvenli SELECT sorguları çalıştırmak,
+                kayıtlı raporları görüntülemek ve tabloları okuma amaçlı taramak için tasarlanmıştır.
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.HataMesaji))
+            {
+                <div class="db-alert db-alert-danger">
+                    @Model.HataMesaji
+                </div>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(Model.BasariMesaji))
+            {
+                <div class="db-alert db-alert-success">
+                    @Model.BasariMesaji
+                </div>
+            }
+
+            <!-- ŞEMA GÖRÜNÜMÜ -->
+            <section id="schemaPanel" class="db-panel active">
+                <div class="db-panel-header">
+                    <div>
+                        <p class="db-kicker">Database Schema</p>
+                        <h1>Şema Görünümü</h1>
+                        <p>
+                            Bu bölümde Giyim Mağazası ERP sisteminin ilişkisel veritabanı yapısı gösterilmektedir.
+                            PK alanları benzersiz kimlikleri, FK alanları ise tablolar arası bağlantıları ifade eder.
+                        </p>
+                    </div>
+
+                    <div class="db-panel-number">
+                        <strong>10</strong>
+                        <span>Tablo</span>
+                    </div>
+                </div>
+
+                <div class="db-schema-grid">
+                    @foreach (var tablo in Model.SemaTablolari)
+                    {
+                        <article class="db-schema-card">
+                            <header class="db-schema-card-header">
+                                <div class="db-table-heading">
+                                    <span class="db-table-glyph">▦</span>
+
+                                    <div>
+                                        <h2>@tablo.TabloAdi</h2>
+                                        <p>SQL Server tablo şeması</p>
+                                    </div>
+                                </div>
+
+                                <span class="db-field-count">
+                                    @tablo.Alanlar.Count alan
+                                </span>
+                            </header>
+
+                            <div class="db-schema-fields">
+                                @foreach (var alan in tablo.Alanlar)
+                                {
+                                    <div class="db-schema-field">
+                                        <div class="db-schema-field-left">
+                                            <div class="db-schema-badges">
+                                                @if (alan.PrimaryKeyMi)
+                                                {
+                                                    <span class="db-schema-badge pk">PK</span>
+                                                }
+
+                                                @if (alan.ForeignKeyMi)
+                                                {
+                                                    <span class="db-schema-badge fk">FK</span>
+                                                }
+
+                                                @if (alan.NotNullMi)
+                                                {
+                                                    <span class="db-schema-badge nn">NN</span>
+                                                }
+                                            </div>
+
+                                            <strong>@alan.AlanAdi</strong>
+                                        </div>
+
+                                        <code>@alan.VeriTipi</code>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </section>
+
+            <!-- SQL EDİTÖRÜ -->
+            <section id="sqlPanel" class="db-panel">
+                <div class="db-panel-header">
+                    <div>
+                        <p class="db-kicker">Query Workspace</p>
+                        <h1>SQL Editörü</h1>
+                        <p>
+                            Bu editörde yalnızca SELECT sorguları çalıştırılabilir.
+                            Veri değiştiren komutlar güvenlik nedeniyle engellenmiştir.
+                        </p>
+                    </div>
+                </div>
+
+                <article class="db-editor-card">
+                    <div class="db-editor-top">
+                        <span>SQL Editor</span>
+                        <small>Read-only çalışma modu</small>
+                    </div>
+
+                    <form asp-controller="VeritabaniYonetici"
+                          asp-action="CalistirSql"
+                          method="post">
+                        <textarea id="sqlSorgusu"
+                                  name="sqlSorgusu"
+                                  class="db-sql-area"
+                                  rows="12"
+                                  placeholder="SELECT * FROM Urunler">@Model.SqlSorgusu</textarea>
+
+                        <div class="db-editor-actions">
+                            <button type="submit" class="db-btn db-btn-primary">
+                                Çalıştır
+                            </button>
+
+                            <button type="reset" class="db-btn db-btn-muted">
+                                Temizle
+                            </button>
+
+                            <span>
+                                Engelli komutlar:
+                                INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, EXEC, CREATE, MERGE
+                            </span>
+                        </div>
+                    </form>
+                </article>
+
+                @if (Model.SonucTablosu is not null)
+                {
+                    <div class="db-result-card">
+                        <div class="db-result-header">
+                            <div>
+                                <h2>@Model.SonucTablosu.Baslik</h2>
+                                <p>@Model.SonucTablosu.KayitSayisi kayıt getirildi.</p>
+                            </div>
+                        </div>
+
+                        @if (Model.SonucTablosu.Satirlar.Any())
+                        {
+                            <div class="db-table-wrap">
+                                <table class="db-data-table">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                            {
+                                                <th>@sutun</th>
+                                            }
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var satir in Model.SonucTablosu.Satirlar)
+                                        {
+                                            <tr>
+                                                @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                                {
+                                                    var hucreDegeri = satir.TryGetValue(sutun, out var bulunanDeger)
+                                                        ? bulunanDeger
+                                                        : "-";
+
+                                                    <td title="@hucreDegeri">
+                                                        @hucreDegeri
+                                                    </td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="db-empty">
+                                @Model.SonucTablosu.BosKayitMesaji
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <!-- KAYITLI SORGULAR -->
+            <section id="queriesPanel" class="db-panel">
+                <div class="db-panel-header">
+                    <div>
+                        <p class="db-kicker">Saved Queries</p>
+                        <h1>Kayıtlı Sorgular</h1>
+                        <p>
+                            Hazır rapor sorgularını seçerek satış, stok, finans ve müşteri analizlerini görüntüleyebilirsin.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="db-query-grid">
+                    @foreach (var sorgu in Model.KayitliSorgular)
+                    {
+                        var kategoriSinifi = sorgu.Kategori switch
+                        {
+                            "Satış" => "sales",
+                            "Stok" => "stock",
+                            "Finans" => "finance",
+                            "Müşteri" => "customer",
+                            "Personel" => "staff",
+                            "Tedarikçi" => "supplier",
+                            _ => "general"
+                        };
+
+                        <article class="db-query-card">
+                            <span class="db-query-category @kategoriSinifi">
+                                @sorgu.Kategori
+                            </span>
+
+                            <h2>@sorgu.Baslik</h2>
+                            <p>@sorgu.Aciklama</p>
+
+                            <a asp-controller="VeritabaniYonetici"
+                               asp-action="Index"
+                               asp-route-raporKod="@sorgu.Kod"
+                               class="db-btn db-btn-primary">
+                                Çalıştır
+                            </a>
+                        </article>
+                    }
+                </div>
+
+                @if (Model.SonucTablosu is not null)
+                {
+                    <div class="db-result-card">
+                        <div class="db-result-header">
+                            <div>
+                                <h2>@Model.SonucTablosu.Baslik</h2>
+                                <p>@Model.SonucTablosu.KayitSayisi kayıt getirildi.</p>
+                            </div>
+                        </div>
+
+                        @if (Model.SonucTablosu.Satirlar.Any())
+                        {
+                            <div class="db-table-wrap">
+                                <table class="db-data-table">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                            {
+                                                <th>@sutun</th>
+                                            }
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var satir in Model.SonucTablosu.Satirlar)
+                                        {
+                                            <tr>
+                                                @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                                {
+                                                    var hucreDegeri = satir.TryGetValue(sutun, out var bulunanDeger)
+                                                        ? bulunanDeger
+                                                        : "-";
+
+                                                    <td title="@hucreDegeri">
+                                                        @hucreDegeri
+                                                    </td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="db-empty">
+                                @Model.SonucTablosu.BosKayitMesaji
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <!-- TABLO TARAYICI -->
+            <section id="tableBrowserPanel" class="db-panel">
+                <div class="db-panel-header">
+                    <div>
+                        <p class="db-kicker">Table Browser</p>
+                        <h1>Tablo Tarayıcı</h1>
+                        <p>
+                            Tabloları okuma amaçlı görüntüle. Seçilen tablonun ilk 50 kaydı listelenir.
+                        </p>
+                    </div>
+                </div>
+
+                <article class="db-browser-card">
+                    <div class="db-browser-grid">
+                        @foreach (var tablo in Model.TabloTarayiciTablolari)
+                        {
+                            <a asp-controller="VeritabaniYonetici"
+                               asp-action="Index"
+                               asp-route-tablo="@tablo"
+                               class="db-browser-item">
+                                <span>▤</span>
+
+                                <div>
+                                    <strong>@tablo</strong>
+                                    <small>İlk 50 kayıt</small>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </article>
+
+                @if (Model.SonucTablosu is not null)
+                {
+                    <div class="db-result-card">
+                        <div class="db-result-header">
+                            <div>
+                                <h2>@Model.SonucTablosu.Baslik</h2>
+                                <p>@Model.SonucTablosu.KayitSayisi kayıt getirildi.</p>
+                            </div>
+                        </div>
+
+                        @if (Model.SonucTablosu.Satirlar.Any())
+                        {
+                            <div class="db-table-wrap">
+                                <table class="db-data-table">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                            {
+                                                <th>@sutun</th>
+                                            }
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var satir in Model.SonucTablosu.Satirlar)
+                                        {
+                                            <tr>
+                                                @foreach (var sutun in Model.SonucTablosu.Sutunlar)
+                                                {
+                                                    var hucreDegeri = satir.TryGetValue(sutun, out var bulunanDeger)
+                                                        ? bulunanDeger
+                                                        : "-";
+
+                                                    <td title="@hucreDegeri">
+                                                        @hucreDegeri
+                                                    </td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="db-empty">
+                                @Model.SonucTablosu.BosKayitMesaji
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <!-- İLİŞKİ HARİTASI -->
+            <section id="relationsPanel" class="db-panel">
+                <div class="db-panel-header db-relation-panel-header">
+                    <div>
+                        <p class="db-kicker">Relationship Map</p>
+                        <h1>Tablolar Arası İlişkiler</h1>
+                        <p>
+                            Bu bölümde Giyim Mağazası ERP veritabanındaki tabloların birbirine hangi alanlar
+                            üzerinden bağlandığı gösterilmektedir. 1-N ilişkisi, bir ana kaydın karşı tabloda
+                            birden fazla kayıtla ilişkili olabileceğini ifade eder.
+                        </p>
+                    </div>
+                </div>
+
+                <article class="db-relation-reading-note">
+                    <h2>Nasıl okunur?</h2>
+                    <p>
+                        Örneğin “Kategoriler → Urunler” ilişkisi, Urunler tablosundaki KategoriId alanının
+                        Kategoriler tablosundaki Id alanına bağlandığını gösterir.
+                        Böylece her ürünün hangi kategoriye ait olduğu takip edilir.
+                    </p>
+                </article>
+
+                <div class="db-relation-module-grid">
+                    <!-- ÜRÜN YÖNETİMİ -->
+                    <article class="db-relation-module-card product">
+                        <header class="db-relation-module-head">
+                            <div>
+                                <span>Ürün Modülü</span>
+                                <h2>Ürün Yönetimi İlişkileri</h2>
+                                <p>Ana odak: <strong>Urunler</strong></p>
+                            </div>
+                        </header>
+
+                        <div class="db-relation-items">
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Kategoriler</span>
+                                    <b>→</b>
+                                    <span>Urunler</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: Urunler.KategoriId</code>
+
+                                <p>Bir kategoriye birden fazla ürün bağlı olabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Tedarikciler</span>
+                                    <b>→</b>
+                                    <span>Urunler</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: Urunler.TedarikciId</code>
+
+                                <p>Bir tedarikçi birden fazla ürün sağlayabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Urunler</span>
+                                    <b>→</b>
+                                    <span>SatisDetaylari</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: SatisDetaylari.UrunId</code>
+
+                                <p>Bir ürün farklı satış detaylarında yer alabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Urunler</span>
+                                    <b>→</b>
+                                    <span>StokHareketleri</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: StokHareketleri.UrunId</code>
+
+                                <p>Bir ürünün stok giriş ve çıkış hareketleri takip edilir.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- SATIŞ YÖNETİMİ -->
+                    <article class="db-relation-module-card sales">
+                        <header class="db-relation-module-head">
+                            <div>
+                                <span>Satış Modülü</span>
+                                <h2>Satış Yönetimi İlişkileri</h2>
+                                <p>Ana odak: <strong>Satislar</strong></p>
+                            </div>
+                        </header>
+
+                        <div class="db-relation-items">
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Musteriler</span>
+                                    <b>→</b>
+                                    <span>Satislar</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: Satislar.MusteriId</code>
+
+                                <p>Bir müşteri birden fazla satış kaydına sahip olabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Personeller</span>
+                                    <b>→</b>
+                                    <span>Satislar</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: Satislar.PersonelId</code>
+
+                                <p>Bir personel birden fazla satış işlemi yapabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Satislar</span>
+                                    <b>→</b>
+                                    <span>SatisDetaylari</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: SatisDetaylari.SatisId</code>
+
+                                <p>Bir satışın içinde bir veya birden fazla ürün kalemi olabilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Satislar</span>
+                                    <b>→</b>
+                                    <span>FinansHareketleri</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: FinansHareketleri.SatisId</code>
+
+                                <p>Bir satış gerçekleştiğinde finans hareketi oluşabilir.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- FİNANS YÖNETİMİ -->
+                    <article class="db-relation-module-card finance">
+                        <header class="db-relation-module-head">
+                            <div>
+                                <span>Finans Modülü</span>
+                                <h2>Finans Yönetimi İlişkileri</h2>
+                                <p>Ana odak: <strong>FinansHareketleri</strong></p>
+                            </div>
+                        </header>
+
+                        <div class="db-relation-items">
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Satislar</span>
+                                    <b>→</b>
+                                    <span>FinansHareketleri</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: FinansHareketleri.SatisId</code>
+
+                                <p>Satıştan doğan gelir hareketi finans tablosunda takip edilir.</p>
+                            </div>
+
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Kullanicilar</span>
+                                    <b>→</b>
+                                    <span>FinansHareketleri</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: FinansHareketleri.KullaniciId</code>
+
+                                <p>Finans hareketini hangi kullanıcının oluşturduğu tutulur.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- STOK YÖNETİMİ -->
+                    <article class="db-relation-module-card stock">
+                        <header class="db-relation-module-head">
+                            <div>
+                                <span>Stok Modülü</span>
+                                <h2>Stok Yönetimi İlişkileri</h2>
+                                <p>Ana odak: <strong>StokHareketleri</strong></p>
+                            </div>
+                        </header>
+
+                        <div class="db-relation-items">
+                            <div class="db-relation-item">
+                                <div class="db-relation-pair">
+                                    <span>Urunler</span>
+                                    <b>→</b>
+                                    <span>StokHareketleri</span>
+                                    <em>1-N</em>
+                                </div>
+
+                                <code>FK: StokHareketleri.UrunId</code>
+
+                                <p>Bir ürün için birden fazla stok hareketi tutulabilir.</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <article class="db-relation-summary-note">
+                    Bu ilişkiler sayesinde ürün, satış, stok, müşteri, personel ve finans kayıtları
+                    birbirinden kopuk tutulmaz. Satış yapıldığında ürün, müşteri, stok ve finans tabloları
+                    ilişkili şekilde çalışır. Bu yapı ERP mantığının temelini oluşturur.
+                </article>
+            </section>
+
+            <!-- İSTATİSTİKLER -->
+            <section id="statsPanel" class="db-panel">
+                <div class="db-panel-header">
+                    <div>
+                        <p class="db-kicker">Database Metrics</p>
+                        <h1>Veritabanı İstatistikleri</h1>
+                        <p>ERP modüllerinin tablo ve finans özetleri.</p>
+                    </div>
+                </div>
+
+                <div class="db-stats-grid">
+                    <article class="db-stat-card admin">
+                        <span class="db-stat-mark">DB</span>
+                        <p>Toplam Tablo</p>
+                        <strong>@Model.Istatistikler.ToplamTabloSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card catalog">
+                        <span class="db-stat-mark">UR</span>
+                        <p>Toplam Ürün</p>
+                        <strong>@Model.Istatistikler.ToplamUrunSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card customer">
+                        <span class="db-stat-mark">MU</span>
+                        <p>Toplam Müşteri</p>
+                        <strong>@Model.Istatistikler.ToplamMusteriSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card staff">
+                        <span class="db-stat-mark">PE</span>
+                        <p>Toplam Personel</p>
+                        <strong>@Model.Istatistikler.ToplamPersonelSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card sales">
+                        <span class="db-stat-mark">ST</span>
+                        <p>Toplam Satış</p>
+                        <strong>@Model.Istatistikler.ToplamSatisSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card stock">
+                        <span class="db-stat-mark">KS</span>
+                        <p>Kritik Stok</p>
+                        <strong>@Model.Istatistikler.KritikStokSayisi</strong>
+                    </article>
+
+                    <article class="db-stat-card income">
+                        <span class="db-stat-mark">+</span>
+                        <p>Toplam Gelir</p>
+                        <strong>@Model.Istatistikler.ToplamGelir.ToString("N2") TL</strong>
+                    </article>
+
+                    <article class="db-stat-card expense">
+                        <span class="db-stat-mark">-</span>
+                        <p>Toplam Gider</p>
+                        <strong>@Model.Istatistikler.ToplamGider.ToString("N2") TL</strong>
+                    </article>
+
+                    <article class="db-stat-card profit">
+                        <span class="db-stat-mark">NK</span>
+                        <p>Net Kazanç</p>
+                        <strong>@Model.Istatistikler.NetKazanc.ToString("N2") TL</strong>
+                    </article>
+                </div>
+            </section>
+        </main>
+    </section>
+</div>
+
+<script>
+    (() => {
+        const navItems = document.querySelectorAll(".db-nav-item");
+        const panels = document.querySelectorAll(".db-panel");
+
+        function openPanel(panelId) {
+            panels.forEach(panel => {
+                panel.classList.toggle("active", panel.id === panelId);
+            });
+
+            navItems.forEach(item => {
+                item.classList.toggle("active", item.dataset.panel === panelId);
+            });
+        }
+
+        navItems.forEach(item => {
+            item.addEventListener("click", () => {
+                openPanel(item.dataset.panel);
+            });
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const path = window.location.pathname.toLowerCase();
+
+        if (params.has("raporKod")) {
+            openPanel("queriesPanel");
+        } else if (params.has("tablo")) {
+            openPanel("tableBrowserPanel");
+        } else if (path.includes("calistirsql")) {
+            openPanel("sqlPanel");
+        }
+    })();
+</script>

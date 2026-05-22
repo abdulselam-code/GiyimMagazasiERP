@@ -1,0 +1,56 @@
+﻿@model GiyimMagazasiERP.Models.Tedarikci
+
+@{
+    ViewData["Title"] = "Yeni Tedarikçi";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Yeni Tedarikçi Ekle</h1>
+
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="FirmaAdi" class="form-label">Firma Adı</label>
+                        <input asp-for="FirmaAdi" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Telefon" class="form-label">Telefon</label>
+                        <input asp-for="Telefon" class="form-control" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="Adres" class="form-label">Adres</label>
+                        <textarea asp-for="Adres" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label asp-for="IndirimOrani" class="form-label">İndirim Oranı</label>
+                        <input asp-for="IndirimOrani" class="form-control" />
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input asp-for="AktifMi" class="form-check-input" />
+                            <label asp-for="AktifMi" class="form-check-label">Aktif</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

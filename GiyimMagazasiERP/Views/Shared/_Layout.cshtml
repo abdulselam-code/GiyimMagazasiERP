@@ -1,0 +1,229 @@
+﻿@{
+    var aktifController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var yonetimAktif =
+        aktifController == "Urunler" ||
+        aktifController == "Musteriler" ||
+        aktifController == "Personeller" ||
+        aktifController == "Kategoriler" ||
+        aktifController == "Tedarikciler";
+
+    var hareketlerAktif =
+        aktifController == "Satislar" ||
+        aktifController == "FinansHareketleri" ||
+        aktifController == "StokHareketleri";
+
+    var analizAktif =
+        aktifController == "Raporlar" ||
+        aktifController == "SqlYonetici" ||
+        aktifController == "VeritabaniYonetici";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Giyim Mağazası ERP</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/GiyimMagazasiERP.styles.css" asp-append-version="true" />
+</head>
+<body class="bg-body-tertiary">
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm erp-top-navbar">
+            <div class="erp-navbar-inner px-3 px-lg-4">
+                <a class="navbar-brand fw-semibold erp-navbar-brand"
+                   asp-controller="Home"
+                   asp-action="Index">
+                    Giyim Mağazası ERP
+                </a>
+
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#erpAnaMenu"
+                        aria-controls="erpAnaMenu"
+                        aria-expanded="false"
+                        aria-label="Menüyü aç veya kapat">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="erpAnaMenu">
+                    <ul class="navbar-nav ms-md-auto py-2 py-md-0 erp-navbar-menu">
+                        <li class="nav-item">
+                            <a class="nav-link erp-menu-link @(aktifController == "Home" ? "active fw-semibold" : "")"
+                               asp-controller="Home"
+                               asp-action="Index">
+                                Ana Sayfa
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link erp-menu-link @(aktifController == "Dashboard" ? "active fw-semibold" : "")"
+                               asp-controller="Dashboard"
+                               asp-action="Index">
+                                Dashboard
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link erp-menu-link @(aktifController == "SatisIslemleri" ? "active fw-semibold" : "")"
+                               asp-controller="SatisIslemleri"
+                               asp-action="Create">
+                                Satış Yap
+                            </a>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle erp-menu-link @(yonetimAktif ? "active fw-semibold" : "")"
+                               href="#"
+                               id="yonetimDropdown"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                Yönetim
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
+                                aria-labelledby="yonetimDropdown">
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Urunler" ? "active" : "")"
+                                       asp-controller="Urunler"
+                                       asp-action="Index">
+                                        Ürünler
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Musteriler" ? "active" : "")"
+                                       asp-controller="Musteriler"
+                                       asp-action="Index">
+                                        Müşteriler
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Personeller" ? "active" : "")"
+                                       asp-controller="Personeller"
+                                       asp-action="Index">
+                                        Personeller
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Kategoriler" ? "active" : "")"
+                                       asp-controller="Kategoriler"
+                                       asp-action="Index">
+                                        Kategoriler
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Tedarikciler" ? "active" : "")"
+                                       asp-controller="Tedarikciler"
+                                       asp-action="Index">
+                                        Tedarikçiler
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle erp-menu-link @(hareketlerAktif ? "active fw-semibold" : "")"
+                               href="#"
+                               id="hareketlerDropdown"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                Hareketler
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
+                                aria-labelledby="hareketlerDropdown">
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Satislar" ? "active" : "")"
+                                       asp-controller="Satislar"
+                                       asp-action="Index">
+                                        Satışlar
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "FinansHareketleri" ? "active" : "")"
+                                       asp-controller="FinansHareketleri"
+                                       asp-action="Index">
+                                        Finans
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "StokHareketleri" ? "active" : "")"
+                                       asp-controller="StokHareketleri"
+                                       asp-action="Index">
+                                        Stok
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle erp-menu-link @(analizAktif ? "active fw-semibold" : "")"
+                               href="#"
+                               id="analizDropdown"
+                               role="button"
+                               data-bs-toggle="dropdown"
+                               aria-expanded="false">
+                                Analiz
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-md-end erp-dropdown-menu"
+                                aria-labelledby="analizDropdown">
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "Raporlar" ? "active" : "")"
+                                       asp-controller="Raporlar"
+                                       asp-action="Index">
+                                        Raporlar
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "SqlYonetici" ? "active" : "")"
+                                       asp-controller="SqlYonetici"
+                                       asp-action="Index">
+                                        SQL Panel
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="dropdown-item @(aktifController == "VeritabaniYonetici" ? "active" : "")"
+                                       asp-controller="VeritabaniYonetici"
+                                       asp-action="Index">
+                                        DB Panel
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="min-vh-100">
+        @RenderBody()
+    </main>
+
+    <footer class="border-top bg-white">
+        <div class="container-fluid px-3 px-lg-4 py-3 text-muted small">
+            &copy; @DateTime.Now.Year - Giyim Mağazası ERP
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

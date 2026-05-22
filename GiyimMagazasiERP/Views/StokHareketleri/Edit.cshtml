@@ -1,0 +1,50 @@
+﻿@model GiyimMagazasiERP.Models.StokHareketi
+
+@{
+    ViewData["Title"] = "Stok Hareketi Düzenle";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Stok Hareketi Düzenle</h1>
+
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="UrunId" class="form-label">Ürün</label>
+                        <select asp-for="UrunId" asp-items="ViewBag.UrunId" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="HareketTipi" class="form-label">Hareket Tipi</label>
+                        <select asp-for="HareketTipi" asp-items="ViewBag.HareketTipleri" class="form-select"></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Miktar" class="form-label">Miktar</label>
+                        <input asp-for="Miktar" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Tarih" class="form-label">Tarih</label>
+                        <input asp-for="Tarih" type="datetime-local" class="form-control" />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Aciklama" class="form-label">Açıklama</label>
+                        <textarea asp-for="Aciklama" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-warning">Güncelle</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

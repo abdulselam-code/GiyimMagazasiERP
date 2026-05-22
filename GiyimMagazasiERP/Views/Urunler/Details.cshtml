@@ -1,0 +1,53 @@
+﻿@model GiyimMagazasiERP.Models.Urun
+
+@{
+    ViewData["Title"] = "Ürün Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Ürün Detayı</h1>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Ürün Adı</dt>
+                <dd class="col-sm-9">@Model.UrunAdi</dd>
+
+                <dt class="col-sm-3">Barkod</dt>
+                <dd class="col-sm-9">@Model.Barkod</dd>
+
+                <dt class="col-sm-3">Kategori</dt>
+                <dd class="col-sm-9">@Model.Kategori.KategoriAdi</dd>
+
+                <dt class="col-sm-3">Tedarikçi</dt>
+                <dd class="col-sm-9">@Model.Tedarikci.FirmaAdi</dd>
+
+                <dt class="col-sm-3">Beden / Renk</dt>
+                <dd class="col-sm-9">@Model.Beden / @Model.Renk</dd>
+
+                <dt class="col-sm-3">Alış Fiyatı</dt>
+                <dd class="col-sm-9">@Model.AlisFiyati.ToString("N2") TL</dd>
+
+                <dt class="col-sm-3">Satış Fiyatı</dt>
+                <dd class="col-sm-9">@Model.SatisFiyati.ToString("N2") TL</dd>
+
+                <dt class="col-sm-3">Stok</dt>
+                <dd class="col-sm-9">@Model.StokMiktari</dd>
+
+                <dt class="col-sm-3">Minimum Stok</dt>
+                <dd class="col-sm-9">@Model.MinimumStok</dd>
+
+                <dt class="col-sm-3">Durum</dt>
+                <dd class="col-sm-9">@(Model.AktifMi ? "Aktif" : "Pasif")</dd>
+
+                <dt class="col-sm-3">Oluşturma Tarihi</dt>
+                <dd class="col-sm-9">@Model.OlusturmaTarihi.ToString("dd/MM/yyyy")</dd>
+            </dl>
+
+            <div class="mt-4">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+            </div>
+        </div>
+    </div>
+</div>
