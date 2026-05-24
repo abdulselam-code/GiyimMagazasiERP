@@ -1,0 +1,25 @@
+﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>Personel</th>
+                <th>Pozisyon</th>
+                <th>Departman</th>
+                <th>Maaş</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var personelSatiri in Model.PersonelOzeti)
+            {
+                <tr>
+                    <td>@personelSatiri.AdSoyad</td>
+                    <td>@personelSatiri.Pozisyon</td>
+                    <td>@personelSatiri.Departman</td>
+                    <td>@personelSatiri.Maas.ToString("N2") TL</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

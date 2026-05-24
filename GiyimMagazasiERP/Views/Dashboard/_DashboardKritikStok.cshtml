@@ -1,0 +1,23 @@
+﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>Ürün</th>
+                <th>Stok</th>
+                <th>Minimum</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var urun in Model.KritikStokUrunleri)
+            {
+                <tr class="table-warning">
+                    <td>@urun.UrunAdi</td>
+                    <td>@urun.StokMiktari</td>
+                    <td>@urun.MinimumStok</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

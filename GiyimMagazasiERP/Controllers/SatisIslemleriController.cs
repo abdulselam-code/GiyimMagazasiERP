@@ -4,9 +4,11 @@ using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GiyimMagazasiERP.Controllers;
 
+[Authorize(Roles = "Admin,Yonetici,Kasiyer")]
 public class SatisIslemleriController : Controller
 {
     private readonly AppDbContext _context;
@@ -27,6 +29,8 @@ public class SatisIslemleriController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(SatisOlusturViewModel model)
     {
+        model.SepetUrunleri ??= new List<SatisSepetUrunViewModel>();
+
         if (!model.MusteriId.HasValue)
         {
             ModelState.AddModelError(nameof(model.MusteriId),

@@ -1,0 +1,67 @@
+﻿@model GiyimMagazasiERP.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Giriş Yap";
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Giyim Mağazası ERP - Giriş</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+    <main class="min-vh-100 d-flex align-items-center">
+        <div class="container">
+            <div class="row shadow-lg rounded-4 overflow-hidden bg-white">
+                <div class="col-lg-6 p-5 text-white" style="background:#0f172a;">
+                    <h1 class="fw-bold mb-3">Giyim Mağazası ERP</h1>
+                    <p class="lead mb-4">İşletme yönetim paneline giriş yapın.</p>
+
+                    <div class="border-start border-4 border-primary ps-3">
+                        <p class="mb-1">Satış, stok, müşteri, finans ve rapor yönetimi</p>
+                        <small class="text-white-50">Rol bazlı güvenli erişim sistemi</small>
+                    </div>
+
+                    <div class="alert alert-info mt-4 mb-0">
+                        Demo kullanıcılar: admin, yonetici, kasa1, depo, muhasebe, ik
+                    </div>
+                </div>
+
+                <div class="col-lg-6 p-5">
+                    <h2 class="h4 fw-bold mb-1">Giriş Yap</h2>
+                    <p class="text-muted mb-4">Kullanıcı adı/email ve şifrenizle devam edin.</p>
+
+                    <form asp-action="Login" method="post">
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="KullaniciAdiVeyaEmail" class="form-label">Kullanıcı adı veya email</label>
+                            <input asp-for="KullaniciAdiVeyaEmail" class="form-control form-control-lg" autofocus />
+                            <span asp-validation-for="KullaniciAdiVeyaEmail" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Sifre" class="form-label">Şifre</label>
+                            <input asp-for="Sifre" class="form-control form-control-lg" />
+                            <span asp-validation-for="Sifre" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            Giriş Yap
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

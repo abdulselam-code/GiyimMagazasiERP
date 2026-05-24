@@ -4,9 +4,11 @@ using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GiyimMagazasiERP.Controllers;
 
+[Authorize(Roles = "Admin,Yonetici,Depo")]
 public class UrunlerController : Controller
 {
     private readonly AppDbContext _context;

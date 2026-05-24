@@ -7,7 +7,7 @@
 
     var musterilerJson = JsonSerializer.Serialize(ViewData["MusterilerJson"]);
     var urunlerJson = JsonSerializer.Serialize(ViewData["UrunlerJson"]);
-    var mevcutSepetJson = JsonSerializer.Serialize(Model.SepetUrunleri);
+    var mevcutSepetJson = JsonSerializer.Serialize(Model.SepetUrunleri ?? new List<GiyimMagazasiERP.ViewModels.SatisSepetUrunViewModel>());
 }
 
 <div class="container py-4">
@@ -32,47 +32,38 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label asp-for="MusteriId" class="form-label">Müşteri</label>
-
                                 <select asp-for="MusteriId"
                                         asp-items="ViewBag.MusteriId"
                                         class="form-select"
                                         id="musteriSecimi">
                                     <option value="">Müşteri Seçiniz</option>
                                 </select>
-
                                 <span asp-validation-for="MusteriId" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-6">
-                                <label asp-for="PersonelId" class="form-label">
-                                    Satışı Yapan Personel
-                                </label>
-
+                                <label asp-for="PersonelId" class="form-label">Satışı Yapan Personel</label>
                                 <select asp-for="PersonelId"
                                         asp-items="ViewBag.PersonelId"
                                         class="form-select">
                                     <option value="">Personel Seçiniz</option>
                                 </select>
-
                                 <span asp-validation-for="PersonelId" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-6">
                                 <label asp-for="OdemeTipi" class="form-label">Ödeme Tipi</label>
-
                                 <select asp-for="OdemeTipi"
                                         asp-items="ViewBag.OdemeTipleri"
                                         class="form-select"
                                         id="odemeTipiSecimi">
                                     <option value="">Ödeme Tipi Seçiniz</option>
                                 </select>
-
                                 <span asp-validation-for="OdemeTipi" class="text-danger"></span>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">KDV Bilgisi</label>
-
                                 <div class="form-control bg-light">
                                     Ürün fiyatlarına %20 KDV dahildir
                                 </div>
@@ -88,7 +79,6 @@
                         <div class="row g-3 align-items-end">
                             <div class="col-lg-8">
                                 <label for="urunSecimi" class="form-label">Ürün</label>
-
                                 <select id="urunSecimi"
                                         asp-items="ViewBag.UrunId"
                                         class="form-select">
@@ -98,7 +88,6 @@
 
                             <div class="col-sm-4 col-lg-2">
                                 <label for="adetGirisi" class="form-label">Adet</label>
-
                                 <input type="number"
                                        id="adetGirisi"
                                        class="form-control"
@@ -133,9 +122,7 @@
                                 </p>
                             </div>
 
-                            <span class="badge text-bg-primary">
-                                KDV Dahil
-                            </span>
+                            <span class="badge text-bg-primary">KDV Dahil</span>
                         </div>
 
                         <div class="alert alert-info small">
@@ -170,11 +157,7 @@
 
                         <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
                             <span class="fw-bold">KDV Dahil Genel Toplam</span>
-
-                            <strong id="ozetGenelToplam"
-                                    class="fs-5 text-success">
-                                0,00 TL
-                            </strong>
+                            <strong id="ozetGenelToplam" class="fs-5 text-success">0,00 TL</strong>
                         </div>
 
                         <div class="d-flex justify-content-between py-2 border-bottom">
@@ -213,9 +196,7 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                     <div>
                         <h2 class="h5 fw-bold mb-1">Sepet</h2>
-                        <p class="text-muted mb-0">
-                            Satışa eklenecek ürün kalemleri
-                        </p>
+                        <p class="text-muted mb-0">Satışa eklenecek ürün kalemleri</p>
                     </div>
 
                     <span class="badge text-bg-secondary px-3 py-2">
@@ -257,15 +238,19 @@
     </form>
 </div>
 
+<script type="application/json" id="musterilerJson">@Html.Raw(musterilerJson)</script>
+<script type="application/json" id="urunlerJson">@Html.Raw(urunlerJson)</script>
+<script type="application/json" id="mevcutSepetJson">@Html.Raw(mevcutSepetJson)</script>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
     <script>
-        const musteriler = @Html.Raw(musterilerJson);
-        const urunler = @Html.Raw(urunlerJson);
-        const mevcutSepet = @Html.Raw(mevcutSepetJson);
+        const musteriler = JSON.parse(document.getElementById("musterilerJson").textContent || "[]");
+        const urunler = JSON.parse(document.getElementById("urunlerJson").textContent || "[]");
+        const mevcutSepet = JSON.parse(document.getElementById("mevcutSepetJson").textContent || "[]");
 
         const kdvCarpani = 1.20;
 
@@ -290,221 +275,218 @@
         const ozetKdvTutari = document.getElementById("ozetKdvTutari");
 
         let sepet = Array.isArray(mevcutSepet)
-            ? mevcutSepet.map(x => ({
-                UrunId: Number(x.UrunId),
-                UrunAdi: x.UrunAdi || "",
-                Barkod: x.Barkod || "",
-                Beden: x.Beden || "",
-                Renk: x.Renk || "",
-                BirimFiyat: Number(x.BirimFiyat) || 0,
-                Adet: Number(x.Adet) || 1,
-                StokMiktari: Number(x.StokMiktari) || 0
-            }))
-            : [];
+        ? mevcutSepet.map(x => ({
+        UrunId: Number(x.UrunId),
+        UrunAdi: x.UrunAdi || "",
+        Barkod: x.Barkod || "",
+        Beden: x.Beden || "",
+        Renk: x.Renk || "",
+        BirimFiyat: Number(x.BirimFiyat) || 0,
+        Adet: Number(x.Adet) || 1,
+        StokMiktari: Number(x.StokMiktari) || 0
+        }))
+        : [];
 
         function tlFormatla(tutar) {
-            return new Intl.NumberFormat("tr-TR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(tutar) + " TL";
+        return new Intl.NumberFormat("tr-TR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+        }).format(tutar) + " TL";
         }
 
         function oranFormatla(oran) {
-            return "%" + new Intl.NumberFormat("tr-TR", {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 2
-            }).format(oran);
+        return "%" + new Intl.NumberFormat("tr-TR", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+        }).format(oran);
         }
 
-        function uyariGoster(mesaj, tur = "danger") {
-            sepetUyariAlani.innerHTML = `
-                <div class="alert alert-${tur} alert-dismissible fade show" role="alert">
-                    ${mesaj}
-                    <button type="button"
-                            class="btn-close"
-                            data-bs-dismiss="alert"
-                            aria-label="Kapat"></button>
-                </div>
-            `;
+        function uyariGoster(mesaj, tur) {
+        const alertTuru = tur || "danger";
+
+        sepetUyariAlani.innerHTML =
+        '<div class="alert alert-' + alertTuru + ' alert-dismissible fade show" role="alert">' +
+        mesaj +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>' +
+        '</div>';
         }
 
         function seciliMusteriIndirimOraniGetir() {
-            const musteriId = Number(musteriSecimi.value);
+        const musteriId = Number(musteriSecimi.value);
+        const musteri = musteriler.find(x => Number(x.Id) === musteriId);
 
-            const musteri = musteriler.find(x => Number(x.Id) === musteriId);
-
-            return musteri ? Number(musteri.IndirimOrani) || 0 : 0;
+        return musteri ? Number(musteri.IndirimOrani) || 0 : 0;
         }
 
         function urunuGetir(urunId) {
-            return urunler.find(x => Number(x.Id) === Number(urunId));
+        return urunler.find(x => Number(x.Id) === Number(urunId));
         }
 
         function htmlGuvenliYaz(deger) {
-            const alan = document.createElement("div");
-            alan.textContent = deger ?? "";
-            return alan.innerHTML;
+        const alan = document.createElement("div");
+        alan.textContent = deger || "";
+        return alan.innerHTML;
         }
 
         function sepeteUrunEkle() {
-            const urunId = Number(urunSecimi.value);
-            const adet = Number(adetGirisi.value);
+        const urunId = Number(urunSecimi.value);
+        const adet = Number(adetGirisi.value);
 
-            if (!urunId) {
-                uyariGoster("Sepete eklemek için ürün seçiniz.");
-                return;
-            }
+        if (!urunId) {
+        uyariGoster("Sepete eklemek için ürün seçiniz.");
+        return;
+        }
 
-            if (!Number.isInteger(adet) || adet < 1) {
-                uyariGoster("Ürün adedi en az 1 olmalıdır.");
-                return;
-            }
+        if (!Number.isInteger(adet) || adet < 1) {
+        uyariGoster("Ürün adedi en az 1 olmalıdır.");
+        return;
+        }
 
-            const urun = urunuGetir(urunId);
+        const urun = urunuGetir(urunId);
 
-            if (!urun) {
-                uyariGoster("Seçilen ürün bulunamadı.");
-                return;
-            }
+        if (!urun) {
+        uyariGoster("Seçilen ürün bulunamadı.");
+        return;
+        }
 
-            const mevcutSatir = sepet.find(x => x.UrunId === urunId);
-            const mevcutAdet = mevcutSatir ? mevcutSatir.Adet : 0;
-            const yeniToplamAdet = mevcutAdet + adet;
-            const stokMiktari = Number(urun.StokMiktari) || 0;
+        const mevcutSatir = sepet.find(x => x.UrunId === urunId);
+        const mevcutAdet = mevcutSatir ? mevcutSatir.Adet : 0;
+        const yeniToplamAdet = mevcutAdet + adet;
+        const stokMiktari = Number(urun.StokMiktari) || 0;
 
-            if (yeniToplamAdet > stokMiktari) {
-                uyariGoster("Seçilen ürün için yeterli stok yok.");
-                return;
-            }
+        if (yeniToplamAdet > stokMiktari) {
+        uyariGoster("Seçilen ürün için yeterli stok yok.");
+        return;
+        }
 
-            if (mevcutSatir) {
-                mevcutSatir.Adet = yeniToplamAdet;
-            } else {
-                sepet.push({
-                    UrunId: Number(urun.Id),
-                    UrunAdi: urun.UrunAdi,
-                    Barkod: urun.Barkod,
-                    Beden: urun.Beden,
-                    Renk: urun.Renk,
-                    BirimFiyat: Number(urun.SatisFiyati) || 0,
-                    Adet: adet,
-                    StokMiktari: stokMiktari
-                });
-            }
+        if (mevcutSatir) {
+        mevcutSatir.Adet = yeniToplamAdet;
+        } else {
+        sepet.push({
+        UrunId: Number(urun.Id),
+        UrunAdi: urun.UrunAdi || "",
+        Barkod: urun.Barkod || "",
+        Beden: urun.Beden || "",
+        Renk: urun.Renk || "",
+        BirimFiyat: Number(urun.SatisFiyati) || 0,
+        Adet: adet,
+        StokMiktari: stokMiktari
+        });
+        }
 
-            urunSecimi.value = "";
-            adetGirisi.value = 1;
+        urunSecimi.value = "";
+        adetGirisi.value = 1;
 
-            uyariGoster("Ürün sepete eklendi.", "success");
-            sepetiGuncelle();
+        uyariGoster("Ürün sepete eklendi.", "success");
+        sepetiGuncelle();
         }
 
         function sepettenCikar(index) {
-            sepet.splice(index, 1);
-            sepetiGuncelle();
+        sepet.splice(index, 1);
+        sepetiGuncelle();
+        }
+
+        window.sepettenCikar = sepettenCikar;
+
+        function hiddenInputEkle(index, alan, deger) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "SepetUrunleri[" + index + "]." + alan;
+        input.value = deger || "";
+        sepetHiddenAlanlari.appendChild(input);
         }
 
         function sepetiGuncelle() {
-            const indirimOrani = seciliMusteriIndirimOraniGetir();
+        const indirimOrani = seciliMusteriIndirimOraniGetir();
 
-            sepetTabloGovdesi.innerHTML = "";
-            sepetHiddenAlanlari.innerHTML = "";
+        sepetTabloGovdesi.innerHTML = "";
+        sepetHiddenAlanlari.innerHTML = "";
 
-            let toplamAdet = 0;
-            let araToplam = 0;
-            let indirimTutari = 0;
-            let genelToplam = 0;
+        let toplamAdet = 0;
+        let araToplam = 0;
+        let indirimTutari = 0;
+        let genelToplam = 0;
 
-            if (sepet.length === 0) {
-                sepetTabloGovdesi.innerHTML = `
-                    <tr id="bosSepetSatiri">
-                        <td colspan="11" class="text-center text-muted py-4">
-                            Sepette ürün bulunmuyor.
-                        </td>
-                    </tr>
-                `;
-            }
+        if (sepet.length === 0) {
+        sepetTabloGovdesi.innerHTML =
+        '<tr id="bosSepetSatiri">' +
+        '<td colspan="11" class="text-center text-muted py-4">Sepette ürün bulunmuyor.</td>' +
+        '</tr>';
+        }
 
-            sepet.forEach((urun, index) => {
-                const satirAraToplam = urun.BirimFiyat * urun.Adet;
-                const satirIndirim = satirAraToplam * indirimOrani / 100;
-                const satirKdvDahilToplam = satirAraToplam - satirIndirim;
+        sepet.forEach((urun, index) => {
+        const satirAraToplam = urun.BirimFiyat * urun.Adet;
+        const satirIndirim = satirAraToplam * indirimOrani / 100;
+        const satirKdvDahilToplam = satirAraToplam - satirIndirim;
 
-                toplamAdet += urun.Adet;
-                araToplam += satirAraToplam;
-                indirimTutari += satirIndirim;
-                genelToplam += satirKdvDahilToplam;
+        toplamAdet += urun.Adet;
+        araToplam += satirAraToplam;
+        indirimTutari += satirIndirim;
+        genelToplam += satirKdvDahilToplam;
 
-                sepetTabloGovdesi.innerHTML += `
-                    <tr>
-                        <td class="fw-semibold">${htmlGuvenliYaz(urun.UrunAdi)}</td>
-                        <td>${htmlGuvenliYaz(urun.Barkod)}</td>
-                        <td>${htmlGuvenliYaz(urun.Beden)}</td>
-                        <td>${htmlGuvenliYaz(urun.Renk)}</td>
-                        <td class="text-end">${tlFormatla(urun.BirimFiyat)}</td>
-                        <td class="text-end">${urun.Adet}</td>
-                        <td class="text-end">${tlFormatla(satirAraToplam)}</td>
-                        <td class="text-end">${tlFormatla(satirIndirim)}</td>
-                        <td class="text-end fw-semibold text-success">${tlFormatla(satirKdvDahilToplam)}</td>
-                        <td class="text-end">${urun.StokMiktari}</td>
-                        <td>
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-danger"
-                                    onclick="sepettenCikar(${index})">
-                                Çıkar
-                            </button>
-                        </td>
-                    </tr>
-                `;
+        sepetTabloGovdesi.innerHTML +=
+        '<tr>' +
+        '<td class="fw-semibold">' + htmlGuvenliYaz(urun.UrunAdi) + '</td>' +
+        '<td>' + htmlGuvenliYaz(urun.Barkod) + '</td>' +
+        '<td>' + htmlGuvenliYaz(urun.Beden) + '</td>' +
+        '<td>' + htmlGuvenliYaz(urun.Renk) + '</td>' +
+        '<td class="text-end">' + tlFormatla(urun.BirimFiyat) + '</td>' +
+        '<td class="text-end">' + urun.Adet + '</td>' +
+        '<td class="text-end">' + tlFormatla(satirAraToplam) + '</td>' +
+        '<td class="text-end">' + tlFormatla(satirIndirim) + '</td>' +
+        '<td class="text-end fw-semibold text-success">' + tlFormatla(satirKdvDahilToplam) + '</td>' +
+        '<td class="text-end">' + urun.StokMiktari + '</td>' +
+        '<td>' +
+        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="sepettenCikar(' + index + ')">Çıkar</button>' +
+        '</td>' +
+        '</tr>';
 
-                sepetHiddenAlanlari.innerHTML += `
-                    <input type="hidden" name="SepetUrunleri[${index}].UrunId" value="${urun.UrunId}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].UrunAdi" value="${htmlGuvenliYaz(urun.UrunAdi)}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].Barkod" value="${htmlGuvenliYaz(urun.Barkod)}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].Beden" value="${htmlGuvenliYaz(urun.Beden)}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].Renk" value="${htmlGuvenliYaz(urun.Renk)}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].BirimFiyat" value="${urun.BirimFiyat}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].Adet" value="${urun.Adet}" />
-                    <input type="hidden" name="SepetUrunleri[${index}].StokMiktari" value="${urun.StokMiktari}" />
-                `;
-            });
+        hiddenInputEkle(index, "UrunId", urun.UrunId);
+        hiddenInputEkle(index, "UrunAdi", urun.UrunAdi);
+        hiddenInputEkle(index, "Barkod", urun.Barkod);
+        hiddenInputEkle(index, "Beden", urun.Beden);
+        hiddenInputEkle(index, "Renk", urun.Renk);
+        hiddenInputEkle(index, "BirimFiyat", urun.BirimFiyat);
+        hiddenInputEkle(index, "Adet", urun.Adet);
+        hiddenInputEkle(index, "StokMiktari", urun.StokMiktari);
+        });
 
-            const kdvHaricTutar = genelToplam / kdvCarpani;
-            const kdvTutari = genelToplam - kdvHaricTutar;
+        const kdvHaricTutar = genelToplam / kdvCarpani;
+        const kdvTutari = genelToplam - kdvHaricTutar;
 
-            ozetUrunSayisi.textContent = sepet.length;
-            ozetToplamAdet.textContent = toplamAdet;
-            ozetAraToplam.textContent = tlFormatla(araToplam);
-            ozetIndirimOrani.textContent = oranFormatla(indirimOrani);
-            ozetIndirimTutari.textContent = tlFormatla(indirimTutari);
-            ozetGenelToplam.textContent = tlFormatla(genelToplam);
-            ozetKdvHaricTutar.textContent = tlFormatla(kdvHaricTutar);
-            ozetKdvTutari.textContent = tlFormatla(kdvTutari);
+        ozetUrunSayisi.textContent = sepet.length;
+        ozetToplamAdet.textContent = toplamAdet;
+        ozetAraToplam.textContent = tlFormatla(araToplam);
+        ozetIndirimOrani.textContent = oranFormatla(indirimOrani);
+        ozetIndirimTutari.textContent = tlFormatla(indirimTutari);
+        ozetGenelToplam.textContent = tlFormatla(genelToplam);
+        ozetKdvHaricTutar.textContent = tlFormatla(kdvHaricTutar);
+        ozetKdvTutari.textContent = tlFormatla(kdvTutari);
         }
 
         sepeteEkleBtn.addEventListener("click", sepeteUrunEkle);
 
         musteriSecimi.addEventListener("change", function () {
-            sepetiGuncelle();
+        sepetiGuncelle();
         });
 
         satisFormu.addEventListener("submit", function (event) {
-            if (!musteriSecimi.value) {
-                event.preventDefault();
-                uyariGoster("Satış işlemi için müşteri seçilmelidir.");
-                return;
-            }
+        if (!musteriSecimi.value) {
+        event.preventDefault();
+        uyariGoster("Satış işlemi için müşteri seçilmelidir.");
+        return;
+        }
 
-            if (!odemeTipiSecimi.value) {
-                event.preventDefault();
-                uyariGoster("Ödeme tipi seçilmelidir.");
-                return;
-            }
+        if (!odemeTipiSecimi.value) {
+        event.preventDefault();
+        uyariGoster("Ödeme tipi seçilmelidir.");
+        return;
+        }
 
-            if (sepet.length === 0) {
-                event.preventDefault();
-                uyariGoster("Satış tamamlamak için sepete en az bir ürün eklenmelidir.");
-            }
+        if (sepet.length === 0) {
+        event.preventDefault();
+        uyariGoster("Satış tamamlamak için sepete en az bir ürün eklenmelidir.");
+        }
         });
 
         sepetiGuncelle();

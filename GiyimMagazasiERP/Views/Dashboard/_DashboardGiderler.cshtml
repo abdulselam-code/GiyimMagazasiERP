@@ -1,0 +1,25 @@
+﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>Tarih</th>
+                <th>Kategori</th>
+                <th>Açıklama</th>
+                <th>Tutar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var gider in Model.EnYuksekGiderler)
+            {
+                <tr>
+                    <td>@gider.Tarih.ToString("dd/MM/yyyy")</td>
+                    <td>@gider.Kategori</td>
+                    <td>@(gider.Aciklama ?? "-")</td>
+                    <td class="text-danger fw-semibold">@gider.Tutar.ToString("N2") TL</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

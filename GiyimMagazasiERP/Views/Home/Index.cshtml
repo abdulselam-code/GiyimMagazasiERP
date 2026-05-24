@@ -1,300 +1,104 @@
-﻿@model GiyimMagazasiERP.ViewModels.HomeIndexViewModel
+﻿@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Ana Sayfa";
+
+    var girisVarMi = User.Identity?.IsAuthenticated == true;
+    var kullaniciAdi = User.Identity?.Name ?? "Kullanıcı";
+    var rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Tanımsız";
 }
 
-<div class="home-erp-page">
-    <section class="home-hero">
-        <div class="container home-container-wide">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-7">
-                    <div class="home-hero-content">
-                        <span class="home-kicker">Perakende Giyim Mini ERP</span>
+<div class="container py-4">
+    <section class="rounded-4 p-4 p-lg-5 text-white shadow-sm mb-4" style="background: linear-gradient(135deg, #0f172a, #1d4ed8);">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <h1 class="display-6 fw-bold mb-3">
+                    Giyim Mağazası ERP ve İşletme Yönetim Sistemi
+                </h1>
 
-                        <h1>Giyim Mağazası ERP ve İşletme Yönetim Sistemi</h1>
+                <p class="lead mb-0">
+                    Satış, stok, müşteri, personel, finans ve raporlama süreçlerini tek panelden yönetin.
+                </p>
+            </div>
 
-                        <p class="home-hero-lead">
-                            Satış, stok, müşteri, personel, finans ve rapor yönetimini
-                            tek panelden yönetin.
+            <div class="col-lg-4">
+                <div class="bg-white text-dark rounded-4 p-4 shadow-sm">
+                    @if (girisVarMi)
+                    {
+                        <p class="text-muted mb-1">Hoş geldiniz,</p>
+                        <h2 class="h4 fw-bold mb-2">@kullaniciAdi</h2>
+                        <p class="mb-3">
+                            <span class="text-muted">Rolünüz:</span>
+                            <strong>@rol</strong>
                         </p>
 
-                        <p class="home-hero-text">
-                            Bu sistem perakende giyim mağazaları için satış, stok takibi,
-                            müşteri sadakati, personel performansı, finans hareketleri ve
-                            raporlama süreçlerini bütünleşik şekilde yönetmek için geliştirilmiştir.
+                        <a asp-controller="Dashboard"
+                           asp-action="Index"
+                           class="btn btn-primary w-100">
+                            Dashboard'a Git
+                        </a>
+                    }
+                    else
+                    {
+                        <h2 class="h5 fw-bold mb-2">Devam etmek için giriş yapınız.</h2>
+                        <p class="text-muted mb-3">
+                            ERP paneline erişmek için kullanıcı hesabınızla oturum açın.
                         </p>
 
-                        <div class="home-actions">
-                            <a asp-controller="SatisIslemleri"
-                               asp-action="Create"
-                               class="btn btn-success home-action-btn home-primary-action">
-                                Satış Yap
-                            </a>
-
-                            <a asp-controller="Dashboard"
-                               asp-action="Index"
-                               class="btn btn-primary home-action-btn">
-                                Dashboard'a Git
-                            </a>
-
-                            <a asp-controller="Urunler"
-                               asp-action="Index"
-                               class="btn btn-outline-light home-action-btn">
-                                Ürünleri Yönet
-                            </a>
-
-                            <a asp-controller="Raporlar"
-                               asp-action="Index"
-                               class="btn btn-outline-light home-action-btn">
-                                Raporları Görüntüle
-                            </a>
-
-                            <a asp-controller="VeritabaniYonetici"
-                               asp-action="Index"
-                               class="btn btn-outline-light home-action-btn">
-                                DB Panel
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-5">
-                    <div class="home-system-panel">
-                        <div class="home-system-panel-head">
-                            <div>
-                                <span>Sistem Özeti</span>
-                                <h2>ERP Genel Durum</h2>
-                            </div>
-
-                            <span class="home-live-badge">Aktif</span>
-                        </div>
-
-                        <div class="home-system-mini-grid">
-                            <div>
-                                <span>Ürün</span>
-                                <strong>@Model.ToplamUrunSayisi</strong>
-                            </div>
-
-                            <div>
-                                <span>Müşteri</span>
-                                <strong>@Model.ToplamMusteriSayisi</strong>
-                            </div>
-
-                            <div>
-                                <span>Satış</span>
-                                <strong>@Model.ToplamSatisSayisi</strong>
-                            </div>
-
-                            <div class="warning">
-                                <span>Kritik Stok</span>
-                                <strong>@Model.KritikStokSayisi</strong>
-                            </div>
-                        </div>
-
-                        <div class="home-system-flow">
-                            <div>Satış</div>
-                            <span>→</span>
-                            <div>Stok</div>
-                            <span>→</span>
-                            <div>Finans</div>
-                            <span>→</span>
-                            <div>Rapor</div>
-                        </div>
-
-                        <p>
-                            Satış oluştuğunda stok, finans ve müşteri kayıtları
-                            birbirine bağlı şekilde güncellenir.
-                        </p>
-                    </div>
+                        <a asp-controller="Auth"
+                           asp-action="Login"
+                           class="btn btn-primary w-100">
+                            Giriş Yap
+                        </a>
+                    }
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="container home-container-wide home-section">
-        <div class="home-section-heading">
-            <h2>İşletme Özeti</h2>
-            <p>Veritabanındaki mevcut kayıtlardan alınan genel durum bilgileri</p>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card">
-                    <span>Toplam Ürün</span>
-                    <strong>@Model.ToplamUrunSayisi</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card">
-                    <span>Toplam Müşteri</span>
-                    <strong>@Model.ToplamMusteriSayisi</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card">
-                    <span>Toplam Personel</span>
-                    <strong>@Model.ToplamPersonelSayisi</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card">
-                    <span>Toplam Satış</span>
-                    <strong>@Model.ToplamSatisSayisi</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card home-stat-warning">
-                    <span>Kritik Stok</span>
-                    <strong>@Model.KritikStokSayisi</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card home-stat-success">
-                    <span>Toplam Gelir</span>
-                    <strong>@Model.ToplamGelir.ToString("N2") TL</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card home-stat-danger">
-                    <span>Toplam Gider</span>
-                    <strong>@Model.ToplamGider.ToString("N2") TL</strong>
-                </article>
-            </div>
-
-            <div class="col-sm-6 col-xl-3">
-                <article class="home-stat-card home-stat-profit">
-                    <span>Net Kazanç</span>
-                    <strong>@Model.NetKazanc.ToString("N2") TL</strong>
-                </article>
+    <section class="row g-3">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Satış Yönetimi</h2>
+                    <p class="text-muted mb-0">
+                        Sepetli satış, müşteri takibi ve fatura süreçleri yönetilir.
+                    </p>
+                </div>
             </div>
         </div>
-    </section>
 
-    <section class="container home-container-wide home-section pb-5">
-        <div class="home-section-heading">
-            <h2>Sistem Kapsamı</h2>
-            <p>ERP yapısının temel işlevsel alanları</p>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Stok Yönetimi</h2>
+                    <p class="text-muted mb-0">
+                        Ürün, kategori, tedarikçi ve stok hareketleri takip edilir.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="home-scope-grid">
-            <article class="home-scope-card home-scope-sales">
-                <div class="home-scope-head">
-                    <span class="home-scope-icon">SM</span>
-
-                    <div>
-                        <h3>Satış &amp; Müşteri Yönetimi</h3>
-                        <p>
-                            Satış işlemleri yapılır, müşteri harcamaları
-                            ve sadakat bilgileri takip edilir.
-                        </p>
-                    </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Finans Yönetimi</h2>
+                    <p class="text-muted mb-0">
+                        Gelir, gider, net kazanç ve işletme giderleri izlenir.
+                    </p>
                 </div>
+            </div>
+        </div>
 
-                <div class="home-scope-actions">
-                    <a asp-controller="SatisIslemleri"
-                       asp-action="Create"
-                       class="btn btn-sm btn-primary">
-                        Satış Yap
-                    </a>
-
-                    <a asp-controller="Musteriler"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-primary">
-                        Müşteriler
-                    </a>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Raporlama</h2>
+                    <p class="text-muted mb-0">
+                        Günlük, aylık ve yıllık raporlarla işletme performansı analiz edilir.
+                    </p>
                 </div>
-            </article>
-
-            <article class="home-scope-card home-scope-stock">
-                <div class="home-scope-head">
-                    <span class="home-scope-icon">ÜS</span>
-
-                    <div>
-                        <h3>Stok &amp; Ürün Yönetimi</h3>
-                        <p>
-                            Ürün bilgileri, stok miktarları, kritik stoklar
-                            ve stok hareketleri yönetilir.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="home-scope-actions">
-                    <a asp-controller="Urunler"
-                       asp-action="Index"
-                       class="btn btn-sm btn-primary">
-                        Ürünler
-                    </a>
-
-                    <a asp-controller="StokHareketleri"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-primary">
-                        Stok
-                    </a>
-                </div>
-            </article>
-
-            <article class="home-scope-card home-scope-finance">
-                <div class="home-scope-head">
-                    <span class="home-scope-icon">PF</span>
-
-                    <div>
-                        <h3>Personel &amp; Finans Yönetimi</h3>
-                        <p>
-                            Personel bilgileri, prim/mesai yapısı,
-                            gelir-gider ve net kazanç izlenir.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="home-scope-actions">
-                    <a asp-controller="Personeller"
-                       asp-action="Index"
-                       class="btn btn-sm btn-primary">
-                        Personeller
-                    </a>
-
-                    <a asp-controller="FinansHareketleri"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-primary">
-                        Finans
-                    </a>
-                </div>
-            </article>
-
-            <article class="home-scope-card home-scope-analysis">
-                <div class="home-scope-head">
-                    <span class="home-scope-icon">RA</span>
-
-                    <div>
-                        <h3>Raporlama &amp; Veritabanı Analizi</h3>
-                        <p>
-                            Satış, stok, müşteri, finans raporları
-                            ve veritabanı şeması analiz edilir.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="home-scope-actions">
-                    <a asp-controller="Raporlar"
-                       asp-action="Index"
-                       class="btn btn-sm btn-primary">
-                        Raporlar
-                    </a>
-
-                    <a asp-controller="VeritabaniYonetici"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-primary">
-                        DB Panel
-                    </a>
-                </div>
-            </article>
+            </div>
         </div>
     </section>
 </div>

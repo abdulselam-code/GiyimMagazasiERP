@@ -1,5 +1,20 @@
-﻿@{
+﻿@using System.Security.Claims
+
+@{
     var aktifController = ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var girisVarMi = User.Identity?.IsAuthenticated == true;
+
+    var admin = User.IsInRole("Admin");
+    var yonetici = User.IsInRole("Yonetici");
+    var kasiyer = User.IsInRole("Kasiyer");
+    var depo = User.IsInRole("Depo");
+    var muhasebe = User.IsInRole("Muhasebe");
+    var ik = User.IsInRole("InsanKaynaklari");
+    var personel = User.IsInRole("Personel");
+
+    var kullaniciAdi = User.Identity?.Name ?? "Kullanıcı";
+    var kullaniciRol = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
 
     var yonetimAktif =
         aktifController == "Urunler" ||
@@ -30,13 +45,14 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GiyimMagazasiERP.styles.css" asp-append-version="true" />
 </head>
+
 <body class="bg-body-tertiary">
     <header>
         <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm erp-top-navbar">
             <div class="erp-navbar-inner px-3 px-lg-4">
+
                 <a class="navbar-brand fw-semibold erp-navbar-brand"
-                   asp-controller="Home"
-                   asp-action="Index">
+                   href="@(girisVarMi ? Url.Action("Index", "Home") : Url.Action("Login", "Auth"))">
                     Giyim Mağazası ERP
                 </a>
 
@@ -52,159 +68,248 @@
 
                 <div class="collapse navbar-collapse" id="erpAnaMenu">
                     <ul class="navbar-nav ms-md-auto py-2 py-md-0 erp-navbar-menu">
-                        <li class="nav-item">
-                            <a class="nav-link erp-menu-link @(aktifController == "Home" ? "active fw-semibold" : "")"
-                               asp-controller="Home"
-                               asp-action="Index">
-                                Ana Sayfa
-                            </a>
-                        </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link erp-menu-link @(aktifController == "Dashboard" ? "active fw-semibold" : "")"
-                               asp-controller="Dashboard"
-                               asp-action="Index">
-                                Dashboard
-                            </a>
-                        </li>
+                        @if (girisVarMi)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link erp-menu-link @(aktifController == "Home" ? "active fw-semibold" : "")"
+                                   asp-controller="Home"
+                                   asp-action="Index">
+                                    Ana Sayfa
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link erp-menu-link @(aktifController == "SatisIslemleri" ? "active fw-semibold" : "")"
-                               asp-controller="SatisIslemleri"
-                               asp-action="Create">
-                                Satış Yap
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link erp-menu-link @(aktifController == "Dashboard" ? "active fw-semibold" : "")"
+                                   asp-controller="Dashboard"
+                                   asp-action="Index">
+                                    Dashboard
+                                </a>
+                            </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle erp-menu-link @(yonetimAktif ? "active fw-semibold" : "")"
-                               href="#"
-                               id="yonetimDropdown"
-                               role="button"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                                Yönetim
-                            </a>
-
-                            <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
-                                aria-labelledby="yonetimDropdown">
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Urunler" ? "active" : "")"
-                                       asp-controller="Urunler"
-                                       asp-action="Index">
-                                        Ürünler
+                            @if (admin || yonetici || kasiyer)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link erp-menu-link @(aktifController == "SatisIslemleri" ? "active fw-semibold" : "")"
+                                       asp-controller="SatisIslemleri"
+                                       asp-action="Create">
+                                        Satış Yap
                                     </a>
                                 </li>
+                            }
 
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Musteriler" ? "active" : "")"
-                                       asp-controller="Musteriler"
-                                       asp-action="Index">
-                                        Müşteriler
+                            @if (admin || yonetici || depo || kasiyer || ik)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle erp-menu-link @(yonetimAktif ? "active fw-semibold" : "")"
+                                       href="#"
+                                       id="yonetimDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Yönetim
                                     </a>
-                                </li>
 
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Personeller" ? "active" : "")"
-                                       asp-controller="Personeller"
-                                       asp-action="Index">
-                                        Personeller
+                                    <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
+                                        aria-labelledby="yonetimDropdown">
+
+                                        @if (admin || yonetici || depo)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Urunler" ? "active" : "")"
+                                                   asp-controller="Urunler"
+                                                   asp-action="Index">
+                                                    Ürünler
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Kategoriler" ? "active" : "")"
+                                                   asp-controller="Kategoriler"
+                                                   asp-action="Index">
+                                                    Kategoriler
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Tedarikciler" ? "active" : "")"
+                                                   asp-controller="Tedarikciler"
+                                                   asp-action="Index">
+                                                    Tedarikçiler
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || kasiyer)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Musteriler" ? "active" : "")"
+                                                   asp-controller="Musteriler"
+                                                   asp-action="Index">
+                                                    Müşteriler
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || ik)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Personeller" ? "active" : "")"
+                                                   asp-controller="Personeller"
+                                                   asp-action="Index">
+                                                    Personeller
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </li>
+                            }
+
+                            @if (admin || yonetici || kasiyer || muhasebe || depo)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle erp-menu-link @(hareketlerAktif ? "active fw-semibold" : "")"
+                                       href="#"
+                                       id="hareketlerDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Hareketler
                                     </a>
-                                </li>
 
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Kategoriler" ? "active" : "")"
-                                       asp-controller="Kategoriler"
-                                       asp-action="Index">
-                                        Kategoriler
+                                    <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
+                                        aria-labelledby="hareketlerDropdown">
+
+                                        @if (admin || yonetici || kasiyer || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Satislar" ? "active" : "")"
+                                                   asp-controller="Satislar"
+                                                   asp-action="Index">
+                                                    Satışlar
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "FinansHareketleri" ? "active" : "")"
+                                                   asp-controller="FinansHareketleri"
+                                                   asp-action="Index">
+                                                    Finans
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || depo)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "StokHareketleri" ? "active" : "")"
+                                                   asp-controller="StokHareketleri"
+                                                   asp-action="Index">
+                                                    Stok
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </li>
+                            }
+
+                            @if (admin || yonetici || muhasebe)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle erp-menu-link @(analizAktif ? "active fw-semibold" : "")"
+                                       href="#"
+                                       id="analizDropdown"
+                                       role="button"
+                                       data-bs-toggle="dropdown"
+                                       aria-expanded="false">
+                                        Analiz
                                     </a>
+
+                                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-md-end erp-dropdown-menu"
+                                        aria-labelledby="analizDropdown">
+
+                                        @if (admin || yonetici || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Raporlar" ? "active" : "")"
+                                                   asp-controller="Raporlar"
+                                                   asp-action="Index">
+                                                    Raporlar
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "SqlYonetici" ? "active" : "")"
+                                                   asp-controller="SqlYonetici"
+                                                   asp-action="Index">
+                                                    SQL Panel
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "VeritabaniYonetici" ? "active" : "")"
+                                                   asp-controller="VeritabaniYonetici"
+                                                   asp-action="Index">
+                                                    DB Panel
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
                                 </li>
+                            }
 
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Tedarikciler" ? "active" : "")"
-                                       asp-controller="Tedarikciler"
-                                       asp-action="Index">
-                                        Tedarikçiler
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                            <li class="nav-item dropdown ms-md-3">
+                                <a class="nav-link dropdown-toggle erp-menu-link"
+                                   href="#"
+                                   id="kullaniciDropdown"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+                                    @kullaniciAdi
+                                    @if (!string.IsNullOrWhiteSpace(kullaniciRol))
+                                    {
+                                        <span class="text-secondary">| @kullaniciRol</span>
+                                    }
+                                </a>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle erp-menu-link @(hareketlerAktif ? "active fw-semibold" : "")"
-                               href="#"
-                               id="hareketlerDropdown"
-                               role="button"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                                Hareketler
-                            </a>
+                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-md-end erp-dropdown-menu"
+                                    aria-labelledby="kullaniciDropdown">
+                                    <li>
+                                        <span class="dropdown-item-text text-light small">
+                                            Oturum açık
+                                        </span>
+                                    </li>
 
-                            <ul class="dropdown-menu dropdown-menu-dark erp-dropdown-menu"
-                                aria-labelledby="hareketlerDropdown">
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Satislar" ? "active" : "")"
-                                       asp-controller="Satislar"
-                                       asp-action="Index">
-                                        Satışlar
-                                    </a>
-                                </li>
+                                    <li>
+                                        <hr class="dropdown-divider" />
+                                    </li>
 
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "FinansHareketleri" ? "active" : "")"
-                                       asp-controller="FinansHareketleri"
-                                       asp-action="Index">
-                                        Finans
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "StokHareketleri" ? "active" : "")"
-                                       asp-controller="StokHareketleri"
-                                       asp-action="Index">
-                                        Stok
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle erp-menu-link @(analizAktif ? "active fw-semibold" : "")"
-                               href="#"
-                               id="analizDropdown"
-                               role="button"
-                               data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                                Analiz
-                            </a>
-
-                            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-md-end erp-dropdown-menu"
-                                aria-labelledby="analizDropdown">
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "Raporlar" ? "active" : "")"
-                                       asp-controller="Raporlar"
-                                       asp-action="Index">
-                                        Raporlar
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "SqlYonetici" ? "active" : "")"
-                                       asp-controller="SqlYonetici"
-                                       asp-action="Index">
-                                        SQL Panel
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a class="dropdown-item @(aktifController == "VeritabaniYonetici" ? "active" : "")"
-                                       asp-controller="VeritabaniYonetici"
-                                       asp-action="Index">
-                                        DB Panel
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="Auth"
+                                           asp-action="Logout">
+                                            Çıkış Yap
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link erp-menu-link @(aktifController == "Auth" ? "active fw-semibold" : "")"
+                                   asp-controller="Auth"
+                                   asp-action="Login">
+                                    Giriş Yap
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>

@@ -3,8 +3,11 @@ using GiyimMagazasiERP.Models;
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+
 namespace GiyimMagazasiERP.Controllers;
 
+[Authorize(Roles = "Admin,Yonetici,Kasiyer,Muhasebe")]
 public class SatislarController : Controller
 {
     private readonly AppDbContext _context;

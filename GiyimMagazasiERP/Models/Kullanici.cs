@@ -9,6 +9,10 @@ public class Kullanici
     public string SifreHash { get; set; } = null!;
     public string Rol { get; set; } = null!;
 
+    public string? AdSoyad { get; set; }
+
+    public DateTime? SonGirisTarihi { get; set; }
+
     public bool AktifMi { get; set; }
     public DateTime OlusturmaTarihi { get; set; }
 

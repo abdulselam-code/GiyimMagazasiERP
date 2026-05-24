@@ -1,0 +1,34 @@
+﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>Satış No</th>
+                <th>Tarih</th>
+                <th>Müşteri</th>
+                <th>Net Tutar</th>
+                <th>Fatura</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var satis in Model.SonSatislar)
+            {
+                <tr>
+                    <td>#@satis.SatisId</td>
+                    <td>@satis.SatisTarihi.ToString("dd/MM/yyyy")</td>
+                    <td>@satis.MusteriAdi</td>
+                    <td>@satis.NetTutar.ToString("N2") TL</td>
+                    <td>
+                        <a asp-controller="Faturalar"
+                           asp-action="Detay"
+                           asp-route-id="@satis.SatisId"
+                           class="btn btn-sm btn-outline-primary">
+                            Görüntüle
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

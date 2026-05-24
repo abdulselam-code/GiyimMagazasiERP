@@ -4,9 +4,11 @@ using GiyimMagazasiERP.Data;
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GiyimMagazasiERP.Controllers;
 
+[Authorize(Roles = "Admin")]
 public class VeritabaniYoneticiController : Controller
 {
     private readonly AppDbContext _context;

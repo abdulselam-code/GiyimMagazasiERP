@@ -1,0 +1,14 @@
+﻿@{
+    ViewData["Title"] = "Yetkisiz Erişim";
+}
+
+<div class="container py-5">
+    <div class="alert alert-danger shadow-sm">
+        <h1 class="h4 fw-bold">Bu sayfaya erişim yetkiniz yok.</h1>
+        <p class="mb-0">Bu işlem için gerekli role sahip değilsiniz.</p>
+    </div>
+
+    <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">
+        Ana Panele Dön
+    </a>
+</div>

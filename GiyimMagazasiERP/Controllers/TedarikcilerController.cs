@@ -3,8 +3,11 @@ using GiyimMagazasiERP.Models;
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GiyimMagazasiERP.Controllers;
+
+[Authorize(Roles = "Admin,Yonetici,Depo")]
 
 public class TedarikcilerController : Controller
 {

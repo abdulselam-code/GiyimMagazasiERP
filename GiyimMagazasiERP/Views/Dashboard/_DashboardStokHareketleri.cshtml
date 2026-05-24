@@ -1,0 +1,25 @@
+﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>Tarih</th>
+                <th>Ürün</th>
+                <th>Tip</th>
+                <th>Miktar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var hareket in Model.SonStokHareketleri)
+            {
+                <tr>
+                    <td>@hareket.Tarih.ToString("dd/MM/yyyy")</td>
+                    <td>@hareket.UrunAdi</td>
+                    <td>@hareket.HareketTipi</td>
+                    <td>@hareket.Miktar</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
