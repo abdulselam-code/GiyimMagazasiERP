@@ -12,6 +12,7 @@ public class DashboardViewModel
     public int AktifPersonel { get; set; }
     public int ToplamSatis { get; set; }
     public int KritikStokSayisi { get; set; }
+    public int ToplamTedarikci { get; set; }
 
     public decimal ToplamGelir { get; set; }
     public decimal ToplamGider { get; set; }
@@ -20,18 +21,37 @@ public class DashboardViewModel
     public int BugunkuSatisSayisi { get; set; }
     public decimal BugunkuSatisGeliri { get; set; }
     public decimal BugunkuGelir { get; set; }
-
     public decimal AylikGelir { get; set; }
     public decimal AylikGider { get; set; }
-
     public decimal OrtalamaMaas { get; set; }
+    public decimal EnYuksekGider { get; set; }
 
     public List<DashboardQuickActionViewModel> HizliIslemler { get; set; } = new();
     public List<DashboardSonSatisViewModel> SonSatislar { get; set; } = new();
     public List<DashboardKritikStokViewModel> KritikStokUrunleri { get; set; } = new();
     public List<DashboardStokHareketiViewModel> SonStokHareketleri { get; set; } = new();
     public List<DashboardGiderViewModel> EnYuksekGiderler { get; set; } = new();
+    public List<DashboardFinansHareketiViewModel> SonFinansHareketleri { get; set; } = new();
     public List<DashboardPersonelOzetViewModel> PersonelOzeti { get; set; } = new();
+
+    public List<string> GunlukSatisLabels { get; set; } = new();
+    public List<decimal> GunlukSatisValues { get; set; } = new();
+
+    public List<string> GelirGiderLabels { get; set; } = new();
+    public List<decimal> GelirGiderValues { get; set; } = new();
+
+    public List<string> KategoriSatisLabels { get; set; } = new();
+    public List<decimal> KategoriSatisValues { get; set; } = new();
+
+    public List<string> EnCokSatilanUrunLabels { get; set; } = new();
+    public List<int> EnCokSatilanUrunValues { get; set; } = new();
+
+    public List<string> KritikStokLabels { get; set; } = new();
+    public List<int> KritikStokValues { get; set; } = new();
+
+    public List<string> AylikGelirGiderLabels { get; set; } = new();
+    public List<decimal> AylikGelirValues { get; set; } = new();
+    public List<decimal> AylikGiderValues { get; set; } = new();
 }
 
 public class DashboardQuickActionViewModel
@@ -71,6 +91,14 @@ public class DashboardGiderViewModel
     public DateTime Tarih { get; set; }
     public string Kategori { get; set; } = null!;
     public string? Aciklama { get; set; }
+    public decimal Tutar { get; set; }
+}
+
+public class DashboardFinansHareketiViewModel
+{
+    public DateTime Tarih { get; set; }
+    public string HareketTipi { get; set; } = null!;
+    public string Kategori { get; set; } = null!;
     public decimal Tutar { get; set; }
 }
 

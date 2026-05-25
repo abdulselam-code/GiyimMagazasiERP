@@ -39,25 +39,19 @@ public class DashboardController : Controller
             Rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Personel",
 
             ToplamUrunCesidi = await _context.Urunler.CountAsync(),
-
-            ToplamStokAdedi = await _context.Urunler
-                .SumAsync(x => (int?)x.StokMiktari) ?? 0,
-
+            ToplamStokAdedi = await _context.Urunler.SumAsync(x => (int?)x.StokMiktari) ?? 0,
             ToplamMusteri = await _context.Musteriler.CountAsync(),
             ToplamPersonel = await _context.Personeller.CountAsync(),
             AktifPersonel = await _context.Personeller.CountAsync(x => x.AktifMi),
             ToplamSatis = await _context.Satislar.CountAsync(),
-
-            KritikStokSayisi = await _context.Urunler
-                .CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
+            ToplamTedarikci = await _context.Tedarikciler.CountAsync(),
+            KritikStokSayisi = await _context.Urunler.CountAsync(x => x.AktifMi && x.StokMiktari <= x.MinimumStok),
 
             ToplamGelir = toplamGelir,
             ToplamGider = toplamGider,
             NetKazanc = toplamGelir - toplamGider,
 
-            BugunkuSatisSayisi = await _context.Satislar
-                .CountAsync(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin),
-
+            BugunkuSatisSayisi = await _context.Satislar.CountAsync(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin),
             BugunkuSatisGeliri = await _context.Satislar
                 .Where(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin)
                 .SumAsync(x => (decimal?)x.NetTutar) ?? 0,
@@ -76,14 +70,20 @@ public class DashboardController : Controller
 
             OrtalamaMaas = await _context.Personeller
                 .Where(x => x.AktifMi)
-                .AverageAsync(x => (decimal?)x.Maas) ?? 0
+                .AverageAsync(x => (decimal?)x.Maas) ?? 0,
+
+            EnYuksekGider = await _context.FinansHareketleri
+                .Where(x => x.HareketTipi == "Gider")
+                .MaxAsync(x => (decimal?)x.Tutar) ?? 0
         };
+
+        model.HizliIslemler = HizliIslemleriGetir();
 
         model.SonSatislar = await _context.Satislar
             .AsNoTracking()
             .Include(x => x.Musteri)
             .OrderByDescending(x => x.SatisTarihi)
-            .Take(6)
+            .Take(8)
             .Select(x => new DashboardSonSatisViewModel
             {
                 SatisId = x.Id,
@@ -121,6 +121,19 @@ public class DashboardController : Controller
             })
             .ToListAsync();
 
+        model.SonFinansHareketleri = await _context.FinansHareketleri
+            .AsNoTracking()
+            .OrderByDescending(x => x.Tarih)
+            .Take(8)
+            .Select(x => new DashboardFinansHareketiViewModel
+            {
+                Tarih = x.Tarih,
+                HareketTipi = x.HareketTipi,
+                Kategori = x.Kategori,
+                Tutar = x.Tutar
+            })
+            .ToListAsync();
+
         model.EnYuksekGiderler = await _context.FinansHareketleri
             .AsNoTracking()
             .Where(x => x.HareketTipi == "Gider")
@@ -137,7 +150,7 @@ public class DashboardController : Controller
 
         model.PersonelOzeti = await _context.Personeller
             .AsNoTracking()
-            .OrderBy(x => x.AdSoyad)
+            .OrderByDescending(x => x.IseBaslamaTarihi)
             .Take(8)
             .Select(x => new DashboardPersonelOzetViewModel
             {
@@ -148,9 +161,91 @@ public class DashboardController : Controller
             })
             .ToListAsync();
 
-        model.HizliIslemler = HizliIslemleriGetir();
+        await GrafikVerileriniDoldur(model);
 
         return View(model);
+    }
+
+    private async Task GrafikVerileriniDoldur(DashboardViewModel model)
+    {
+        var gunlukSatislar = await _context.Satislar
+            .AsNoTracking()
+            .GroupBy(x => x.SatisTarihi.Date)
+            .Select(g => new
+            {
+                Gun = g.Key,
+                NetTutar = g.Sum(x => x.NetTutar)
+            })
+            .OrderByDescending(x => x.Gun)
+            .Take(10)
+            .OrderBy(x => x.Gun)
+            .ToListAsync();
+
+        model.GunlukSatisLabels = gunlukSatislar.Select(x => x.Gun.ToString("dd/MM")).ToList();
+        model.GunlukSatisValues = gunlukSatislar.Select(x => x.NetTutar).ToList();
+
+        model.GelirGiderLabels = new() { "Gelir", "Gider" };
+        model.GelirGiderValues = new() { model.ToplamGelir, model.ToplamGider };
+
+        var kategoriSatis = await _context.SatisDetaylari
+            .AsNoTracking()
+            .Include(x => x.Urun)
+                .ThenInclude(x => x.Kategori)
+            .GroupBy(x => x.Urun.Kategori.KategoriAdi)
+            .Select(g => new
+            {
+                Kategori = g.Key,
+                Tutar = g.Sum(x => x.ToplamTutar)
+            })
+            .OrderByDescending(x => x.Tutar)
+            .Take(8)
+            .ToListAsync();
+
+        model.KategoriSatisLabels = kategoriSatis.Select(x => x.Kategori).ToList();
+        model.KategoriSatisValues = kategoriSatis.Select(x => x.Tutar).ToList();
+
+        var enCokSatilan = await _context.SatisDetaylari
+            .AsNoTracking()
+            .Include(x => x.Urun)
+            .GroupBy(x => x.Urun.UrunAdi)
+            .Select(g => new
+            {
+                Urun = g.Key,
+                Adet = g.Sum(x => x.Adet)
+            })
+            .OrderByDescending(x => x.Adet)
+            .Take(8)
+            .ToListAsync();
+
+        model.EnCokSatilanUrunLabels = enCokSatilan.Select(x => x.Urun).ToList();
+        model.EnCokSatilanUrunValues = enCokSatilan.Select(x => x.Adet).ToList();
+
+        model.KritikStokLabels = model.KritikStokUrunleri.Select(x => x.UrunAdi).ToList();
+        model.KritikStokValues = model.KritikStokUrunleri.Select(x => x.StokMiktari).ToList();
+
+        var aylikFinans = await _context.FinansHareketleri
+            .AsNoTracking()
+            .GroupBy(x => new { x.Tarih.Year, x.Tarih.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                Gelir = g.Where(x => x.HareketTipi == "Gelir").Sum(x => (decimal?)x.Tutar) ?? 0,
+                Gider = g.Where(x => x.HareketTipi == "Gider").Sum(x => (decimal?)x.Tutar) ?? 0
+            })
+            .OrderByDescending(x => x.Year)
+            .ThenByDescending(x => x.Month)
+            .Take(6)
+            .ToListAsync();
+
+        aylikFinans = aylikFinans
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ToList();
+
+        model.AylikGelirGiderLabels = aylikFinans.Select(x => $"{x.Month:00}/{x.Year}").ToList();
+        model.AylikGelirValues = aylikFinans.Select(x => x.Gelir).ToList();
+        model.AylikGiderValues = aylikFinans.Select(x => x.Gider).ToList();
     }
 
     private List<DashboardQuickActionViewModel> HizliIslemleriGetir()

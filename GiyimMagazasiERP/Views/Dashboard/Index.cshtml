@@ -424,4 +424,186 @@
             </div>
         </section>
     }
+
+    @using System.Text.Json
+
+@{
+        var adminGrafikGorsun = User.IsInRole("Admin");
+        var yoneticiGrafikGorsun = User.IsInRole("Yonetici");
+        var kasiyerGrafikGorsun = User.IsInRole("Kasiyer");
+        var depoGrafikGorsun = User.IsInRole("Depo");
+        var muhasebeGrafikGorsun = User.IsInRole("Muhasebe");
+
+        var gunlukSatisLabelsJson = JsonSerializer.Serialize(Model.GunlukSatisLabels);
+        var gunlukSatisValuesJson = JsonSerializer.Serialize(Model.GunlukSatisValues);
+
+        var gelirGiderLabelsJson = JsonSerializer.Serialize(Model.GelirGiderLabels);
+        var gelirGiderValuesJson = JsonSerializer.Serialize(Model.GelirGiderValues);
+
+        var kategoriSatisLabelsJson = JsonSerializer.Serialize(Model.KategoriSatisLabels);
+        var kategoriSatisValuesJson = JsonSerializer.Serialize(Model.KategoriSatisValues);
+
+        var enCokSatilanLabelsJson = JsonSerializer.Serialize(Model.EnCokSatilanUrunLabels);
+        var enCokSatilanValuesJson = JsonSerializer.Serialize(Model.EnCokSatilanUrunValues);
+
+        var kritikStokLabelsJson = JsonSerializer.Serialize(Model.KritikStokLabels);
+        var kritikStokValuesJson = JsonSerializer.Serialize(Model.KritikStokValues);
+
+        var aylikGelirGiderLabelsJson = JsonSerializer.Serialize(Model.AylikGelirGiderLabels);
+        var aylikGelirValuesJson = JsonSerializer.Serialize(Model.AylikGelirValues);
+        var aylikGiderValuesJson = JsonSerializer.Serialize(Model.AylikGiderValues);
+    }
+
+    @if (adminGrafikGorsun || yoneticiGrafikGorsun || kasiyerGrafikGorsun || depoGrafikGorsun || muhasebeGrafikGorsun)
+    {
+        <div class="container pb-4">
+            <section class="mt-4">
+                <div class="mb-3">
+                    <h2 class="h4 fw-bold mb-1">Görsel Raporlar</h2>
+                    <p class="text-muted mb-0">
+                        Satış, stok ve finans verileri grafiklerle özetlenir.
+                    </p>
+                </div>
+
+                <div class="row g-4">
+                    @if (adminGrafikGorsun || yoneticiGrafikGorsun || kasiyerGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">Günlük Satış Grafiği</h3>
+                                    @if (Model.GunlukSatisValues.Any())
+                                    {
+                                        <canvas id="gunlukSatisChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (adminGrafikGorsun || yoneticiGrafikGorsun || muhasebeGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">Gelir-Gider Grafiği</h3>
+                                    @if (Model.GelirGiderValues.Any())
+                                    {
+                                        <canvas id="gelirGiderChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (adminGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">Kategori Bazlı Satış Grafiği</h3>
+                                    @if (Model.KategoriSatisValues.Any())
+                                    {
+                                        <canvas id="kategoriSatisChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (adminGrafikGorsun || yoneticiGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">En Çok Satılan Ürünler</h3>
+                                    @if (Model.EnCokSatilanUrunValues.Any())
+                                    {
+                                        <canvas id="enCokSatilanChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (adminGrafikGorsun || yoneticiGrafikGorsun || depoGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">Kritik Stok Grafiği</h3>
+                                    @if (Model.KritikStokValues.Any())
+                                    {
+                                        <canvas id="kritikStokChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (muhasebeGrafikGorsun)
+                    {
+                        <div class="col-lg-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h3 class="h6 fw-bold">Aylık Gelir-Gider Grafiği</h3>
+                                    @if (Model.AylikGelirGiderLabels.Any())
+                                    {
+                                        <canvas id="aylikGelirGiderChart" height="140"></canvas>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    }
+
+    <script type="application/json" id="gunlukSatisLabelsJson">@Html.Raw(gunlukSatisLabelsJson)</script>
+    <script type="application/json" id="gunlukSatisValuesJson">@Html.Raw(gunlukSatisValuesJson)</script>
+
+    <script type="application/json" id="gelirGiderLabelsJson">@Html.Raw(gelirGiderLabelsJson)</script>
+    <script type="application/json" id="gelirGiderValuesJson">@Html.Raw(gelirGiderValuesJson)</script>
+
+    <script type="application/json" id="kategoriSatisLabelsJson">@Html.Raw(kategoriSatisLabelsJson)</script>
+    <script type="application/json" id="kategoriSatisValuesJson">@Html.Raw(kategoriSatisValuesJson)</script>
+
+    <script type="application/json" id="enCokSatilanLabelsJson">@Html.Raw(enCokSatilanLabelsJson)</script>
+    <script type="application/json" id="enCokSatilanValuesJson">@Html.Raw(enCokSatilanValuesJson)</script>
+
+    <script type="application/json" id="kritikStokLabelsJson">@Html.Raw(kritikStokLabelsJson)</script>
+    <script type="application/json" id="kritikStokValuesJson">@Html.Raw(kritikStokValuesJson)</script>
+
+    <script type="application/json" id="aylikGelirGiderLabelsJson">@Html.Raw(aylikGelirGiderLabelsJson)</script>
+    <script type="application/json" id="aylikGelirValuesJson">@Html.Raw(aylikGelirValuesJson)</script>
+    <script type="application/json" id="aylikGiderValuesJson">@Html.Raw(aylikGiderValuesJson)</script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+
 </div>
