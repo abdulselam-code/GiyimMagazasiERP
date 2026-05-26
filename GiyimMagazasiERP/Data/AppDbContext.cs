@@ -175,5 +175,10 @@ public class AppDbContext : DbContext
                 .WithMany(x => x.FinansHareketleri)
                 .HasForeignKey(x => x.KullaniciId);
         });
+        modelBuilder.Entity<Kullanici>()
+    .HasOne(k => k.Personel)
+    .WithMany()
+    .HasForeignKey(k => k.PersonelId)
+    .OnDelete(DeleteBehavior.SetNull);
     }
 }

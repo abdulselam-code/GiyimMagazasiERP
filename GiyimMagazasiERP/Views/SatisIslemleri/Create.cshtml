@@ -11,7 +11,10 @@
 
     var personelOtomatikMi = ViewData["PersonelOtomatikMi"] as bool? ?? false;
     var otomatikPersonelAdi = ViewData["OtomatikPersonelAdi"]?.ToString() ?? "Uygun personel bulunamadı";
+    var personelEslesmeVarMi = ViewData["PersonelEslesmeVarMi"] as bool? ?? true;
+    var personelHataMesaji = ViewData["PersonelHataMesaji"]?.ToString();
 }
+
 
 <div class="container py-4 sales-page">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
@@ -30,6 +33,12 @@
         }
 
         <div id="sepetUyariAlani"></div>
+        @if (!personelEslesmeVarMi && !string.IsNullOrWhiteSpace(personelHataMesaji))
+        {
+            <div class="alert alert-warning">
+                @personelHataMesaji
+            </div>
+        }
 
         <input type="hidden" asp-for="SatisTuru" id="satisTuruInput" />
 
@@ -71,7 +80,17 @@
                                     <label class="form-label">Satışı Yapan</label>
                                     <div class="sales-info-box">
                                         <strong>@otomatikPersonelAdi</strong>
-                                        <span>Giriş yapan kasiyer için otomatik atanır.</span>
+
+                                        @if (personelEslesmeVarMi)
+                                        {
+                                            <span>Giriş yapan kasiyerin bağlı personel kaydı kullanılır.</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">
+                                                Bu kullanıcıya bağlı satış personeli bulunamadı.
+                                            </span>
+                                        }
                                     </div>
                                 }
                                 else
@@ -250,7 +269,9 @@
                         </div>
 
                         <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-success btn-lg">
+                            <button type="submit"
+                                    class="btn btn-success btn-lg"
+                                    disabled="@(!personelEslesmeVarMi)">
                                 Satışı Tamamla
                             </button>
 

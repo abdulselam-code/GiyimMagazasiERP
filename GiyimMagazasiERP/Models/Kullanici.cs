@@ -11,6 +11,9 @@ public class Kullanici
 
     public string? AdSoyad { get; set; }
 
+    public int? PersonelId { get; set; }
+    public Personel? Personel { get; set; }
+
     public DateTime? SonGirisTarihi { get; set; }
 
     public bool AktifMi { get; set; }

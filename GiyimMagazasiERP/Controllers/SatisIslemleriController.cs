@@ -23,7 +23,6 @@ public class SatisIslemleriController : Controller
         "Satis Temsilcisi"
     };
 
-   
     public SatisIslemleriController(AppDbContext context)
     {
         _context = context;
@@ -270,36 +269,57 @@ public class SatisIslemleriController : Controller
 
     private async Task<Personel?> OtomatikPersonelBul()
     {
-        var email = User.FindFirstValue(ClaimTypes.Email);
-        var adSoyad = User.Identity?.Name;
+        var kullaniciIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var query = _context.Personeller
-            .Where(x => x.AktifMi && SatisPersoneliPozisyonlari.Contains(x.Pozisyon));
-
-        if (!string.IsNullOrWhiteSpace(email))
+        if (int.TryParse(kullaniciIdText, out var kullaniciId))
         {
-            var emailEslesen = await query.FirstOrDefaultAsync(x => x.Email == email);
+            var kullanici = await _context.Kullanicilar
+                .AsNoTracking()
+                .Include(x => x.Personel)
+                .FirstOrDefaultAsync(x => x.Id == kullaniciId && x.AktifMi);
 
-            if (emailEslesen is not null)
-                return emailEslesen;
+            if (kullanici?.Personel is not null &&
+                kullanici.Personel.AktifMi &&
+                SatisPersoneliPozisyonlari.Contains(kullanici.Personel.Pozisyon))
+            {
+                return kullanici.Personel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kullanici?.Email))
+            {
+                var emailEslesenPersonel = await _context.Personeller
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.AktifMi &&
+                        x.Email == kullanici.Email &&
+                        SatisPersoneliPozisyonlari.Contains(x.Pozisyon));
+
+                if (emailEslesenPersonel is not null)
+                    return emailEslesenPersonel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(kullanici?.AdSoyad))
+            {
+                var adEslesenPersonel = await _context.Personeller
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.AktifMi &&
+                        x.AdSoyad == kullanici.AdSoyad &&
+                        SatisPersoneliPozisyonlari.Contains(x.Pozisyon));
+
+                if (adEslesenPersonel is not null)
+                    return adEslesenPersonel;
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(adSoyad))
-        {
-            var adEslesen = await query.FirstOrDefaultAsync(x => x.AdSoyad == adSoyad);
-
-            if (adEslesen is not null)
-                return adEslesen;
-        }
-
-        return await query.OrderBy(x => x.Id).FirstOrDefaultAsync();
+        return null;
     }
 
     private async Task DropdownlariDoldur(
-     int? musteriId = null,
-     int? personelId = null,
-     string satisTuru = "Perakende",
-     string? odemeTipi = null)
+        int? musteriId = null,
+        int? personelId = null,
+        string satisTuru = "Perakende",
+        string? odemeTipi = null)
     {
         var musteriler = await _context.Musteriler
             .AsNoTracking()
@@ -335,6 +355,12 @@ public class SatisIslemleriController : Controller
             : "Uygun personel bulunamadı";
 
         ViewData["PersonelOtomatikMi"] = User.IsInRole("Kasiyer");
+
+        ViewData["PersonelEslesmeVarMi"] = !User.IsInRole("Kasiyer") || otomatikPersonel is not null;
+
+        ViewData["PersonelHataMesaji"] = otomatikPersonel is null && User.IsInRole("Kasiyer")
+            ? "Bu kullanıcıya bağlı satış personeli bulunamadı. Lütfen kullanıcı-personel eşleştirmesini kontrol edin."
+            : null;
 
         var urunler = await _context.Urunler
             .AsNoTracking()
