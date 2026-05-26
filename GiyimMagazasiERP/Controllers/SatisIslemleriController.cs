@@ -23,6 +23,7 @@ public class SatisIslemleriController : Controller
         "Satis Temsilcisi"
     };
 
+   
     public SatisIslemleriController(AppDbContext context)
     {
         _context = context;
@@ -178,7 +179,8 @@ public class SatisIslemleriController : Controller
                 ToplamTutar = toplamTutar,
                 IndirimTutari = indirimTutari,
                 NetTutar = netTutar,
-                OdemeTipi = model.OdemeTipi
+                OdemeTipi = model.OdemeTipi,
+                SatisTuru = model.SatisTuru == "Toptan" ? "Toptan" : "Perakende"
             };
 
             _context.Satislar.Add(satis);
@@ -294,12 +296,13 @@ public class SatisIslemleriController : Controller
     }
 
     private async Task DropdownlariDoldur(
-        int? musteriId = null,
-        int? personelId = null,
-        string satisTuru = "Perakende",
-        string? odemeTipi = null)
+     int? musteriId = null,
+     int? personelId = null,
+     string satisTuru = "Perakende",
+     string? odemeTipi = null)
     {
         var musteriler = await _context.Musteriler
+            .AsNoTracking()
             .OrderBy(x => x.AdSoyad)
             .Select(x => new
             {
@@ -313,17 +316,28 @@ public class SatisIslemleriController : Controller
         ViewData["MusterilerJson"] = musteriler;
 
         var satisPersonelleri = await _context.Personeller
+            .AsNoTracking()
             .Where(x => x.AktifMi && SatisPersoneliPozisyonlari.Contains(x.Pozisyon))
             .OrderBy(x => x.AdSoyad)
+            .Select(x => new
+            {
+                x.Id,
+                Etiket = x.AdSoyad + " - " + x.Pozisyon
+            })
             .ToListAsync();
 
-        ViewData["PersonelId"] = new SelectList(satisPersonelleri, "Id", "AdSoyad", personelId);
+        ViewData["PersonelId"] = new SelectList(satisPersonelleri, "Id", "Etiket", personelId);
 
         var otomatikPersonel = await OtomatikPersonelBul();
-        ViewData["OtomatikPersonelAdi"] = otomatikPersonel?.AdSoyad ?? "Uygun personel bulunamadı";
+
+        ViewData["OtomatikPersonelAdi"] = otomatikPersonel is not null
+            ? otomatikPersonel.AdSoyad + " - " + otomatikPersonel.Pozisyon
+            : "Uygun personel bulunamadı";
+
         ViewData["PersonelOtomatikMi"] = User.IsInRole("Kasiyer");
 
         var urunler = await _context.Urunler
+            .AsNoTracking()
             .Where(x => x.AktifMi)
             .OrderBy(x => x.UrunAdi)
             .Select(x => new

@@ -1,108 +1,36 @@
 ﻿@model GiyimMagazasiERP.ViewModels.FaturaDetayViewModel
 
 @{
-    ViewData["Title"] = "Fatura Detayı";
+    ViewData["Title"] = "Fatura Görüntüleme";
+
+    var magaza = ViewBag.Magaza as GiyimMagazasiERP.Models.MagazaBilgileri;
+
+    var magazaAdi = magaza?.MagazaAdi ?? "Giyim Mağazası ERP";
+    var adres = magaza?.Adres ?? "Merkez / Türkiye";
+    var telefon = magaza?.Telefon ?? "0555 000 00 00";
+    var email = magaza?.Email ?? "info@giyimerp.local";
+    var vergiDairesi = magaza?.VergiDairesi ?? "Merkez";
+    var vergiNo = magaza?.VergiNo ?? "0000000000";
+
+    var satisTuru = ViewBag.SatisTuru?.ToString() ?? "Perakende";
+
+    var genelToplam = Model.NetTutar;
+    var araToplam = Model.ToplamTutar;
+    var indirimTutari = Model.IndirimTutari;
+    var indirimOrani = araToplam > 0 ? (indirimTutari / araToplam) * 100 : 0;
+    var kdvHaric = genelToplam / 1.20m;
+    var kdvTutari = genelToplam - kdvHaric;
 }
 
-<style>
-    .invoice-page {
-        max-width: 1100px;
-        margin: 0 auto;
-    }
-
-    .invoice-card {
-        background: #fff;
-        color: #212529;
-        border: 1px solid #dee2e6;
-        border-radius: 12px;
-        box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.12);
-        overflow: hidden;
-    }
-
-    .invoice-header {
-        border-bottom: 1px solid #dee2e6;
-        background: #f8f9fa;
-    }
-
-    .invoice-meta {
-        min-width: 230px;
-    }
-
-    .invoice-summary {
-        max-width: 450px;
-        margin-left: auto;
-        background: #fff;
-    }
-
-    .invoice-table th {
-        white-space: nowrap;
-    }
-
-    .invoice-table td {
-        vertical-align: middle;
-    }
-
-    .invoice-discount {
-        color: #b45309;
-    }
-
-    .invoice-grand-total {
-        border-radius: 12px;
-        border: 1px solid #b7ebc6;
-        background: #ecfdf3;
-    }
-
-    .invoice-kdv-note {
-        border-left: 4px solid #0d6efd;
-        background: #eef6ff;
-    }
-
-    @@media print {
-        header,
-        footer,
-        .no-print {
-            display: none !important;
-        }
-
-        body {
-            background: #fff !important;
-        }
-
-        main {
-            min-height: auto !important;
-        }
-
-        .invoice-page {
-            max-width: none;
-            padding: 0 !important;
-        }
-
-        .invoice-card {
-            border: 0;
-            border-radius: 0;
-            box-shadow: none;
-        }
-
-        .container,
-        .container-fluid {
-            max-width: none !important;
-        }
-    }
-</style>
-
 <div class="container py-4 invoice-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 no-print">
+    <div class="d-flex justify-content-between align-items-center mb-3 invoice-print-actions">
         <div>
             <h1 class="h3 fw-bold mb-1">Fatura Görüntüleme</h1>
-            <p class="text-muted mb-0">
-                Mevcut satış kaydından oluşturulan fatura özeti
-            </p>
+            <p class="text-muted mb-0">Satış kaydından oluşturulan fatura özeti</p>
         </div>
 
         <div class="d-flex gap-2">
-            <button type="button"
-                    class="btn btn-primary"
-                    onclick="window.print()">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
                 Yazdır
             </button>
 
@@ -114,102 +42,61 @@
         </div>
     </div>
 
-    <section class="invoice-card">
-        <div class="invoice-header p-4">
-            <div class="d-flex flex-wrap justify-content-between gap-4">
-                <div>
-                    <h2 class="h3 fw-bold mb-2">
-                        Giyim Mağazası ERP Faturası
-                    </h2>
-
-                    <p class="text-muted mb-0">
-                        Satış ve ürün kalemleri fatura görünümünde listelenmiştir.
-                    </p>
-                </div>
-
-                <div class="invoice-meta">
-                    <div class="d-flex justify-content-between border-bottom py-2">
-                        <span class="text-muted">Fatura No</span>
-                        <strong>@Model.FaturaNo</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between border-bottom py-2">
-                        <span class="text-muted">Satış Tarihi</span>
-                        <strong>@Model.SatisTarihi.ToString("dd/MM/yyyy HH:mm")</strong>
-                    </div>
-
-                    <div class="d-flex justify-content-between py-2">
-                        <span class="text-muted">Ödeme Tipi</span>
-                        <strong>@Model.OdemeTipi</strong>
-                    </div>
-                </div>
+    <article class="invoice-card">
+        <header class="invoice-header">
+            <div>
+                <h2>@magazaAdi</h2>
+                <p>@adres</p>
+                <p>Telefon: @telefon</p>
+                <p>E-posta: @email</p>
+                <p>Vergi Dairesi: @vergiDairesi</p>
+                <p>VKN: @vergiNo</p>
             </div>
+
+            <div class="invoice-meta">
+                <h3>FATURA</h3>
+                <p><strong>Fatura No:</strong> FAT-@Model.SatisId.ToString("D6")</p>
+                <p><strong>Tarih:</strong> @Model.SatisTarihi.ToString("dd.MM.yyyy")</p>
+                <p><strong>Saat:</strong> @Model.SatisTarihi.ToString("HH:mm")</p>
+                <p><strong>Satış Türü:</strong> @satisTuru</p>
+                <p><strong>Ödeme Tipi:</strong> @Model.OdemeTipi</p>
+            </div>
+        </header>
+        <section class="invoice-info-grid">
+            <div class="invoice-info-box">
+                <h4>Alıcı / Müşteri Bilgileri</h4>
+
+                @if (Model.KayitliMusteriMi)
+                {
+                    <strong>@Model.MusteriAdi</strong>
+                    <p>Telefon: @(Model.MusteriTelefon ?? "-")</p>
+                    <p>Email: @(Model.MusteriEmail ?? "-")</p>
+                }
+                else
+                {
+                    <strong>Nihai Tüketici</strong>
+                    <span class="badge text-bg-secondary mt-2">Kayıtsız Müşteri</span>
+                }
+            </div>
+        </section>
+
+        <div class="invoice-operator-note">
+            İşlemi yapan:
+            <strong>
+                @Model.PersonelAdi
+                @if (!string.IsNullOrWhiteSpace(Model.PersonelPozisyonu))
+                {
+                    <text> - @Model.PersonelPozisyonu</text>
+                }
+            </strong>
         </div>
 
-        <div class="p-4">
-            <div class="invoice-kdv-note rounded-3 p-3 mb-4">
-                <strong>KDV Bilgisi:</strong>
-                Ürün satış fiyatları KDV dahil olarak hesaplanmıştır.
-                KDV tutarı genel toplam içinden ayrıştırılarak gösterilir.
-            </div>
+        <section class="mt-4">
+            <h4 class="invoice-section-title">Ürün Kalemleri</h4>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="border rounded-3 p-3 h-100">
-                        <h3 class="h6 fw-bold text-uppercase text-muted mb-3">
-                            Müşteri Bilgisi
-                        </h3>
-
-                        <p class="fw-semibold fs-5 mb-2">
-                            @Model.MusteriAdi
-                        </p>
-
-                        @if (Model.KayitliMusteriMi)
-                        {
-                            <div class="small">
-                                <div>
-                                    <span class="text-muted">Telefon:</span>
-                                    @(Model.MusteriTelefon ?? "-")
-                                </div>
-
-                                <div>
-                                    <span class="text-muted">Email:</span>
-                                    @(Model.MusteriEmail ?? "-")
-                                </div>
-                            </div>
-                        }
-                        else
-                        {
-                            <span class="badge text-bg-secondary">
-                                Kayıtsız Müşteri
-                            </span>
-                        }
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="border rounded-3 p-3 h-100">
-                        <h3 class="h6 fw-bold text-uppercase text-muted mb-3">
-                            Personel Bilgisi
-                        </h3>
-
-                        <p class="fw-semibold fs-5 mb-2">
-                            @Model.PersonelAdi
-                        </p>
-
-                        <div class="small">
-                            <span class="text-muted">Pozisyon:</span>
-                            @Model.PersonelPozisyonu
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <h3 class="h5 fw-bold mb-3">Ürün Kalemleri</h3>
-
-            <div class="table-responsive mb-4">
-                <table class="table table-bordered table-striped invoice-table mb-0">
-                    <thead class="table-dark">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle invoice-table">
+                    <thead>
                         <tr>
                             <th>Ürün Adı</th>
                             <th>Barkod</th>
@@ -217,7 +104,7 @@
                             <th>Renk</th>
                             <th class="text-end">Adet</th>
                             <th class="text-end">Birim Fiyat</th>
-                            <th class="text-end">Toplam Tutar</th>
+                            <th class="text-end">KDV Dahil Toplam</th>
                         </tr>
                     </thead>
 
@@ -225,69 +112,57 @@
                         @foreach (var kalem in Model.Kalemler)
                         {
                             <tr>
-                                <td class="fw-semibold">@kalem.UrunAdi</td>
+                                <td>@kalem.UrunAdi</td>
                                 <td>@kalem.Barkod</td>
                                 <td>@kalem.Beden</td>
                                 <td>@kalem.Renk</td>
                                 <td class="text-end">@kalem.Adet</td>
-                                <td class="text-end">
-                                    @kalem.BirimFiyat.ToString("N2") TL
-                                </td>
-                                <td class="text-end">
-                                    @kalem.ToplamTutar.ToString("N2") TL
-                                </td>
+                                <td class="text-end">@kalem.BirimFiyat.ToString("N2") TL</td>
+                                <td class="text-end fw-semibold">@kalem.ToplamTutar.ToString("N2") TL</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
+        </section>
 
-            <div class="invoice-summary border rounded-3 shadow-sm p-3">
-                <h3 class="h6 fw-bold mb-3">Fatura Toplamları</h3>
-
-                <div class="d-flex justify-content-between py-2 border-bottom">
+        <section class="invoice-total-wrap">
+            <div class="invoice-total-box">
+                <div>
                     <span>Ara Toplam</span>
-                    <strong>@Model.ToplamTutar.ToString("N2") TL</strong>
+                    <strong>@araToplam.ToString("N2") TL</strong>
                 </div>
 
-                <div class="d-flex justify-content-between py-2 border-bottom">
-                    <span>Yapılan İndirim</span>
-                    <strong class="invoice-discount">
-                        @Model.IndirimTutari.ToString("N2") TL
-                    </strong>
+                <div>
+                    <span>İndirim Oranı</span>
+                    <strong>%@indirimOrani.ToString("N2")</strong>
                 </div>
 
-                <div class="invoice-grand-total my-3 p-3">
-                    <div class="d-flex justify-content-between align-items-center gap-3">
-                        <span class="fw-bold fs-5">
-                            KDV Dahil Genel Toplam
-                        </span>
-
-                        <strong class="text-success fs-4">
-                            @Model.KdvDahilGenelToplam.ToString("N2") TL
-                        </strong>
-                    </div>
-
-                    <p class="small text-muted mb-0 mt-2">
-                        Genel Toplam KDV dahildir.
-                    </p>
+                <div>
+                    <span>İndirim Tutarı</span>
+                    <strong>@indirimTutari.ToString("N2") TL</strong>
                 </div>
 
-                <div class="d-flex justify-content-between py-2 border-bottom">
+                <div>
                     <span>KDV Oranı</span>
-                    <strong>%@Model.KdvOrani.ToString("N0")</strong>
+                    <strong>%20</strong>
                 </div>
 
-                <div class="d-flex justify-content-between py-2 border-bottom">
+                <div>
                     <span>KDV Hariç Tutar</span>
-                    <strong>@Model.KdvHaricTutar.ToString("N2") TL</strong>
+                    <strong>@kdvHaric.ToString("N2") TL</strong>
                 </div>
 
-                <div class="d-flex justify-content-between py-2">
+                <div>
                     <span>KDV Tutarı</span>
-                    <strong>@Model.KdvTutari.ToString("N2") TL</strong>
+                    <strong>@kdvTutari.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-grand-total">
+                    <span>KDV Dahil Genel Toplam</span>
+                    <strong>@genelToplam.ToString("N2") TL</strong>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </article>
 </div>

@@ -15,6 +15,8 @@ public class Satis
 
     public string OdemeTipi { get; set; } = null!;
 
+    public string? SatisTuru { get; set; }
+
     public Musteri? Musteri { get; set; }
     public Personel Personel { get; set; } = null!;
 

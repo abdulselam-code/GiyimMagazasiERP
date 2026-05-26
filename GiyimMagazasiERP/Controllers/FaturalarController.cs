@@ -1,9 +1,8 @@
 ﻿using GiyimMagazasiERP.Data;
 using GiyimMagazasiERP.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-
 
 namespace GiyimMagazasiERP.Controllers;
 
@@ -15,6 +14,32 @@ public class FaturalarController : Controller
     public FaturalarController(AppDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var faturalar = await _context.Satislar
+            .AsNoTracking()
+            .Include(x => x.Musteri)
+            .Include(x => x.Personel)
+            .OrderByDescending(x => x.SatisTarihi)
+            .Select(x => new FaturaListeViewModel
+            {
+                SatisId = x.Id,
+                FaturaNo = "FAT-" + x.Id.ToString("D6"),
+                SatisTarihi = x.SatisTarihi,
+                MusteriAdi = x.Musteri != null
+                    ? x.Musteri.AdSoyad
+                    : "Nihai Tüketici",
+                SatisTuru = string.IsNullOrWhiteSpace(x.SatisTuru)
+                    ? "Perakende"
+                    : x.SatisTuru,
+                OdemeTipi = x.OdemeTipi,
+                ToplamTutar = x.NetTutar
+            })
+            .ToListAsync();
+
+        return View(faturalar);
     }
 
     public async Task<IActionResult> Detay(int id)
@@ -30,6 +55,14 @@ public class FaturalarController : Controller
         if (satis is null)
             return NotFound();
 
+        ViewBag.Magaza = await _context.MagazaBilgileri
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.AktifMi);
+
+        ViewBag.SatisTuru = string.IsNullOrWhiteSpace(satis.SatisTuru)
+            ? "Perakende"
+            : satis.SatisTuru;
+
         var viewModel = new FaturaDetayViewModel
         {
             SatisId = satis.Id,
@@ -41,8 +74,8 @@ public class FaturalarController : Controller
             MusteriTelefon = satis.Musteri?.Telefon,
             MusteriEmail = satis.Musteri?.Email,
 
-            PersonelAdi = satis.Personel.AdSoyad,
-            PersonelPozisyonu = satis.Personel.Pozisyon,
+            PersonelAdi = satis.Personel?.AdSoyad ?? "-",
+            PersonelPozisyonu = satis.Personel?.Pozisyon ?? "-",
 
             ToplamTutar = satis.ToplamTutar,
             IndirimTutari = satis.IndirimTutari,

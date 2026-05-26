@@ -1,0 +1,91 @@
+﻿@model List<GiyimMagazasiERP.ViewModels.FaturaListeViewModel>
+
+@{
+    ViewData["Title"] = "Faturalar";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Faturalar</h1>
+            <p class="text-muted mb-0">
+                Oluşturulan satış faturalarını görüntüleyin.
+            </p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a asp-controller="SatisIslemleri"
+               asp-action="Create"
+               class="btn btn-success">
+                Yeni Satış Yap
+            </a>
+
+            <a asp-controller="Satislar"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Satışlara Dön
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Satış No</th>
+                                <th>Fatura No</th>
+                                <th>Tarih</th>
+                                <th>Saat</th>
+                                <th>Müşteri</th>
+                                <th>Satış Türü</th>
+                                <th>Ödeme Tipi</th>
+                                <th class="text-end">Toplam Tutar</th>
+                                <th class="text-end">İşlem</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var fatura in Model)
+                            {
+                                <tr>
+                                    <td>#@fatura.SatisId</td>
+                                    <td>@fatura.FaturaNo</td>
+                                    <td>@fatura.SatisTarihi.ToString("dd.MM.yyyy")</td>
+                                    <td>@fatura.SatisTarihi.ToString("HH:mm")</td>
+                                    <td>@fatura.MusteriAdi</td>
+                                    <td>
+                                        <span class="badge text-bg-primary">
+                                            @fatura.SatisTuru
+                                        </span>
+                                    </td>
+                                    <td>@fatura.OdemeTipi</td>
+                                    <td class="text-end fw-semibold">
+                                        @fatura.ToplamTutar.ToString("N2") TL
+                                    </td>
+                                    <td class="text-end">
+                                        <a asp-controller="Faturalar"
+                                           asp-action="Detay"
+                                           asp-route-id="@fatura.SatisId"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Görüntüle
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted py-5">
+                    Henüz fatura kaydı bulunmuyor.
+                </div>
+            }
+        </div>
+    </div>
+</div>

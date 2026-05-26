@@ -20,7 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<SatisDetayi> SatisDetaylari => Set<SatisDetayi>();
     public DbSet<StokHareketi> StokHareketleri => Set<StokHareketi>();
     public DbSet<FinansHareketi> FinansHareketleri => Set<FinansHareketi>();
-
+    public DbSet<MagazaBilgileri> MagazaBilgileri { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
