@@ -4,14 +4,16 @@ namespace GiyimMagazasiERP.ViewModels;
 
 public class SatisOlusturViewModel
 {
-    [Required(ErrorMessage = "Satış işlemi için müşteri seçilmelidir.")]
+    public string SatisTuru { get; set; } = "Perakende";
+
     public int? MusteriId { get; set; }
 
-    [Required(ErrorMessage = "Personel seçimi zorunludur.")]
-    public int PersonelId { get; set; }
+    public int? PersonelId { get; set; }
 
     [Required(ErrorMessage = "Ödeme tipi seçilmelidir.")]
     public string OdemeTipi { get; set; } = null!;
+
+    public string? Aciklama { get; set; }
 
     public List<SatisSepetUrunViewModel> SepetUrunleri { get; set; } = new();
 }

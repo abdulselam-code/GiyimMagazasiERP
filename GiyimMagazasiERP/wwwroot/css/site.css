@@ -497,3 +497,136 @@ body {
         flex-direction: column;
     }
 }
+.sales-page .sales-card {
+    border-radius: 12px;
+}
+
+.sales-type-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.sales-type-tab {
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: left;
+    transition: 0.2s ease;
+}
+
+    .sales-type-tab strong {
+        display: block;
+        font-size: 1rem;
+    }
+
+    .sales-type-tab span {
+        display: block;
+        color: #64748b;
+        font-size: 0.875rem;
+        margin-top: 4px;
+    }
+
+    .sales-type-tab.active {
+        border-color: #0d6efd;
+        background: #eff6ff;
+        box-shadow: 0 0.5rem 1.25rem rgba(13, 110, 253, 0.12);
+    }
+
+.sales-summary-card {
+    position: sticky;
+    top: 86px;
+    border-radius: 12px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid #edf2f7;
+}
+
+    .summary-row span {
+        color: #64748b;
+    }
+
+.total-box {
+    border: 1px solid #bbf7d0;
+    background: #ecfdf5;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+    .total-box span {
+        display: block;
+        color: #166534;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+.total-amount {
+    color: #15803d;
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.sales-info-box {
+    min-height: 38px;
+    border: 1px solid #dbe3ef;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+    .sales-info-box strong {
+        display: block;
+    }
+
+    .sales-info-box span {
+        color: #64748b;
+        font-size: 0.85rem;
+    }
+
+.sales-product-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    border: 1px dashed #cbd5e1;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px;
+    color: #475569;
+}
+
+    .sales-product-info strong {
+        color: #0f172a;
+    }
+
+.cart-table th {
+    white-space: nowrap;
+}
+
+.cart-table td {
+    white-space: nowrap;
+}
+
+@media (max-width: 1199px) {
+    .sales-summary-card {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .sales-type-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .total-amount {
+        font-size: 1.35rem;
+    }
+}
+.validation-summary-valid {
+    display: none;
+}

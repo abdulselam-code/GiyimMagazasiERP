@@ -37,7 +37,7 @@ public class FaturalarController : Controller
             OdemeTipi = satis.OdemeTipi,
 
             KayitliMusteriMi = satis.Musteri is not null,
-            MusteriAdi = satis.Musteri?.AdSoyad ?? "Kayıtsız Müşteri",
+            MusteriAdi = satis.Musteri?.AdSoyad ?? "Nihai Tüketici",
             MusteriTelefon = satis.Musteri?.Telefon,
             MusteriEmail = satis.Musteri?.Email,
 

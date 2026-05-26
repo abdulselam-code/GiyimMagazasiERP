@@ -8,24 +8,46 @@
     var musterilerJson = JsonSerializer.Serialize(ViewData["MusterilerJson"]);
     var urunlerJson = JsonSerializer.Serialize(ViewData["UrunlerJson"]);
     var mevcutSepetJson = JsonSerializer.Serialize(Model.SepetUrunleri ?? new List<GiyimMagazasiERP.ViewModels.SatisSepetUrunViewModel>());
+
+    var personelOtomatikMi = ViewData["PersonelOtomatikMi"] as bool? ?? false;
+    var otomatikPersonelAdi = ViewData["OtomatikPersonelAdi"]?.ToString() ?? "Uygun personel bulunamadı";
 }
 
-<div class="container py-4">
-    <div class="mb-4">
-        <h1 class="h3 fw-bold mb-1">Satış Yap</h1>
-        <p class="text-muted mb-0">
-            Sepete ürün ekleyerek çoklu ürün satışı oluşturabilirsiniz.
-        </p>
+<div class="container py-4 sales-page">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Satış Yap</h1>
+            <p class="text-muted mb-0">Perakende veya toptan satış oluşturabilirsiniz.</p>
+        </div>
+
+        <span class="badge text-bg-primary px-3 py-2">KDV Dahil</span>
     </div>
 
     <form asp-action="Create" method="post" id="satisFormu">
-        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="All" class="alert alert-danger py-2"></div>
+        }
 
         <div id="sepetUyariAlani"></div>
 
-        <div class="row g-4">
+        <input type="hidden" asp-for="SatisTuru" id="satisTuruInput" />
+
+        <div class="sales-type-tabs mb-4">
+            <button type="button" class="sales-type-tab active" data-type="Perakende">
+                <strong>Perakende Satış</strong>
+                <span>Hızlı mağaza satışı</span>
+            </button>
+
+            <button type="button" class="sales-type-tab" data-type="Toptan">
+                <strong>Toptan Satış</strong>
+                <span>Kurumsal / toplu satış</span>
+            </button>
+        </div>
+
+        <div class="row g-4 align-items-start">
             <div class="col-xl-8">
-                <div class="card border-0 shadow-sm">
+                <div class="sales-card card border-0 shadow-sm">
                     <div class="card-body">
                         <h2 class="h5 fw-bold mb-3">Satış Bilgileri</h2>
 
@@ -36,19 +58,32 @@
                                         asp-items="ViewBag.MusteriId"
                                         class="form-select"
                                         id="musteriSecimi">
-                                    <option value="">Müşteri Seçiniz</option>
+                                    <option value="">Nihai Tüketici / Kayıtsız Müşteri</option>
                                 </select>
-                                <span asp-validation-for="MusteriId" class="text-danger"></span>
+                                <div class="form-text" id="musteriAciklama">
+                                    Perakende satışta müşteri seçimi isteğe bağlıdır.
+                                </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label asp-for="PersonelId" class="form-label">Satışı Yapan Personel</label>
-                                <select asp-for="PersonelId"
-                                        asp-items="ViewBag.PersonelId"
-                                        class="form-select">
-                                    <option value="">Personel Seçiniz</option>
-                                </select>
-                                <span asp-validation-for="PersonelId" class="text-danger"></span>
+                                @if (personelOtomatikMi)
+                                {
+                                    <label class="form-label">Satışı Yapan</label>
+                                    <div class="sales-info-box">
+                                        <strong>@otomatikPersonelAdi</strong>
+                                        <span>Giriş yapan kasiyer için otomatik atanır.</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <label asp-for="PersonelId" class="form-label">Satışı Yapan Personel</label>
+                                    <select asp-for="PersonelId"
+                                            asp-items="ViewBag.PersonelId"
+                                            class="form-select">
+                                        <option value="">Personel Seçiniz</option>
+                                    </select>
+                                    <span asp-validation-for="PersonelId" class="text-danger"></span>
+                                }
                             </div>
 
                             <div class="col-md-6">
@@ -62,22 +97,22 @@
                                 <span asp-validation-for="OdemeTipi" class="text-danger"></span>
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">KDV Bilgisi</label>
-                                <div class="form-control bg-light">
-                                    Ürün fiyatlarına %20 KDV dahildir
-                                </div>
+                            <div class="col-md-6" id="toptanAciklamaAlani" style="display:none;">
+                                <label asp-for="Aciklama" class="form-label">Açıklama</label>
+                                <input asp-for="Aciklama"
+                                       class="form-control"
+                                       placeholder="Toptan satış notu" />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm mt-4">
+                <div class="sales-card card border-0 shadow-sm mt-4">
                     <div class="card-body">
                         <h2 class="h5 fw-bold mb-3">Sepete Ürün Ekle</h2>
 
                         <div class="row g-3 align-items-end">
-                            <div class="col-lg-8">
+                            <div class="col-lg-7">
                                 <label for="urunSecimi" class="form-label">Ürün</label>
                                 <select id="urunSecimi"
                                         asp-items="ViewBag.UrunId"
@@ -95,7 +130,7 @@
                                        value="1" />
                             </div>
 
-                            <div class="col-sm-8 col-lg-2">
+                            <div class="col-sm-8 col-lg-3">
                                 <button type="button"
                                         id="sepeteEkleBtn"
                                         class="btn btn-primary w-100">
@@ -104,75 +139,114 @@
                             </div>
                         </div>
 
-                        <p class="small text-muted mb-0 mt-3">
-                            Aynı ürün tekrar eklendiğinde ayrı satır oluşmaz, sepetteki adedi artırılır.
-                        </p>
+                        <div id="urunBilgiAlani" class="sales-product-info mt-3">
+                            Ürün seçildiğinde fiyat, stok, beden ve renk bilgisi burada görünür.
+                        </div>
                     </div>
                 </div>
+
+                <section class="sales-card card border-0 shadow-sm mt-4">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h2 class="h5 fw-bold mb-1">Sepet</h2>
+                                <p class="text-muted mb-0">Satışa eklenecek ürün kalemleri</p>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 cart-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Barkod</th>
+                                        <th>Beden</th>
+                                        <th>Renk</th>
+                                        <th class="text-end">Birim Fiyat</th>
+                                        <th class="text-end">Adet</th>
+                                        <th class="text-end">Ara Toplam</th>
+                                        <th class="text-end">İndirim</th>
+                                        <th class="text-end">KDV Dahil Toplam</th>
+                                        <th class="text-end">Stok</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="sepetTabloGovdesi">
+                                    <tr>
+                                        <td colspan="11" class="text-center text-muted py-4">
+                                            Sepette ürün bulunmuyor.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="sepetHiddenAlanlari"></div>
+                    </div>
+                </section>
             </div>
 
             <div class="col-xl-4">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="sales-summary-card card border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                             <div>
                                 <h2 class="h5 fw-bold mb-1">Satış Özeti</h2>
-                                <p class="text-muted small mb-0">
-                                    Sepet ve müşteri indirimi anlık hesaplanır.
-                                </p>
+                                <p class="text-muted small mb-0">Anlık toplamlar</p>
                             </div>
 
-                            <span class="badge text-bg-primary">KDV Dahil</span>
+                            <span class="badge text-bg-info">KDV Dahil</span>
                         </div>
 
-                        <div class="alert alert-info small">
-                            Ürün satış fiyatları KDV dahil kabul edilir.
-                            KDV tutarı genel toplam içinden ayrıştırılır.
+                        <div class="summary-row">
+                            <span>Satış Türü</span>
+                            <strong id="ozetSatisTuru">Perakende</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>Ürün Sayısı</span>
                             <strong id="ozetUrunSayisi">0</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>Toplam Adet</span>
                             <strong id="ozetToplamAdet">0</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>Ara Toplam</span>
                             <strong id="ozetAraToplam">0,00 TL</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span>Müşteri İndirim Oranı</span>
+                        <div class="summary-row">
+                            <span>İndirim Oranı</span>
                             <strong id="ozetIndirimOrani">%0</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>İndirim Tutarı</span>
                             <strong id="ozetIndirimTutari">0,00 TL</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center py-3 border-bottom">
-                            <span class="fw-bold">KDV Dahil Genel Toplam</span>
-                            <strong id="ozetGenelToplam" class="fs-5 text-success">0,00 TL</strong>
-                        </div>
-
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>KDV Oranı</span>
                             <strong>%20</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2 border-bottom">
+                        <div class="summary-row">
                             <span>KDV Hariç Tutar</span>
                             <strong id="ozetKdvHaricTutar">0,00 TL</strong>
                         </div>
 
-                        <div class="d-flex justify-content-between py-2">
+                        <div class="summary-row">
                             <span>KDV Tutarı</span>
                             <strong id="ozetKdvTutari">0,00 TL</strong>
+                        </div>
+
+                        <div class="total-box mt-3">
+                            <span>Genel Toplam</span>
+                            <strong id="ozetGenelToplam" class="total-amount">0,00 TL</strong>
                         </div>
 
                         <div class="d-grid gap-2 mt-4">
@@ -190,51 +264,6 @@
                 </div>
             </div>
         </div>
-
-        <section class="card border-0 shadow-sm mt-4">
-            <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                    <div>
-                        <h2 class="h5 fw-bold mb-1">Sepet</h2>
-                        <p class="text-muted mb-0">Satışa eklenecek ürün kalemleri</p>
-                    </div>
-
-                    <span class="badge text-bg-secondary px-3 py-2">
-                        Çoklu Ürün Satışı
-                    </span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Ürün Adı</th>
-                                <th>Barkod</th>
-                                <th>Beden</th>
-                                <th>Renk</th>
-                                <th class="text-end">Birim Fiyat</th>
-                                <th class="text-end">Adet</th>
-                                <th class="text-end">Ara Toplam</th>
-                                <th class="text-end">İndirim</th>
-                                <th class="text-end">KDV Dahil Toplam</th>
-                                <th class="text-end">Stok</th>
-                                <th>İşlem</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="sepetTabloGovdesi">
-                            <tr id="bosSepetSatiri">
-                                <td colspan="11" class="text-center text-muted py-4">
-                                    Sepette ürün bulunmuyor.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div id="sepetHiddenAlanlari"></div>
-            </div>
-        </section>
     </form>
 </div>
 
@@ -254,17 +283,22 @@
 
         const kdvCarpani = 1.20;
 
-        const satisFormu = document.getElementById("satisFormu");
+        const satisTuruInput = document.getElementById("satisTuruInput");
+        const satisTuruButonlari = document.querySelectorAll(".sales-type-tab");
         const musteriSecimi = document.getElementById("musteriSecimi");
+        const musteriAciklama = document.getElementById("musteriAciklama");
         const odemeTipiSecimi = document.getElementById("odemeTipiSecimi");
         const urunSecimi = document.getElementById("urunSecimi");
         const adetGirisi = document.getElementById("adetGirisi");
         const sepeteEkleBtn = document.getElementById("sepeteEkleBtn");
-
+        const satisFormu = document.getElementById("satisFormu");
         const sepetTabloGovdesi = document.getElementById("sepetTabloGovdesi");
         const sepetHiddenAlanlari = document.getElementById("sepetHiddenAlanlari");
         const sepetUyariAlani = document.getElementById("sepetUyariAlani");
+        const urunBilgiAlani = document.getElementById("urunBilgiAlani");
+        const toptanAciklamaAlani = document.getElementById("toptanAciklamaAlani");
 
+        const ozetSatisTuru = document.getElementById("ozetSatisTuru");
         const ozetUrunSayisi = document.getElementById("ozetUrunSayisi");
         const ozetToplamAdet = document.getElementById("ozetToplamAdet");
         const ozetAraToplam = document.getElementById("ozetAraToplam");
@@ -274,8 +308,7 @@
         const ozetKdvHaricTutar = document.getElementById("ozetKdvHaricTutar");
         const ozetKdvTutari = document.getElementById("ozetKdvTutari");
 
-        let sepet = Array.isArray(mevcutSepet)
-        ? mevcutSepet.map(x => ({
+        let sepet = Array.isArray(mevcutSepet) ? mevcutSepet.map(x => ({
         UrunId: Number(x.UrunId),
         UrunAdi: x.UrunAdi || "",
         Barkod: x.Barkod || "",
@@ -284,26 +317,24 @@
         BirimFiyat: Number(x.BirimFiyat) || 0,
         Adet: Number(x.Adet) || 1,
         StokMiktari: Number(x.StokMiktari) || 0
-        }))
-        : [];
+        })) : [];
 
         function tlFormatla(tutar) {
         return new Intl.NumberFormat("tr-TR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-        }).format(tutar) + " TL";
+        }).format(Math.max(0, tutar)) + " TL";
         }
 
         function oranFormatla(oran) {
         return "%" + new Intl.NumberFormat("tr-TR", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
-        }).format(oran);
+        }).format(Math.max(0, oran));
         }
 
         function uyariGoster(mesaj, tur) {
         const alertTuru = tur || "danger";
-
         sepetUyariAlani.innerHTML =
         '<div class="alert alert-' + alertTuru + ' alert-dismissible fade show" role="alert">' +
         mesaj +
@@ -311,10 +342,15 @@
         '</div>';
         }
 
+        function htmlGuvenliYaz(deger) {
+        const alan = document.createElement("div");
+        alan.textContent = deger || "";
+        return alan.innerHTML;
+        }
+
         function seciliMusteriIndirimOraniGetir() {
         const musteriId = Number(musteriSecimi.value);
         const musteri = musteriler.find(x => Number(x.Id) === musteriId);
-
         return musteri ? Number(musteri.IndirimOrani) || 0 : 0;
         }
 
@@ -322,10 +358,39 @@
         return urunler.find(x => Number(x.Id) === Number(urunId));
         }
 
-        function htmlGuvenliYaz(deger) {
-        const alan = document.createElement("div");
-        alan.textContent = deger || "";
-        return alan.innerHTML;
+        function satisTuruAyarla(tur) {
+        satisTuruInput.value = tur;
+        ozetSatisTuru.textContent = tur;
+
+        satisTuruButonlari.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.type === tur);
+        });
+
+        if (tur === "Toptan") {
+        musteriAciklama.textContent = "Toptan satışta müşteri seçimi zorunludur.";
+        toptanAciklamaAlani.style.display = "";
+        } else {
+        musteriAciklama.textContent = "Perakende satışta müşteri seçimi isteğe bağlıdır.";
+        toptanAciklamaAlani.style.display = "none";
+        }
+
+        sepetiGuncelle();
+        }
+
+        function urunBilgisiniGuncelle() {
+        const urun = urunuGetir(urunSecimi.value);
+
+        if (!urun) {
+        urunBilgiAlani.textContent = "Ürün seçildiğinde fiyat, stok, beden ve renk bilgisi burada görünür.";
+        return;
+        }
+
+        urunBilgiAlani.innerHTML =
+        '<strong>' + htmlGuvenliYaz(urun.UrunAdi) + '</strong>' +
+        '<span>Fiyat: ' + tlFormatla(Number(urun.SatisFiyati) || 0) + '</span>' +
+        '<span>Stok: ' + (Number(urun.StokMiktari) || 0) + '</span>' +
+        '<span>Beden: ' + htmlGuvenliYaz(urun.Beden) + '</span>' +
+        '<span>Renk: ' + htmlGuvenliYaz(urun.Renk) + '</span>';
         }
 
         function sepeteUrunEkle() {
@@ -376,6 +441,7 @@
 
         urunSecimi.value = "";
         adetGirisi.value = 1;
+        urunBilgisiniGuncelle();
 
         uyariGoster("Ürün sepete eklendi.", "success");
         sepetiGuncelle();
@@ -409,9 +475,7 @@
 
         if (sepet.length === 0) {
         sepetTabloGovdesi.innerHTML =
-        '<tr id="bosSepetSatiri">' +
-        '<td colspan="11" class="text-center text-muted py-4">Sepette ürün bulunmuyor.</td>' +
-        '</tr>';
+        '<tr><td colspan="11" class="text-center text-muted py-4">Sepette ürün bulunmuyor.</td></tr>';
         }
 
         sepet.forEach((urun, index) => {
@@ -436,9 +500,7 @@
         '<td class="text-end">' + tlFormatla(satirIndirim) + '</td>' +
         '<td class="text-end fw-semibold text-success">' + tlFormatla(satirKdvDahilToplam) + '</td>' +
         '<td class="text-end">' + urun.StokMiktari + '</td>' +
-        '<td>' +
-        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="sepettenCikar(' + index + ')">Çıkar</button>' +
-        '</td>' +
+        '<td><button type="button" class="btn btn-sm btn-outline-danger" onclick="sepettenCikar(' + index + ')">Çıkar</button></td>' +
         '</tr>';
 
         hiddenInputEkle(index, "UrunId", urun.UrunId);
@@ -464,16 +526,20 @@
         ozetKdvTutari.textContent = tlFormatla(kdvTutari);
         }
 
-        sepeteEkleBtn.addEventListener("click", sepeteUrunEkle);
-
-        musteriSecimi.addEventListener("change", function () {
-        sepetiGuncelle();
+        satisTuruButonlari.forEach(btn => {
+        btn.addEventListener("click", function () {
+        satisTuruAyarla(btn.dataset.type);
+        });
         });
 
+        urunSecimi.addEventListener("change", urunBilgisiniGuncelle);
+        sepeteEkleBtn.addEventListener("click", sepeteUrunEkle);
+        musteriSecimi.addEventListener("change", sepetiGuncelle);
+
         satisFormu.addEventListener("submit", function (event) {
-        if (!musteriSecimi.value) {
+        if (satisTuruInput.value === "Toptan" && !musteriSecimi.value) {
         event.preventDefault();
-        uyariGoster("Satış işlemi için müşteri seçilmelidir.");
+        uyariGoster("Toptan satış için müşteri seçilmelidir.");
         return;
         }
 
@@ -489,6 +555,8 @@
         }
         });
 
+        satisTuruAyarla(satisTuruInput.value || "Perakende");
+        urunBilgisiniGuncelle();
         sepetiGuncelle();
     </script>
 }
