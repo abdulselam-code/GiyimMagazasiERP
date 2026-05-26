@@ -16,8 +16,24 @@ public class RaporlarController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(DateTime? baslangic, DateTime? bitis, string? donem)
     {
+        donem = string.IsNullOrWhiteSpace(donem) ? "BuAy" : donem;
+
+        var tarihAraligi = TarihAraliginiGetir(baslangic, bitis, donem);
+        var baslangicTarihi = tarihAraligi.Baslangic;
+        var bitisTarihi = tarihAraligi.Bitis;
+        var bitisExclusive = bitisTarihi.Date.AddDays(1);
+
+        var donemSatislari = _context.Satislar
+            .AsNoTracking()
+            .Where(x => x.SatisTarihi >= baslangicTarihi && x.SatisTarihi < bitisExclusive);
+
+        var donemFinansHareketleri = _context.FinansHareketleri
+            .AsNoTracking()
+            .Where(x => x.Tarih >= baslangicTarihi && x.Tarih < bitisExclusive);
+
+        // Genel finans özeti tüm zamanı gösterir.
         var toplamGelir = await _context.FinansHareketleri
             .AsNoTracking()
             .Where(x => x.HareketTipi == "Gelir")
@@ -35,8 +51,30 @@ public class RaporlarController : Controller
                 x.Kategori == "Baslangic Sermayesi")
             .SumAsync(x => (decimal?)x.Tutar) ?? 0;
 
-        var gunlukSatisOzetleri = await _context.Satislar
-            .AsNoTracking()
+        var donemToplamSatisSayisi = await donemSatislari.CountAsync();
+
+        var donemToplamSatisTutari = await donemSatislari
+            .SumAsync(x => (decimal?)x.ToplamTutar) ?? 0;
+
+        var donemToplamIndirim = await donemSatislari
+            .SumAsync(x => (decimal?)x.IndirimTutari) ?? 0;
+
+        var donemToplamNetSatis = await donemSatislari
+            .SumAsync(x => (decimal?)x.NetTutar) ?? 0;
+
+        var donemOrtalamaSatisTutari = donemToplamSatisSayisi > 0
+            ? donemToplamNetSatis / donemToplamSatisSayisi
+            : 0;
+
+        var donemGelir = await donemFinansHareketleri
+            .Where(x => x.HareketTipi == "Gelir")
+            .SumAsync(x => (decimal?)x.Tutar) ?? 0;
+
+        var donemGider = await donemFinansHareketleri
+            .Where(x => x.HareketTipi == "Gider")
+            .SumAsync(x => (decimal?)x.Tutar) ?? 0;
+
+        var gunlukSatisOzetleri = await donemSatislari
             .GroupBy(x => x.SatisTarihi.Date)
             .Select(grup => new GunlukSatisOzetiViewModel
             {
@@ -47,8 +85,7 @@ public class RaporlarController : Controller
             .OrderByDescending(x => x.Gun)
             .ToListAsync();
 
-        var aylikSatisOzetleri = await _context.Satislar
-            .AsNoTracking()
+        var aylikSatisOzetleri = await donemSatislari
             .GroupBy(x => new
             {
                 x.SatisTarihi.Year,
@@ -67,8 +104,7 @@ public class RaporlarController : Controller
             .ThenByDescending(x => x.Ay)
             .ToListAsync();
 
-        var yillikSatisOzetleri = await _context.Satislar
-            .AsNoTracking()
+        var yillikSatisOzetleri = await donemSatislari
             .GroupBy(x => x.SatisTarihi.Year)
             .Select(grup => new YillikSatisOzetiViewModel
             {
@@ -81,8 +117,7 @@ public class RaporlarController : Controller
             .OrderByDescending(x => x.Yil)
             .ToListAsync();
 
-        var aylikGelirGiderRaporu = await _context.FinansHareketleri
-            .AsNoTracking()
+        var aylikGelirGiderRaporu = await donemFinansHareketleri
             .GroupBy(x => new
             {
                 x.Tarih.Year,
@@ -103,8 +138,7 @@ public class RaporlarController : Controller
             .ThenByDescending(x => x.Ay)
             .ToListAsync();
 
-        var yillikGelirGiderRaporu = await _context.FinansHareketleri
-            .AsNoTracking()
+        var yillikGelirGiderRaporu = await donemFinansHareketleri
             .GroupBy(x => x.Tarih.Year)
             .Select(grup => new YillikGelirGiderRaporuViewModel
             {
@@ -119,8 +153,7 @@ public class RaporlarController : Controller
             .OrderByDescending(x => x.Yil)
             .ToListAsync();
 
-        var giderKategorileriRaporu = await _context.FinansHareketleri
-            .AsNoTracking()
+        var giderKategorileriRaporu = await donemFinansHareketleri
             .Where(x => x.HareketTipi == "Gider")
             .GroupBy(x => x.Kategori)
             .Select(grup => new GiderKategorisiRaporuViewModel
@@ -133,8 +166,7 @@ public class RaporlarController : Controller
             .ThenBy(x => x.GiderKategorisi)
             .ToListAsync();
 
-        var enYuksekGiderler = await _context.FinansHareketleri
-            .AsNoTracking()
+        var enYuksekGiderler = await donemFinansHareketleri
             .Where(x => x.HareketTipi == "Gider")
             .OrderByDescending(x => x.Tutar)
             .ThenByDescending(x => x.Tarih)
@@ -150,6 +182,7 @@ public class RaporlarController : Controller
 
         var enCokSatilanUrunler = await _context.SatisDetaylari
             .AsNoTracking()
+            .Where(x => x.Satis.SatisTarihi >= baslangicTarihi && x.Satis.SatisTarihi < bitisExclusive)
             .GroupBy(x => new
             {
                 x.UrunId,
@@ -166,6 +199,7 @@ public class RaporlarController : Controller
             .Take(10)
             .ToListAsync();
 
+        // Güncel durum raporu olduğu için tarih filtresi uygulanmıyor.
         var hicSatilmayanUrunler = await _context.Urunler
             .AsNoTracking()
             .Where(x => !x.SatisDetaylari.Any())
@@ -178,6 +212,7 @@ public class RaporlarController : Controller
             .OrderBy(x => x.UrunAdi)
             .ToListAsync();
 
+        // Güncel durum raporu olduğu için tarih filtresi uygulanmıyor.
         var kritikStokRaporu = await _context.Urunler
             .AsNoTracking()
             .Include(x => x.Kategori)
@@ -192,16 +227,24 @@ public class RaporlarController : Controller
             .OrderBy(x => x.StokMiktari)
             .ToListAsync();
 
-        var enCokAlisverisYapanMusteriler = await _context.Musteriler
-            .AsNoTracking()
-            .OrderByDescending(x => x.ToplamHarcama)
-            .Select(x => new EnCokAlisverisYapanMusteriViewModel
+        var enCokAlisverisYapanMusteriler = await donemSatislari
+            .Where(x => x.Musteri != null)
+            .GroupBy(x => new
             {
-                MusteriAdi = x.AdSoyad,
-                ToplamHarcama = x.ToplamHarcama,
-                SadakatPuani = x.SadakatPuani,
-                IndirimOrani = x.IndirimOrani
+                x.MusteriId,
+                x.Musteri!.AdSoyad,
+                x.Musteri.ToplamHarcama,
+                x.Musteri.SadakatPuani,
+                x.Musteri.IndirimOrani
             })
+            .Select(grup => new EnCokAlisverisYapanMusteriViewModel
+            {
+                MusteriAdi = grup.Key.AdSoyad,
+                ToplamHarcama = grup.Sum(x => x.NetTutar),
+                SadakatPuani = grup.Key.SadakatPuani,
+                IndirimOrani = grup.Key.IndirimOrani
+            })
+            .OrderByDescending(x => x.ToplamHarcama)
             .Take(10)
             .ToListAsync();
 
@@ -210,7 +253,10 @@ public class RaporlarController : Controller
             .Include(x => x.Satis)
                 .ThenInclude(x => x.Musteri)
             .Include(x => x.Urun)
-            .Where(x => x.Satis.MusteriId != null)
+            .Where(x =>
+                x.Satis.MusteriId != null &&
+                x.Satis.SatisTarihi >= baslangicTarihi &&
+                x.Satis.SatisTarihi < bitisExclusive)
             .GroupBy(x => new
             {
                 MusteriId = x.Satis.MusteriId,
@@ -234,13 +280,20 @@ public class RaporlarController : Controller
             .Select(x => new PersonelSatisPerformansiViewModel
             {
                 PersonelAdi = x.AdSoyad,
-                SatisSayisi = x.Satislar.Count(),
-                ToplamSatisTutari = x.Satislar.Sum(s => (decimal?)s.NetTutar) ?? 0,
+                SatisSayisi = x.Satislar.Count(s =>
+                    s.SatisTarihi >= baslangicTarihi &&
+                    s.SatisTarihi < bitisExclusive),
+                ToplamSatisTutari = x.Satislar
+                    .Where(s =>
+                        s.SatisTarihi >= baslangicTarihi &&
+                        s.SatisTarihi < bitisExclusive)
+                    .Sum(s => (decimal?)s.NetTutar) ?? 0,
                 PrimOrani = x.PrimOrani
             })
             .OrderByDescending(x => x.ToplamSatisTutari)
             .ToListAsync();
 
+        // Güncel durum raporu olduğu için tarih filtresi uygulanmıyor.
         var tedarikciUrunIndirimRaporu = await _context.Tedarikciler
             .AsNoTracking()
             .Select(x => new TedarikciUrunIndirimRaporuViewModel
@@ -257,6 +310,7 @@ public class RaporlarController : Controller
             .AsNoTracking()
             .Include(x => x.Urun)
                 .ThenInclude(x => x.Kategori)
+            .Where(x => x.Satis.SatisTarihi >= baslangicTarihi && x.Satis.SatisTarihi < bitisExclusive)
             .GroupBy(x => new
             {
                 x.Urun.KategoriId,
@@ -271,8 +325,32 @@ public class RaporlarController : Controller
             .OrderByDescending(x => x.ToplamSatisTutari)
             .ToListAsync();
 
+        var odemeTipineGoreGelirler = await donemSatislari
+            .GroupBy(x => x.OdemeTipi)
+            .Select(grup => new OdemeTipiGelirRaporuViewModel
+            {
+                OdemeTipi = grup.Key ?? "-",
+                SatisSayisi = grup.Count(),
+                ToplamGelir = grup.Sum(x => x.NetTutar)
+            })
+            .OrderByDescending(x => x.ToplamGelir)
+            .ToListAsync();
+
         var viewModel = new RaporlarIndexViewModel
         {
+            BaslangicTarihi = baslangicTarihi,
+            BitisTarihi = bitisTarihi,
+            Donem = donem,
+
+            DonemToplamSatisSayisi = donemToplamSatisSayisi,
+            DonemToplamSatisTutari = donemToplamSatisTutari,
+            DonemToplamIndirim = donemToplamIndirim,
+            DonemToplamNetSatis = donemToplamNetSatis,
+            DonemOrtalamaSatisTutari = donemOrtalamaSatisTutari,
+            DonemNetKarZarar = donemGelir - donemGider,
+
+            OdemeTipineGoreGelirler = odemeTipineGoreGelirler,
+
             GenelFinansOzeti = new GenelFinansOzetiViewModel
             {
                 ToplamGelir = toplamGelir,
@@ -300,5 +378,104 @@ public class RaporlarController : Controller
         };
 
         return View(viewModel);
+    }
+
+    public async Task<IActionResult> HicSatilmayanUrunler(
+        string? arama,
+        int sayfa = 1,
+        int kayitSayisi = 20)
+    {
+        var izinliKayitSayilari = new[] { 10, 20, 50 };
+
+        if (!izinliKayitSayilari.Contains(kayitSayisi))
+            kayitSayisi = 20;
+
+        if (sayfa < 1)
+            sayfa = 1;
+
+        arama = string.IsNullOrWhiteSpace(arama)
+            ? null
+            : arama.Trim();
+
+        var sorgu = _context.Urunler
+            .AsNoTracking()
+            .Include(x => x.Kategori)
+            .Include(x => x.Tedarikci)
+            .Where(x => !x.SatisDetaylari.Any());
+
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            sorgu = sorgu.Where(x =>
+                x.UrunAdi.Contains(arama) ||
+                x.Barkod.Contains(arama) ||
+                (x.Kategori != null && x.Kategori.KategoriAdi.Contains(arama)) ||
+                (x.Tedarikci != null && x.Tedarikci.FirmaAdi.Contains(arama)));
+        }
+
+        var toplamKayit = await sorgu.CountAsync();
+
+        var toplamSayfa = toplamKayit == 0
+            ? 1
+            : (int)Math.Ceiling(toplamKayit / (double)kayitSayisi);
+
+        if (sayfa > toplamSayfa)
+            sayfa = toplamSayfa;
+
+        var urunler = await sorgu
+            .OrderBy(x => x.UrunAdi)
+            .Skip((sayfa - 1) * kayitSayisi)
+            .Take(kayitSayisi)
+            .Select(x => new HicSatilmayanUrunDetayViewModel
+            {
+                UrunAdi = x.UrunAdi,
+                Barkod = x.Barkod,
+                KategoriAdi = x.Kategori != null ? x.Kategori.KategoriAdi : "-",
+                TedarikciAdi = x.Tedarikci != null ? x.Tedarikci.FirmaAdi : "-",
+                StokMiktari = x.StokMiktari,
+                MinimumStok = x.MinimumStok,
+                SatisFiyati = x.SatisFiyati,
+                AktifMi = x.AktifMi
+            })
+            .ToListAsync();
+
+        var viewModel = new HicSatilmayanUrunlerViewModel
+        {
+            Arama = arama,
+            Sayfa = sayfa,
+            KayitSayisi = kayitSayisi,
+            ToplamKayit = toplamKayit,
+            ToplamSayfa = toplamSayfa,
+            Urunler = urunler
+        };
+
+        return View(viewModel);
+    }
+
+    private static (DateTime Baslangic, DateTime Bitis) TarihAraliginiGetir(
+        DateTime? baslangic,
+        DateTime? bitis,
+        string? donem)
+    {
+        var bugun = DateTime.Today;
+        donem = string.IsNullOrWhiteSpace(donem) ? "BuAy" : donem;
+
+        if (baslangic.HasValue && bitis.HasValue)
+            return (baslangic.Value.Date, bitis.Value.Date);
+
+        return donem switch
+        {
+            "Bugun" => (bugun, bugun),
+
+            "BuHafta" => (
+                bugun.AddDays(-((int)bugun.DayOfWeek == 0 ? 6 : (int)bugun.DayOfWeek - 1)),
+                bugun
+            ),
+
+            "BuYil" => (new DateTime(bugun.Year, 1, 1), bugun),
+
+            "TumZamanlar" => (new DateTime(2000, 1, 1), bugun),
+
+            _ => (new DateTime(bugun.Year, bugun.Month, 1), bugun)
+        };
     }
 }

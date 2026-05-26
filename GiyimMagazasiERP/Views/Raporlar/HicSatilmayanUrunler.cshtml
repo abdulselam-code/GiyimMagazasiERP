@@ -1,0 +1,203 @@
+﻿@model GiyimMagazasiERP.ViewModels.HicSatilmayanUrunlerViewModel
+
+@{
+    ViewData["Title"] = "Hiç Satılmayan Ürünler";
+
+    var oncekiSayfa = Model.Sayfa - 1;
+    var sonrakiSayfa = Model.Sayfa + 1;
+
+    var baslangicSayfa = Math.Max(1, Model.Sayfa - 2);
+    var bitisSayfa = Math.Min(Model.ToplamSayfa, Model.Sayfa + 2);
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Hiç Satılmayan Ürünler</h1>
+            <p class="text-muted mb-0">
+                Satış kaydı bulunmayan ürünlerin tam listesi.
+            </p>
+        </div>
+
+        <a asp-controller="Raporlar"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+            Raporlara Dön
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-6">
+                    <label class="form-label">Arama</label>
+                    <input type="text"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control"
+                           placeholder="Ürün adı, barkod, kategori veya tedarikçi ara" />
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <label class="form-label">Kayıt Sayısı</label>
+                    <select name="kayitSayisi" class="form-select">
+                        @if (Model.KayitSayisi == 10)
+                        {
+                            <option value="10" selected>10</option>
+                        }
+                        else
+                        {
+                            <option value="10">10</option>
+                        }
+
+                        @if (Model.KayitSayisi == 20)
+                        {
+                            <option value="20" selected>20</option>
+                        }
+                        else
+                        {
+                            <option value="20">20</option>
+                        }
+
+                        @if (Model.KayitSayisi == 50)
+                        {
+                            <option value="50" selected>50</option>
+                        }
+                        else
+                        {
+                            <option value="50">50</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Ara
+                    </button>
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <a asp-controller="Raporlar"
+                       asp-action="HicSatilmayanUrunler"
+                       class="btn btn-outline-secondary w-100">
+                        Temizle
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="text-muted">
+            Toplam <strong>@Model.ToplamKayit</strong> kayıt bulundu.
+        </div>
+
+        <div class="text-muted">
+            Sayfa <strong>@Model.Sayfa</strong> / <strong>@Model.ToplamSayfa</strong>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            @if (Model.Urunler.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ürün Adı</th>
+                                <th>Barkod</th>
+                                <th>Kategori</th>
+                                <th>Tedarikçi</th>
+                                <th class="text-end">Stok</th>
+                                <th class="text-end">Minimum Stok</th>
+                                <th class="text-end">Satış Fiyatı</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach (var urun in Model.Urunler)
+                            {
+                                var kritikMi = urun.StokMiktari <= urun.MinimumStok;
+
+                                <tr class="@(kritikMi ? "table-warning" : "")">
+                                    <td class="fw-semibold">@urun.UrunAdi</td>
+                                    <td>@urun.Barkod</td>
+                                    <td>@urun.KategoriAdi</td>
+                                    <td>@urun.TedarikciAdi</td>
+                                    <td class="text-end">
+                                        <span class="@(kritikMi ? "fw-bold text-warning" : "")">
+                                            @urun.StokMiktari
+                                        </span>
+                                    </td>
+                                    <td class="text-end">@urun.MinimumStok</td>
+                                    <td class="text-end">@urun.SatisFiyati.ToString("N2") TL</td>
+                                    <td>
+                                        @if (urun.AktifMi)
+                                        {
+                                            <span class="badge text-bg-success">Aktif</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Pasif</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (Model.ToplamSayfa > 1)
+                {
+                    <nav class="mt-4" aria-label="Hiç satılmayan ürünler sayfalama">
+                        <ul class="pagination justify-content-center flex-wrap mb-0">
+                            <li class="page-item @(Model.Sayfa <= 1 ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-controller="Raporlar"
+                                   asp-action="HicSatilmayanUrunler"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-kayitSayisi="@Model.KayitSayisi"
+                                   asp-route-sayfa="@oncekiSayfa">
+                                    Önceki
+                                </a>
+                            </li>
+
+                            @for (var i = baslangicSayfa; i <= bitisSayfa; i++)
+                            {
+                                <li class="page-item @(i == Model.Sayfa ? "active" : "")">
+                                    <a class="page-link"
+                                       asp-controller="Raporlar"
+                                       asp-action="HicSatilmayanUrunler"
+                                       asp-route-arama="@Model.Arama"
+                                       asp-route-kayitSayisi="@Model.KayitSayisi"
+                                       asp-route-sayfa="@i">
+                                        @i
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="page-item @(Model.Sayfa >= Model.ToplamSayfa ? "disabled" : "")">
+                                <a class="page-link"
+                                   asp-controller="Raporlar"
+                                   asp-action="HicSatilmayanUrunler"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-kayitSayisi="@Model.KayitSayisi"
+                                   asp-route-sayfa="@sonrakiSayfa">
+                                    Sonraki
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                }
+            }
+            else
+            {
+                <div class="text-center text-muted py-5">
+                    Arama kriterlerine uygun hiç satılmayan ürün bulunamadı.
+                </div>
+            }
+        </div>
+    </div>
+</div>

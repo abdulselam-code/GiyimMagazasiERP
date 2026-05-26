@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Raporlar";
+    var donemNetClass = Model.DonemNetKarZarar >= 0 ? "text-success" : "text-danger";
 }
 
 <div class="container py-4">
@@ -12,537 +13,823 @@
         </p>
     </div>
 
-    <section class="mb-4">
-        <h2 class="h5 fw-bold mb-3">Genel Finans Özeti</h2>
-
-        <div class="row g-3">
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">
-                            @Model.GenelFinansOzeti.ToplamGelir.ToString("N2") TL
-                        </h3>
-                    </div>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Tarih Filtresi</h2>
+                    <p class="text-muted mb-0">
+                        Rapor Dönemi:
+                        @Model.BaslangicTarihi.ToString("dd.MM.yyyy")
+                        -
+                        @Model.BitisTarihi.ToString("dd.MM.yyyy")
+                    </p>
                 </div>
             </div>
 
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gider</p>
-                        <h3 class="h4 fw-bold text-danger mb-0">
-                            @Model.GenelFinansOzeti.ToplamGider.ToString("N2") TL
-                        </h3>
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Başlangıç Tarihi</label>
+                    <input type="date"
+                           name="baslangic"
+                           value="@Model.BaslangicTarihi.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Bitiş Tarihi</label>
+                    <input type="date"
+                           name="bitis"
+                           value="@Model.BitisTarihi.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Filtrele
+                    </button>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a asp-action="Index" asp-route-donem="Bugun" class="btn btn-outline-secondary btn-sm">Bugün</a>
+                        <a asp-action="Index" asp-route-donem="BuHafta" class="btn btn-outline-secondary btn-sm">Bu Hafta</a>
+                        <a asp-action="Index" asp-route-donem="BuAy" class="btn btn-outline-secondary btn-sm">Bu Ay</a>
+                        <a asp-action="Index" asp-route-donem="BuYil" class="btn btn-outline-secondary btn-sm">Bu Yıl</a>
+                        <a asp-action="Index" asp-route-donem="TumZamanlar" class="btn btn-outline-secondary btn-sm">Tüm Zamanlar</a>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Net Kazanç</p>
-                        <h3 class="h4 fw-bold @(Model.GenelFinansOzeti.NetKazanc < 0 ? "text-danger" : "text-primary") mb-0">
-                            @Model.GenelFinansOzeti.NetKazanc.ToString("N2") TL
-                        </h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Başlangıç Sermayesi</p>
-                        <h3 class="h4 fw-bold mb-0">
-                            @Model.GenelFinansOzeti.BaslangicSermayesi.ToString("N2") TL
-                        </h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="row g-4 mb-4">
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Günlük Satış Özeti</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Gün</th>
-                                    <th>Satış Sayısı</th>
-                                    <th>Toplam Net Satış</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.GunlukSatisOzetleri)
-                                {
-                                    <tr>
-                                        <td>@rapor.Gun.ToString("dd/MM/yyyy")</td>
-                                        <td>@rapor.SatisSayisi</td>
-                                        <td>@rapor.ToplamNetSatis.ToString("N2") TL</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Aylık Satış Özeti</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ay</th>
-                                    <th>Satış Sayısı</th>
-                                    <th>Toplam Tutar</th>
-                                    <th>İndirim</th>
-                                    <th>Net Satış</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.AylikSatisOzetleri)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.AyEtiketi</td>
-                                        <td>@rapor.SatisSayisi</td>
-                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
-                                        <td>@rapor.ToplamIndirim.ToString("N2") TL</td>
-                                        <td class="text-success fw-semibold">
-                                            @rapor.NetSatis.ToString("N2") TL
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Yıllık Satış Özeti</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Yıl</th>
-                                    <th>Satış Sayısı</th>
-                                    <th>Toplam Tutar</th>
-                                    <th>İndirim</th>
-                                    <th>Net Satış</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.YillikSatisOzetleri)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.Yil</td>
-                                        <td>@rapor.SatisSayisi</td>
-                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
-                                        <td>@rapor.ToplamIndirim.ToString("N2") TL</td>
-                                        <td class="text-success fw-semibold">
-                                            @rapor.NetSatis.ToString("N2") TL
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Aylık Gelir-Gider-Net Kazanç</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ay</th>
-                                    <th>Gelir</th>
-                                    <th>Gider</th>
-                                    <th>Net Kazanç</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.AylikGelirGiderRaporu)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.AyEtiketi</td>
-                                        <td class="text-success">@rapor.ToplamGelir.ToString("N2") TL</td>
-                                        <td class="text-danger">@rapor.ToplamGider.ToString("N2") TL</td>
-                                        <td class="fw-semibold @(rapor.NetKazanc < 0 ? "text-danger" : "text-primary")">
-                                            @rapor.NetKazanc.ToString("N2") TL
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Yıllık Gelir-Gider-Net Kazanç</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Yıl</th>
-                                    <th>Gelir</th>
-                                    <th>Gider</th>
-                                    <th>Net Kazanç</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.YillikGelirGiderRaporu)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.Yil</td>
-                                        <td class="text-success">@rapor.ToplamGelir.ToString("N2") TL</td>
-                                        <td class="text-danger">@rapor.ToplamGider.ToString("N2") TL</td>
-                                        <td class="fw-semibold @(rapor.NetKazanc < 0 ? "text-danger" : "text-primary")">
-                                            @rapor.NetKazanc.ToString("N2") TL
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Gider Kategorileri Raporu</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Gider Kategorisi</th>
-                                    <th>Toplam Tutar</th>
-                                    <th>Hareket Sayısı</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.GiderKategorileriRaporu)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.GiderKategorisi</td>
-                                        <td class="text-danger">@rapor.ToplamTutar.ToString("N2") TL</td>
-                                        <td>@rapor.HareketSayisi</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="col-12">
-            <section class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">En Yüksek Giderler</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Tarih</th>
-                                    <th>Kategori</th>
-                                    <th>Açıklama</th>
-                                    <th>Tutar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.EnYuksekGiderler)
-                                {
-                                    <tr>
-                                        <td>@rapor.Tarih.ToString("dd/MM/yyyy")</td>
-                                        <td class="fw-semibold">@rapor.Kategori</td>
-                                        <td>@(rapor.Aciklama ?? "-")</td>
-                                        <td class="text-danger fw-semibold">
-                                            @rapor.Tutar.ToString("N2") TL
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            </form>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+    <div class="row g-3 mb-4">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">En Çok Satılan Ürünler</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ürün Adı</th>
-                                    <th>Toplam Adet</th>
-                                    <th>Satış Tutarı</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.EnCokSatilanUrunler)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.UrunAdi</td>
-                                        <td>@rapor.ToplamSatilanAdet</td>
-                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Satış Sayısı</small>
+                    <strong class="d-block fs-5">@Model.DonemToplamSatisSayisi</strong>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Hiç Satılmayan Ürünler</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ürün Adı</th>
-                                    <th>Barkod</th>
-                                    <th>Stok</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.HicSatilmayanUrunler)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.UrunAdi</td>
-                                        <td>@rapor.Barkod</td>
-                                        <td>@rapor.StokMiktari</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Satış Tutarı</small>
+                    <strong class="d-block fs-6">@Model.DonemToplamSatisTutari.ToString("N2") TL</strong>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Kritik Stok Raporu</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ürün</th>
-                                    <th>Kategori</th>
-                                    <th>Stok</th>
-                                    <th>Minimum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.KritikStokRaporu)
-                                {
-                                    <tr class="table-warning">
-                                        <td class="fw-semibold">@rapor.UrunAdi</td>
-                                        <td>@rapor.KategoriAdi</td>
-                                        <td>@rapor.StokMiktari</td>
-                                        <td>@rapor.MinimumStok</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Toplam İndirim</small>
+                    <strong class="d-block fs-6">@Model.DonemToplamIndirim.ToString("N2") TL</strong>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">En Çok Alışveriş Yapan Müşteriler</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Müşteri</th>
-                                    <th>Toplam Harcama</th>
-                                    <th>Puan</th>
-                                    <th>İndirim</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.EnCokAlisverisYapanMusteriler)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.MusteriAdi</td>
-                                        <td>@rapor.ToplamHarcama.ToString("N2") TL</td>
-                                        <td>@rapor.SadakatPuani</td>
-                                        <td>% @rapor.IndirimOrani.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Net Satış</small>
+                    <strong class="d-block fs-6">@Model.DonemToplamNetSatis.ToString("N2") TL</strong>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Müşteri Hangi Ürünü En Çok Alıyor</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Müşteri</th>
-                                    <th>Ürün</th>
-                                    <th>Toplam Adet</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.MusteriUrunAnalizi)
-                                {
-                                    <tr>
-                                        <td>@rapor.MusteriAdi</td>
-                                        <td class="fw-semibold">@rapor.UrunAdi</td>
-                                        <td>@rapor.ToplamAdet</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Ortalama Satış</small>
+                    <strong class="d-block fs-6">@Model.DonemOrtalamaSatisTutari.ToString("N2") TL</strong>
                 </div>
-            </section>
+            </div>
         </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
+        <div class="col-md-4 col-xl-2">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Personel Satış Performansı</h2>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Personel</th>
-                                    <th>Satış Sayısı</th>
-                                    <th>Satış Tutarı</th>
-                                    <th>Prim</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.PersonelSatisPerformansi)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.PersonelAdi</td>
-                                        <td>@rapor.SatisSayisi</td>
-                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
-                                        <td>% @rapor.PrimOrani.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                    <small class="text-muted">Net Kâr / Zarar</small>
+                    <strong class="d-block fs-6 @donemNetClass">@Model.DonemNetKarZarar.ToString("N2") TL</strong>
                 </div>
-            </section>
+            </div>
         </div>
+    </div>
 
-        <div class="col-xl-6">
-            <section class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Tedarikçi Ürün ve İndirim Raporu</h2>
+    <div class="reports-tabs-wrapper card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Rapor Kategorileri</h2>
+                    <p class="text-muted mb-0">
+                        İlgili rapor grubunu seçerek detayları görüntüleyin.
+                    </p>
+                </div>
+            </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Tedarikçi</th>
-                                    <th>Ürün Sayısı</th>
-                                    <th>İndirim Oranı</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.TedarikciUrunIndirimRaporu)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.FirmaAdi</td>
-                                        <td>@rapor.UrunSayisi</td>
-                                        <td>% @rapor.IndirimOrani.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+            <div class="reports-tabs-scroll">
+                <ul class="nav nav-pills reports-tabs" id="raporTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            id="finans-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#finansRaporlari"
+                            type="button"
+                            role="tab"
+                            aria-controls="finansRaporlari"
+                            aria-selected="true">
+                        Finans Raporları
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="satis-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#satisRaporlari"
+                            type="button"
+                            role="tab"
+                            aria-controls="satisRaporlari"
+                            aria-selected="false">
+                        Satış Raporları
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="stok-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#stokRaporlari"
+                            type="button"
+                            role="tab"
+                            aria-controls="stokRaporlari"
+                            aria-selected="false">
+                        Stok Raporları
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="musteri-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#musteriRaporlari"
+                            type="button"
+                            role="tab"
+                            aria-controls="musteriRaporlari"
+                            aria-selected="false">
+                        Müşteri Raporları
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="personel-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#personelTedarikciRaporlari"
+                            type="button"
+                            role="tab"
+                            aria-controls="personelTedarikciRaporlari"
+                            aria-selected="false">
+                        Personel & Tedarikçi
+                    </button>
+                </li>
+                </ul>
+            </div>
+
+            <div class="tab-content reports-tab-content" id="raporTabsContent">
+                <div class="tab-pane fade show active"
+                     id="finansRaporlari"
+                     role="tabpanel"
+                     aria-labelledby="finans-tab">
+
+                    <section class="mb-4">
+                        <h2 class="h5 fw-bold mb-3">Genel Finans Özeti</h2>
+
+                        <div class="row g-3">
+                            <div class="col-md-6 col-xl-3">
+                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                                    <div class="card-body">
+                                        <p class="text-muted mb-2">Toplam Gelir</p>
+                                        <h3 class="h4 fw-bold text-success mb-0">
+                                            @Model.GenelFinansOzeti.ToplamGelir.ToString("N2") TL
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-xl-3">
+                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+                                    <div class="card-body">
+                                        <p class="text-muted mb-2">Toplam Gider</p>
+                                        <h3 class="h4 fw-bold text-danger mb-0">
+                                            @Model.GenelFinansOzeti.ToplamGider.ToString("N2") TL
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-xl-3">
+                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                                    <div class="card-body">
+                                        <p class="text-muted mb-2">Net Kazanç</p>
+                                        <h3 class="h4 fw-bold @(Model.GenelFinansOzeti.NetKazanc < 0 ? "text-danger" : "text-primary") mb-0">
+                                            @Model.GenelFinansOzeti.NetKazanc.ToString("N2") TL
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-xl-3">
+                                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                                    <div class="card-body">
+                                        <p class="text-muted mb-2">Başlangıç Sermayesi</p>
+                                        <h3 class="h4 fw-bold mb-0">
+                                            @Model.GenelFinansOzeti.BaslangicSermayesi.ToString("N2") TL
+                                        </h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <section class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Ödeme Tipine Göre Gelir</h2>
+
+                                    @if (Model.OdemeTipineGoreGelirler.Any())
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Ödeme Tipi</th>
+                                                        <th class="text-end">Satış Sayısı</th>
+                                                        <th class="text-end">Toplam Gelir</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    @foreach (var item in Model.OdemeTipineGoreGelirler)
+                                                    {
+                                                        <tr>
+                                                            <td>@item.OdemeTipi</td>
+                                                            <td class="text-end">@item.SatisSayisi</td>
+                                                            <td class="text-end fw-semibold">@item.ToplamGelir.ToString("N2") TL</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            Bu dönem için ödeme tipi geliri bulunamadı.
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Aylık Gelir-Gider-Net Kazanç</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Ay</th>
+                                                    <th>Gelir</th>
+                                                    <th>Gider</th>
+                                                    <th>Net Kazanç</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.AylikGelirGiderRaporu)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.AyEtiketi</td>
+                                                        <td class="text-success">@rapor.ToplamGelir.ToString("N2") TL</td>
+                                                        <td class="text-danger">@rapor.ToplamGider.ToString("N2") TL</td>
+                                                        <td class="fw-semibold @(rapor.NetKazanc < 0 ? "text-danger" : "text-primary")">
+                                                            @rapor.NetKazanc.ToString("N2") TL
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Yıllık Gelir-Gider-Net Kazanç</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Yıl</th>
+                                                    <th>Gelir</th>
+                                                    <th>Gider</th>
+                                                    <th>Net Kazanç</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.YillikGelirGiderRaporu)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.Yil</td>
+                                                        <td class="text-success">@rapor.ToplamGelir.ToString("N2") TL</td>
+                                                        <td class="text-danger">@rapor.ToplamGider.ToString("N2") TL</td>
+                                                        <td class="fw-semibold @(rapor.NetKazanc < 0 ? "text-danger" : "text-primary")">
+                                                            @rapor.NetKazanc.ToString("N2") TL
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Gider Kategorileri Raporu</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Gider Kategorisi</th>
+                                                    <th>Toplam Tutar</th>
+                                                    <th>Hareket Sayısı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.GiderKategorileriRaporu)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.GiderKategorisi</td>
+                                                        <td class="text-danger">@rapor.ToplamTutar.ToString("N2") TL</td>
+                                                        <td>@rapor.HareketSayisi</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">En Yüksek Giderler</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Tarih</th>
+                                                    <th>Kategori</th>
+                                                    <th>Açıklama</th>
+                                                    <th>Tutar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.EnYuksekGiderler)
+                                                {
+                                                    <tr>
+                                                        <td>@rapor.Tarih.ToString("dd/MM/yyyy")</td>
+                                                        <td class="fw-semibold">@rapor.Kategori</td>
+                                                        <td>@(rapor.Aciklama ?? "-")</td>
+                                                        <td class="text-danger fw-semibold">
+                                                            @rapor.Tutar.ToString("N2") TL
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
-            </section>
-        </div>
 
-        <div class="col-12">
-            <section class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold mb-3">Kategori Bazlı Satış Raporu</h2>
+                <div class="tab-pane fade"
+                     id="satisRaporlari"
+                     role="tabpanel"
+                     aria-labelledby="satis-tab">
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Kategori</th>
-                                    <th>Toplam Satılan Adet</th>
-                                    <th>Toplam Satış Tutarı</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rapor in Model.KategoriBazliSatisRaporu)
-                                {
-                                    <tr>
-                                        <td class="fw-semibold">@rapor.KategoriAdi</td>
-                                        <td>@rapor.ToplamSatilanAdet</td>
-                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Günlük Satış Özeti</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Gün</th>
+                                                    <th>Satış Sayısı</th>
+                                                    <th>Toplam Net Satış</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.GunlukSatisOzetleri)
+                                                {
+                                                    <tr>
+                                                        <td>@rapor.Gun.ToString("dd/MM/yyyy")</td>
+                                                        <td>@rapor.SatisSayisi</td>
+                                                        <td>@rapor.ToplamNetSatis.ToString("N2") TL</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Aylık Satış Özeti</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Ay</th>
+                                                    <th>Satış Sayısı</th>
+                                                    <th>Toplam Tutar</th>
+                                                    <th>İndirim</th>
+                                                    <th>Net Satış</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.AylikSatisOzetleri)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.AyEtiketi</td>
+                                                        <td>@rapor.SatisSayisi</td>
+                                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
+                                                        <td>@rapor.ToplamIndirim.ToString("N2") TL</td>
+                                                        <td class="text-success fw-semibold">
+                                                            @rapor.NetSatis.ToString("N2") TL
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Yıllık Satış Özeti</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Yıl</th>
+                                                    <th>Satış Sayısı</th>
+                                                    <th>Toplam Tutar</th>
+                                                    <th>İndirim</th>
+                                                    <th>Net Satış</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.YillikSatisOzetleri)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.Yil</td>
+                                                        <td>@rapor.SatisSayisi</td>
+                                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
+                                                        <td>@rapor.ToplamIndirim.ToString("N2") TL</td>
+                                                        <td class="text-success fw-semibold">
+                                                            @rapor.NetSatis.ToString("N2") TL
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">En Çok Satılan Ürünler</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Ürün Adı</th>
+                                                    <th>Toplam Adet</th>
+                                                    <th>Satış Tutarı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.EnCokSatilanUrunler)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.UrunAdi</td>
+                                                        <td>@rapor.ToplamSatilanAdet</td>
+                                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-12">
+                            <section class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Kategori Bazlı Satış Raporu</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Kategori</th>
+                                                    <th>Toplam Satılan Adet</th>
+                                                    <th>Toplam Satış Tutarı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.KategoriBazliSatisRaporu)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.KategoriAdi</td>
+                                                        <td>@rapor.ToplamSatilanAdet</td>
+                                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
-            </section>
+
+                <div class="tab-pane fade"
+                     id="stokRaporlari"
+                     role="tabpanel"
+                     aria-labelledby="stok-tab">
+
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Kritik Stok Raporu</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Ürün</th>
+                                                    <th>Kategori</th>
+                                                    <th>Stok</th>
+                                                    <th>Minimum</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.KritikStokRaporu)
+                                                {
+                                                    <tr class="table-warning">
+                                                        <td class="fw-semibold">@rapor.UrunAdi</td>
+                                                        <td>@rapor.KategoriAdi</td>
+                                                        <td>@rapor.StokMiktari</td>
+                                                        <td>@rapor.MinimumStok</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                        <div>
+                                            <h2 class="h5 fw-bold mb-1">Hiç Satılmayan Ürünler</h2>
+                                            <p class="text-muted small mb-0">
+                                                İlk 15 kayıt gösteriliyor.
+                                            </p>
+                                        </div>
+
+                                        <a asp-controller="Raporlar"
+                                           asp-action="HicSatilmayanUrunler"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Tümünü Gör
+                                        </a>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Ürün Adı</th>
+                                                    <th>Barkod</th>
+                                                    <th>Stok</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.HicSatilmayanUrunler.Take(15))
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.UrunAdi</td>
+                                                        <td>@rapor.Barkod</td>
+                                                        <td>@rapor.StokMiktari</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    @if (Model.HicSatilmayanUrunler.Count > 15)
+                                    {
+                                        <div class="text-muted small mt-2">
+                                            İlk 15 kayıt gösteriliyor. Tüm hiç satılmayan ürünleri detay sayfasında inceleyebilirsiniz.
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade"
+                     id="musteriRaporlari"
+                     role="tabpanel"
+                     aria-labelledby="musteri-tab">
+
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">En Çok Alışveriş Yapan Müşteriler</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Müşteri</th>
+                                                    <th>Toplam Harcama</th>
+                                                    <th>Puan</th>
+                                                    <th>İndirim</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.EnCokAlisverisYapanMusteriler)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.MusteriAdi</td>
+                                                        <td>@rapor.ToplamHarcama.ToString("N2") TL</td>
+                                                        <td>@rapor.SadakatPuani</td>
+                                                        <td>% @rapor.IndirimOrani.ToString("N2")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Müşteri Hangi Ürünü En Çok Alıyor</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Müşteri</th>
+                                                    <th>Ürün</th>
+                                                    <th>Toplam Adet</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.MusteriUrunAnalizi)
+                                                {
+                                                    <tr>
+                                                        <td>@rapor.MusteriAdi</td>
+                                                        <td class="fw-semibold">@rapor.UrunAdi</td>
+                                                        <td>@rapor.ToplamAdet</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade"
+                     id="personelTedarikciRaporlari"
+                     role="tabpanel"
+                     aria-labelledby="personel-tab">
+
+                    <div class="row g-4">
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Personel Satış Performansı</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Personel</th>
+                                                    <th>Satış Sayısı</th>
+                                                    <th>Satış Tutarı</th>
+                                                    <th>Prim</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.PersonelSatisPerformansi)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.PersonelAdi</td>
+                                                        <td>@rapor.SatisSayisi</td>
+                                                        <td>@rapor.ToplamSatisTutari.ToString("N2") TL</td>
+                                                        <td>% @rapor.PrimOrani.ToString("N2")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="col-xl-6">
+                            <section class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <h2 class="h5 fw-bold mb-3">Tedarikçi Ürün ve İndirim Raporu</h2>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Tedarikçi</th>
+                                                    <th>Ürün Sayısı</th>
+                                                    <th>İndirim Oranı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var rapor in Model.TedarikciUrunIndirimRaporu)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@rapor.FirmaAdi</td>
+                                                        <td>@rapor.UrunSayisi</td>
+                                                        <td>% @rapor.IndirimOrani.ToString("N2")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -951,3 +951,58 @@ body {
         background: #ffffff !important;
     }
 }
+.reports-tabs-wrapper {
+    border-radius: 12px;
+}
+
+.reports-tabs-scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.reports-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-width: max-content;
+}
+
+    .reports-tabs .nav-link {
+        border: 1px solid #d8dee9;
+        background: #f8fafc;
+        color: #334155;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 10px 14px;
+        white-space: nowrap;
+        transition: all 0.18s ease-in-out;
+    }
+
+        .reports-tabs .nav-link:hover {
+            background: #eef4ff;
+            border-color: #9ec5fe;
+            color: #0d6efd;
+        }
+
+        .reports-tabs .nav-link.active {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(13, 110, 253, 0.22);
+        }
+
+.reports-tab-content {
+    padding-top: 18px;
+}
+
+@media (max-width: 768px) {
+    .reports-tabs-scroll {
+        margin-left: -4px;
+        margin-right: -4px;
+    }
+
+    .reports-tabs .nav-link {
+        padding: 9px 12px;
+        font-size: 0.92rem;
+    }
+}

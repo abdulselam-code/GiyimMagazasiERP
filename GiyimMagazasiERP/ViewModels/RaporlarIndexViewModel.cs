@@ -21,6 +21,19 @@ public class RaporlarIndexViewModel
     public List<PersonelSatisPerformansiViewModel> PersonelSatisPerformansi { get; set; } = new();
     public List<TedarikciUrunIndirimRaporuViewModel> TedarikciUrunIndirimRaporu { get; set; } = new();
     public List<KategoriBazliSatisRaporuViewModel> KategoriBazliSatisRaporu { get; set; } = new();
+
+    public DateTime BaslangicTarihi { get; set; }
+    public DateTime BitisTarihi { get; set; }
+    public string Donem { get; set; } = "BuAy";
+
+    public int DonemToplamSatisSayisi { get; set; }
+    public decimal DonemToplamSatisTutari { get; set; }
+    public decimal DonemToplamIndirim { get; set; }
+    public decimal DonemToplamNetSatis { get; set; }
+    public decimal DonemOrtalamaSatisTutari { get; set; }
+    public decimal DonemNetKarZarar { get; set; }
+
+    public List<OdemeTipiGelirRaporuViewModel> OdemeTipineGoreGelirler { get; set; } = new();
 }
 
 public class GenelFinansOzetiViewModel
@@ -150,4 +163,21 @@ public class KategoriBazliSatisRaporuViewModel
     public string KategoriAdi { get; set; } = null!;
     public int ToplamSatilanAdet { get; set; }
     public decimal ToplamSatisTutari { get; set; }
+}
+public class OdemeTipiGelirRaporuViewModel
+{
+    public string OdemeTipi { get; set; } = "-";
+    public int SatisSayisi { get; set; }
+    public decimal ToplamGelir { get; set; }
+}
+public class HicSatilmayanUrunDetayViewModel
+{
+    public string UrunAdi { get; set; } = null!;
+    public string Barkod { get; set; } = null!;
+    public string KategoriAdi { get; set; } = "-";
+    public string TedarikciAdi { get; set; } = "-";
+    public int StokMiktari { get; set; }
+    public int MinimumStok { get; set; }
+    public decimal SatisFiyati { get; set; }
+    public bool AktifMi { get; set; }
 }
