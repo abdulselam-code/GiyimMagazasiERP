@@ -21,7 +21,9 @@ public class DashboardController : Controller
     {
         var bugun = DateTime.Today;
         var yarin = bugun.AddDays(1);
-        var ayBaslangici = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var ayBaslangici = new DateTime(bugun.Year, bugun.Month, 1);
+        var sonrakiAyBaslangici = ayBaslangici.AddMonths(1);
+        var ayBitisi = sonrakiAyBaslangici.AddDays(-1);
 
         var toplamGelir = await _context.FinansHareketleri
             .AsNoTracking()
@@ -37,6 +39,55 @@ public class DashboardController : Controller
         {
             KullaniciAdi = User.Identity?.Name ?? "Kullanıcı",
             Rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Personel",
+
+            BugununTarihi = bugun,
+            BuAyBaslangicTarihi = ayBaslangici,
+            BuAyBitisTarihi = ayBitisi,
+
+            IlkSatisTarihi = await _context.Satislar
+    .AsNoTracking()
+    .OrderBy(x => x.SatisTarihi)
+    .Select(x => (DateTime?)x.SatisTarihi)
+    .FirstOrDefaultAsync(),
+
+            SonSatisTarihi = await _context.Satislar
+    .AsNoTracking()
+    .OrderByDescending(x => x.SatisTarihi)
+    .Select(x => (DateTime?)x.SatisTarihi)
+    .FirstOrDefaultAsync(),
+
+            SonStokHareketiTarihi = await _context.StokHareketleri
+    .AsNoTracking()
+    .OrderByDescending(x => x.Tarih)
+    .Select(x => (DateTime?)x.Tarih)
+    .FirstOrDefaultAsync(),
+
+            SonFinansHareketiTarihi = await _context.FinansHareketleri
+    .AsNoTracking()
+    .OrderByDescending(x => x.Tarih)
+    .Select(x => (DateTime?)x.Tarih)
+    .FirstOrDefaultAsync(),
+
+            AylikSatisSayisi = await _context.Satislar
+    .CountAsync(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici),
+
+            AylikSatisGeliri = await _context.Satislar
+    .Where(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici)
+    .SumAsync(x => (decimal?)x.NetTutar) ?? 0,
+
+            BugunkuGider = await _context.FinansHareketleri
+    .Where(x => x.HareketTipi == "Gider" && x.Tarih >= bugun && x.Tarih < yarin)
+    .SumAsync(x => (decimal?)x.Tutar) ?? 0,
+
+            NetKarZarar = toplamGelir - toplamGider,
+
+            EnYuksekMaas = await _context.Personeller
+    .Where(x => x.AktifMi)
+    .MaxAsync(x => (decimal?)x.Maas) ?? 0,
+
+            EnDusukMaas = await _context.Personeller
+    .Where(x => x.AktifMi)
+    .MinAsync(x => (decimal?)x.Maas) ?? 0,
 
             ToplamUrunCesidi = await _context.Urunler.CountAsync(),
             ToplamStokAdedi = await _context.Urunler.SumAsync(x => (int?)x.StokMiktari) ?? 0,
@@ -75,24 +126,115 @@ public class DashboardController : Controller
             EnYuksekGider = await _context.FinansHareketleri
                 .Where(x => x.HareketTipi == "Gider")
                 .MaxAsync(x => (decimal?)x.Tutar) ?? 0
+               
         };
 
         model.HizliIslemler = HizliIslemleriGetir();
 
-        model.SonSatislar = await _context.Satislar
+        model.IsletmeKurulusTarihi = await _context.MagazaBilgileri
+    .AsNoTracking()
+    .Where(x => x.AktifMi)
+    .Select(x => x.KurulusTarihi)
+    .FirstOrDefaultAsync();
+
+        model.EnCokSatanUrunAdi = await _context.SatisDetaylari
             .AsNoTracking()
-            .Include(x => x.Musteri)
-            .OrderByDescending(x => x.SatisTarihi)
-            .Take(8)
-            .Select(x => new DashboardSonSatisViewModel
+            .GroupBy(x => x.Urun.UrunAdi)
+            .Select(g => new
             {
-                SatisId = x.Id,
-                SatisTarihi = x.SatisTarihi,
-                MusteriAdi = x.Musteri != null ? x.Musteri.AdSoyad : "Kayıtsız Müşteri",
-                NetTutar = x.NetTutar,
-                OdemeTipi = x.OdemeTipi
+                UrunAdi = g.Key,
+                Adet = g.Sum(x => x.Adet)
             })
+            .OrderByDescending(x => x.Adet)
+            .Select(x => x.UrunAdi)
+            .FirstOrDefaultAsync() ?? "Henüz satış yok";
+
+        model.EnCokHarcamaYapanMusteriAdi = await _context.Satislar
+            .AsNoTracking()
+            .Where(x => x.Musteri != null)
+            .GroupBy(x => x.Musteri!.AdSoyad)
+            .Select(g => new
+            {
+                MusteriAdi = g.Key,
+                Harcama = g.Sum(x => x.NetTutar)
+            })
+            .OrderByDescending(x => x.Harcama)
+            .Select(x => x.MusteriAdi)
+            .FirstOrDefaultAsync() ?? "Henüz müşteri yok";
+
+        model.OdemeTipineGoreGelirler = await _context.Satislar
+            .AsNoTracking()
+            .GroupBy(x => x.OdemeTipi)
+            .Select(g => new DashboardOdemeTipiGelirViewModel
+            {
+                OdemeTipi = g.Key,
+                SatisSayisi = g.Count(),
+                ToplamGelir = g.Sum(x => x.NetTutar)
+            })
+            .OrderByDescending(x => x.ToplamGelir)
             .ToListAsync();
+
+        var satisSorgusu = _context.Satislar
+    .AsNoTracking()
+    .Include(x => x.Musteri)
+    .AsQueryable();
+
+        if (User.IsInRole("Kasiyer"))
+        {
+            var kullaniciIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (int.TryParse(kullaniciIdText, out var kullaniciId))
+            {
+                var personelId = await _context.Kullanicilar
+                    .AsNoTracking()
+                    .Where(x => x.Id == kullaniciId)
+                    .Select(x => x.PersonelId)
+                    .FirstOrDefaultAsync();
+                if (personelId.HasValue)
+                {
+                    satisSorgusu = satisSorgusu.Where(x => x.PersonelId == personelId.Value);
+
+                    model.BugunkuSatisSayisi = await satisSorgusu
+                        .CountAsync(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin);
+
+                    model.BugunkuSatisGeliri = await satisSorgusu
+                        .Where(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin)
+                        .SumAsync(x => (decimal?)x.NetTutar) ?? 0;
+
+                    model.AylikSatisSayisi = await satisSorgusu
+                        .CountAsync(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici);
+
+                    model.AylikSatisGeliri = await satisSorgusu
+                        .Where(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici)
+                        .SumAsync(x => (decimal?)x.NetTutar) ?? 0;
+                }
+                else
+                {
+                    model.KasiyerPersonelEslesmesiVarMi = false;
+                    model.UyariMesaji = "Bu kullanıcıya bağlı personel kaydı bulunamadı.";
+                    satisSorgusu = satisSorgusu.Where(x => false);
+                }
+            }
+            else
+            {
+                model.KasiyerPersonelEslesmesiVarMi = false;
+                model.UyariMesaji = "Bu kullanıcıya bağlı personel kaydı bulunamadı.";
+                satisSorgusu = satisSorgusu.Where(x => false);
+            }
+        }
+
+        model.SonSatislar = await satisSorgusu
+    .OrderByDescending(x => x.SatisTarihi)
+    .Take(8)
+    .Select(x => new DashboardSonSatisViewModel
+    {
+        SatisId = x.Id,
+        SatisTarihi = x.SatisTarihi,
+        MusteriAdi = x.Musteri != null ? x.Musteri.AdSoyad : "Nihai Tüketici",
+        NetTutar = x.NetTutar,
+        OdemeTipi = x.OdemeTipi
+    })
+    .ToListAsync();
 
         model.KritikStokUrunleri = await _context.Urunler
             .AsNoTracking()

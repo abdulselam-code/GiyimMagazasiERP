@@ -26,6 +26,32 @@ public class DashboardViewModel
     public decimal OrtalamaMaas { get; set; }
     public decimal EnYuksekGider { get; set; }
 
+    public DateTime BugununTarihi { get; set; }
+    public DateTime BuAyBaslangicTarihi { get; set; }
+    public DateTime BuAyBitisTarihi { get; set; }
+
+    public DateTime? IsletmeKurulusTarihi { get; set; }
+    public DateTime? IlkSatisTarihi { get; set; }
+    public DateTime? SonSatisTarihi { get; set; }
+    public DateTime? SonStokHareketiTarihi { get; set; }
+    public DateTime? SonFinansHareketiTarihi { get; set; }
+
+    public int AylikSatisSayisi { get; set; }
+    public decimal AylikSatisGeliri { get; set; }
+    public decimal BugunkuGider { get; set; }
+    public decimal NetKarZarar { get; set; }
+
+    public decimal EnYuksekMaas { get; set; }
+    public decimal EnDusukMaas { get; set; }
+
+    public string EnCokSatanUrunAdi { get; set; } = "Henüz satış yok";
+    public string EnCokHarcamaYapanMusteriAdi { get; set; } = "Henüz müşteri yok";
+
+    public bool KasiyerPersonelEslesmesiVarMi { get; set; } = true;
+    public string? UyariMesaji { get; set; }
+
+    public List<DashboardOdemeTipiGelirViewModel> OdemeTipineGoreGelirler { get; set; } = new();
+
     public List<DashboardQuickActionViewModel> HizliIslemler { get; set; } = new();
     public List<DashboardSonSatisViewModel> SonSatislar { get; set; } = new();
     public List<DashboardKritikStokViewModel> KritikStokUrunleri { get; set; } = new();
@@ -108,4 +134,10 @@ public class DashboardPersonelOzetViewModel
     public string Pozisyon { get; set; } = null!;
     public string Departman { get; set; } = null!;
     public decimal Maas { get; set; }
+}
+public class DashboardOdemeTipiGelirViewModel
+{
+    public string OdemeTipi { get; set; } = "-";
+    public int SatisSayisi { get; set; }
+    public decimal ToplamGelir { get; set; }
 }

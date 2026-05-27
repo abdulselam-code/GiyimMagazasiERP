@@ -1006,3 +1006,106 @@ body {
         font-size: 0.92rem;
     }
 }
+.dashboard-page {
+    color: #111827;
+}
+
+.dashboard-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 20px;
+    background: linear-gradient(135deg, #102033, #1d4ed8);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.dashboard-role-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    padding: 5px 12px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.dashboard-meta {
+    display: grid;
+    gap: 10px;
+    min-width: 280px;
+}
+
+    .dashboard-meta div,
+    .dashboard-info-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 12px 14px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .dashboard-meta div {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .dashboard-meta span,
+    .dashboard-info-card span {
+        display: block;
+        color: #64748b;
+        font-size: 0.82rem;
+        margin-bottom: 4px;
+    }
+
+    .dashboard-meta span {
+        color: rgba(255, 255, 255, 0.78);
+    }
+
+    .dashboard-meta strong,
+    .dashboard-info-card strong {
+        display: block;
+        font-size: 0.98rem;
+    }
+
+.dashboard-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.dashboard-page .card {
+    border-radius: 10px;
+}
+
+.dashboard-page .card-body p {
+    font-size: 0.9rem;
+}
+
+.dashboard-page canvas {
+    max-height: 260px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-hero {
+        flex-direction: column;
+        padding: 18px;
+    }
+
+    .dashboard-meta {
+        min-width: 0;
+    }
+
+    .dashboard-quick-actions .btn {
+        width: 100%;
+    }
+}
