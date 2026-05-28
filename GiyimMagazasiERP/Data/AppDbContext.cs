@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Personel> Personeller => Set<Personel>();
     public DbSet<Musteri> Musteriler => Set<Musteri>();
     public DbSet<Kategori> Kategoriler => Set<Kategori>();
+    public DbSet<AltKategori> AltKategoriler => Set<AltKategori>();
     public DbSet<Tedarikci> Tedarikciler => Set<Tedarikci>();
     public DbSet<Urun> Urunler => Set<Urun>();
     public DbSet<Satis> Satislar => Set<Satis>();
@@ -74,6 +75,20 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Aciklama).HasMaxLength(250);
         });
 
+        modelBuilder.Entity<AltKategori>(entity =>
+        {
+            entity.ToTable("AltKategoriler");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.AltKategoriAdi).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Aciklama).HasMaxLength(250);
+
+            entity.HasOne(x => x.Kategori)
+                .WithMany(x => x.AltKategoriler)
+                .HasForeignKey(x => x.KategoriId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<Tedarikci>(entity =>
         {
             entity.ToTable("Tedarikciler");
@@ -102,6 +117,11 @@ public class AppDbContext : DbContext
             entity.HasOne(x => x.Kategori)
                 .WithMany(x => x.Urunler)
                 .HasForeignKey(x => x.KategoriId);
+
+            entity.HasOne(x => x.AltKategori)
+                .WithMany(x => x.Urunler)
+                .HasForeignKey(x => x.AltKategoriId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(x => x.Tedarikci)
                 .WithMany(x => x.Urunler)

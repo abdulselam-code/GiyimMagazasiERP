@@ -11,7 +11,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Ürünler</h1>
-            <p class="text-muted mb-0">Ürün, stok, kategori ve tedarikçi yönetimi</p>
+            <p class="text-muted mb-0">Ürün, stok, ana kategori, alt kategori ve tedarikçi yönetimi</p>
         </div>
 
         <a asp-action="Create" class="btn btn-primary">Yeni Ürün</a>
@@ -32,7 +32,7 @@
                            name="arama"
                            value="@Model.Arama"
                            class="form-control"
-                           placeholder="Ürün adı, barkod, beden, renk, kategori veya tedarikçi ara" />
+                           placeholder="Ürün adı, barkod, beden, renk, kategori, alt kategori veya tedarikçi ara" />
                 </div>
 
                 <div class="col-sm-6 col-lg-2">
@@ -41,62 +41,24 @@
                             name="pageSize"
                             class="form-select"
                             onchange="this.form.submit()">
-                        @if (Model.PageSize == 5)
+                        @foreach (var size in new[] { 5, 10, 25, 50, 100 })
                         {
-                            <option value="5" selected>5</option>
-                        }
-                        else
-                        {
-                            <option value="5">5</option>
-                        }
-
-                        @if (Model.PageSize == 10)
-                        {
-                            <option value="10" selected>10</option>
-                        }
-                        else
-                        {
-                            <option value="10">10</option>
-                        }
-
-                        @if (Model.PageSize == 25)
-                        {
-                            <option value="25" selected>25</option>
-                        }
-                        else
-                        {
-                            <option value="25">25</option>
-                        }
-
-                        @if (Model.PageSize == 50)
-                        {
-                            <option value="50" selected>50</option>
-                        }
-                        else
-                        {
-                            <option value="50">50</option>
-                        }
-
-                        @if (Model.PageSize == 100)
-                        {
-                            <option value="100" selected>100</option>
-                        }
-                        else
-                        {
-                            <option value="100">100</option>
+                            if (Model.PageSize == size)
+                            {
+                                <option value="@size" selected>@size</option>
+                            }
+                            else
+                            {
+                                <option value="@size">@size</option>
+                            }
                         }
                     </select>
                 </div>
 
                 <div class="col-sm-6 col-lg-3">
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">
-                            Ara
-                        </button>
-
-                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">
-                            Temizle
-                        </a>
+                        <button type="submit" class="btn btn-primary flex-fill">Ara</button>
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">Temizle</a>
                     </div>
                 </div>
             </form>
@@ -105,18 +67,7 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div class="text-muted small">
-            @if (!string.IsNullOrWhiteSpace(Model.Arama))
-            {
-                <span>
-                    Arama sonucu <strong>@Model.TotalCount</strong> kayıt bulundu.
-                </span>
-            }
-            else
-            {
-                <span>
-                    Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
-                </span>
-            }
+            Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
         </div>
 
         <div class="text-muted small">
@@ -132,11 +83,11 @@
                         <tr>
                             <th>Ürün Adı</th>
                             <th>Barkod</th>
-                            <th>Kategori</th>
+                            <th>Ana Kategori</th>
+                            <th>Alt Kategori</th>
                             <th>Tedarikçi</th>
                             <th>Beden</th>
                             <th>Renk</th>
-                            <th>Alış</th>
                             <th>Satış</th>
                             <th>Stok</th>
                             <th>Minimum</th>
@@ -156,18 +107,16 @@
 
                                         @if (urun.StokMiktari <= urun.MinimumStok)
                                         {
-                                            <span class="badge text-bg-warning ms-1">
-                                                Kritik Stok
-                                            </span>
+                                            <span class="badge text-bg-warning ms-1">Kritik Stok</span>
                                         }
                                     </td>
 
                                     <td>@urun.Barkod</td>
                                     <td>@urun.Kategori.KategoriAdi</td>
+                                    <td>@(urun.AltKategori?.AltKategoriAdi ?? "-")</td>
                                     <td>@urun.Tedarikci.FirmaAdi</td>
                                     <td>@urun.Beden</td>
                                     <td>@urun.Renk</td>
-                                    <td>@urun.AlisFiyati.ToString("N2") TL</td>
                                     <td>@urun.SatisFiyati.ToString("N2") TL</td>
                                     <td>@urun.StokMiktari</td>
                                     <td>@urun.MinimumStok</td>

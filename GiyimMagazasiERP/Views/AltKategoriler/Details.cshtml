@@ -1,0 +1,39 @@
+﻿@model GiyimMagazasiERP.Models.AltKategori
+
+@{
+    ViewData["Title"] = "Alt Kategori Detayı";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Alt Kategori Detayı</h1>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Ana Kategori</dt>
+                <dd class="col-sm-9">@Model.Kategori.KategoriAdi</dd>
+
+                <dt class="col-sm-3">Alt Kategori</dt>
+                <dd class="col-sm-9">@Model.AltKategoriAdi</dd>
+
+                <dt class="col-sm-3">Açıklama</dt>
+                <dd class="col-sm-9">@(Model.Aciklama ?? "-")</dd>
+
+                <dt class="col-sm-3">Durum</dt>
+                <dd class="col-sm-9">
+                    <span class="badge @(Model.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                        @(Model.AktifMi ? "Aktif" : "Pasif")
+                    </span>
+                </dd>
+
+                <dt class="col-sm-3">Oluşturma Tarihi</dt>
+                <dd class="col-sm-9">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy")</dd>
+            </dl>
+
+            <div class="mt-4">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+            </div>
+        </div>
+    </div>
+</div>

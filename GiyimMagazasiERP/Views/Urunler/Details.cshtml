@@ -16,8 +16,11 @@
                 <dt class="col-sm-3">Barkod</dt>
                 <dd class="col-sm-9">@Model.Barkod</dd>
 
-                <dt class="col-sm-3">Kategori</dt>
+                <dt class="col-sm-3">Ana Kategori</dt>
                 <dd class="col-sm-9">@Model.Kategori.KategoriAdi</dd>
+
+                <dt class="col-sm-3">Alt Kategori</dt>
+                <dd class="col-sm-9">@(Model.AltKategori?.AltKategoriAdi ?? "-")</dd>
 
                 <dt class="col-sm-3">Tedarikçi</dt>
                 <dd class="col-sm-9">@Model.Tedarikci.FirmaAdi</dd>
@@ -38,7 +41,11 @@
                 <dd class="col-sm-9">@Model.MinimumStok</dd>
 
                 <dt class="col-sm-3">Durum</dt>
-                <dd class="col-sm-9">@(Model.AktifMi ? "Aktif" : "Pasif")</dd>
+                <dd class="col-sm-9">
+                    <span class="badge @(Model.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                        @(Model.AktifMi ? "Aktif" : "Pasif")
+                    </span>
+                </dd>
 
                 <dt class="col-sm-3">Oluşturma Tarihi</dt>
                 <dd class="col-sm-9">@Model.OlusturmaTarihi.ToString("dd/MM/yyyy")</dd>

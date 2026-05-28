@@ -8,6 +8,8 @@ public class Urun
     public string Barkod { get; set; } = null!;
 
     public int KategoriId { get; set; }
+
+    public int? AltKategoriId { get; set; }
     public int TedarikciId { get; set; }
 
     public string Beden { get; set; } = null!;
@@ -23,6 +25,8 @@ public class Urun
     public DateTime OlusturmaTarihi { get; set; }
 
     public Kategori Kategori { get; set; } = null!;
+
+    public AltKategori? AltKategori { get; set; }
     public Tedarikci Tedarikci { get; set; } = null!;
 
     public ICollection<SatisDetayi> SatisDetaylari { get; set; }

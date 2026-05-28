@@ -9,4 +9,6 @@ public class Kategori
 
     public ICollection<Urun> Urunler { get; set; }
         = new List<Urun>();
+    public ICollection<AltKategori> AltKategoriler { get; set; }
+    = new List<AltKategori>();
 }

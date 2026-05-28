@@ -1,7 +1,9 @@
 ﻿@model GiyimMagazasiERP.Models.Urun
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "Yeni Ürün";
+    var altKategorilerJson = JsonSerializer.Serialize(ViewData["AltKategorilerJson"]);
 }
 
 <div class="container py-4">
@@ -25,14 +27,31 @@
                         <span asp-validation-for="Barkod" class="text-danger"></span>
                     </div>
 
-                    <div class="col-md-6">
-                        <label asp-for="KategoriId" class="form-label">Kategori</label>
-                        <select asp-for="KategoriId" asp-items="ViewBag.KategoriId" class="form-select"></select>
+                    <div class="col-md-4">
+                        <label asp-for="KategoriId" class="form-label">Ana Kategori</label>
+                        <select asp-for="KategoriId"
+                                asp-items="ViewBag.KategoriId"
+                                class="form-select"
+                                id="kategoriSecimi">
+                            <option value="">Ana Kategori Seçiniz</option>
+                        </select>
                     </div>
 
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label asp-for="AltKategoriId" class="form-label">Alt Kategori</label>
+                        <select asp-for="AltKategoriId"
+                                class="form-select"
+                                id="altKategoriSecimi">
+                            <option value="">Alt Kategori Seçiniz</option>
+                        </select>
+                        <div class="form-text">Ana kategoriye göre filtrelenir. Zorunlu değildir.</div>
+                    </div>
+
+                    <div class="col-md-4">
                         <label asp-for="TedarikciId" class="form-label">Tedarikçi</label>
-                        <select asp-for="TedarikciId" asp-items="ViewBag.TedarikciId" class="form-select"></select>
+                        <select asp-for="TedarikciId" asp-items="ViewBag.TedarikciId" class="form-select">
+                            <option value="">Tedarikçi Seçiniz</option>
+                        </select>
                     </div>
 
                     <div class="col-md-3">
@@ -81,3 +100,38 @@
         </div>
     </div>
 </div>
+
+<script type="application/json" id="altKategorilerJson">@Html.Raw(altKategorilerJson)</script>
+
+@section Scripts {
+    <script>
+        (() => {
+        const altKategoriler = JSON.parse(document.getElementById("altKategorilerJson").textContent || "[]");
+        const kategoriSecimi = document.getElementById("kategoriSecimi");
+        const altKategoriSecimi = document.getElementById("altKategoriSecimi");
+        const seciliAltKategoriId = "@(Model.AltKategoriId?.ToString() ?? "")";
+
+        function altKategorileriYukle() {
+        const kategoriId = Number(kategoriSecimi.value);
+        altKategoriSecimi.innerHTML = '<option value="">Alt Kategori Seçiniz</option>';
+
+        altKategoriler
+        .filter(x => Number(x.KategoriId) === kategoriId)
+        .forEach(x => {
+        const option = document.createElement("option");
+        option.value = x.Id;
+        option.textContent = x.AltKategoriAdi;
+
+        if (String(x.Id) === seciliAltKategoriId) {
+        option.selected = true;
+        }
+
+        altKategoriSecimi.appendChild(option);
+        });
+        }
+
+        kategoriSecimi.addEventListener("change", altKategorileriYukle);
+        altKategorileriYukle();
+        })();
+    </script>
+}

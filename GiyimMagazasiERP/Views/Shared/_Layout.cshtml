@@ -21,6 +21,7 @@
         aktifController == "Musteriler" ||
         aktifController == "Personeller" ||
         aktifController == "Kategoriler" ||
+        aktifController == "AltKategoriler" ||
         aktifController == "Tedarikciler";
 
     var hareketlerAktif =
@@ -128,6 +129,14 @@
                                                    asp-controller="Kategoriler"
                                                    asp-action="Index">
                                                     Kategoriler
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "AltKategoriler" ? "active" : "")"
+                                                   asp-controller="AltKategoriler"
+                                                   asp-action="Index">
+                                                    Alt Kategoriler
                                                 </a>
                                             </li>
 

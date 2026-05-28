@@ -1,10 +1,10 @@
 ﻿using GiyimMagazasiERP.Data;
 using GiyimMagazasiERP.Models;
 using GiyimMagazasiERP.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
 
 namespace GiyimMagazasiERP.Controllers;
 
@@ -30,6 +30,7 @@ public class UrunlerController : Controller
 
         var query = _context.Urunler
             .Include(x => x.Kategori)
+            .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
             .AsQueryable();
 
@@ -43,6 +44,7 @@ public class UrunlerController : Controller
                 x.Beden.Contains(arama) ||
                 x.Renk.Contains(arama) ||
                 x.Kategori.KategoriAdi.Contains(arama) ||
+                (x.AltKategori != null && x.AltKategori.AltKategoriAdi.Contains(arama)) ||
                 x.Tedarikci.FirmaAdi.Contains(arama));
         }
 
@@ -78,6 +80,7 @@ public class UrunlerController : Controller
 
         var urun = await _context.Urunler
             .Include(x => x.Kategori)
+            .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
             .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -96,13 +99,16 @@ public class UrunlerController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("UrunAdi,Barkod,KategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi")]
-    Urun urun)
+        [Bind("UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi")]
+        Urun urun)
     {
         urun.OlusturmaTarihi = DateTime.Now;
 
         ModelState.Remove("Kategori");
+        ModelState.Remove("AltKategori");
         ModelState.Remove("Tedarikci");
+        ModelState.Remove("SatisDetaylari");
+        ModelState.Remove("StokHareketleri");
 
         if (ModelState.IsValid)
         {
@@ -111,7 +117,7 @@ public class UrunlerController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId);
+        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId, urun.AltKategoriId);
         return View(urun);
     }
 
@@ -125,7 +131,7 @@ public class UrunlerController : Controller
         if (urun is null)
             return NotFound();
 
-        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId);
+        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId, urun.AltKategoriId);
         return View(urun);
     }
 
@@ -133,11 +139,17 @@ public class UrunlerController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        [Bind("Id,UrunAdi,Barkod,KategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi,OlusturmaTarihi")]
+        [Bind("Id,UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi,OlusturmaTarihi")]
         Urun urun)
     {
         if (id != urun.Id)
             return NotFound();
+
+        ModelState.Remove("Kategori");
+        ModelState.Remove("AltKategori");
+        ModelState.Remove("Tedarikci");
+        ModelState.Remove("SatisDetaylari");
+        ModelState.Remove("StokHareketleri");
 
         if (ModelState.IsValid)
         {
@@ -157,7 +169,7 @@ public class UrunlerController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId);
+        await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId, urun.AltKategoriId);
         return View(urun);
     }
 
@@ -168,6 +180,7 @@ public class UrunlerController : Controller
 
         var urun = await _context.Urunler
             .Include(x => x.Kategori)
+            .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
             .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -199,16 +212,50 @@ public class UrunlerController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task DropdownlariDoldur(int? kategoriId = null, int? tedarikciId = null)
+    private async Task DropdownlariDoldur(
+        int? kategoriId = null,
+        int? tedarikciId = null,
+        int? altKategoriId = null)
     {
+        var kategoriler = await _context.Kategoriler
+            .AsNoTracking()
+            .OrderBy(x => x.KategoriAdi)
+            .ToListAsync();
+
         ViewData["KategoriId"] = new SelectList(
-            await _context.Kategoriler.OrderBy(x => x.KategoriAdi).ToListAsync(),
+            kategoriler,
             "Id",
             "KategoriAdi",
             kategoriId);
 
+        var altKategoriler = await _context.AltKategoriler
+            .AsNoTracking()
+            .Where(x => x.AktifMi)
+            .OrderBy(x => x.Kategori.KategoriAdi)
+            .ThenBy(x => x.AltKategoriAdi)
+            .Select(x => new
+            {
+                x.Id,
+                x.KategoriId,
+                x.AltKategoriAdi,
+                KategoriAdi = x.Kategori.KategoriAdi,
+                Gorunum = x.Kategori.KategoriAdi + " - " + x.AltKategoriAdi
+            })
+            .ToListAsync();
+
+        ViewData["AltKategoriId"] = new SelectList(
+            altKategoriler,
+            "Id",
+            "AltKategoriAdi",
+            altKategoriId);
+
+        ViewData["AltKategorilerJson"] = altKategoriler;
+
         ViewData["TedarikciId"] = new SelectList(
-            await _context.Tedarikciler.OrderBy(x => x.FirmaAdi).ToListAsync(),
+            await _context.Tedarikciler
+                .AsNoTracking()
+                .OrderBy(x => x.FirmaAdi)
+                .ToListAsync(),
             "Id",
             "FirmaAdi",
             tedarikciId);
