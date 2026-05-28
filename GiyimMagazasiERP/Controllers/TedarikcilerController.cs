@@ -70,15 +70,96 @@ public class TedarikcilerController : Controller
 
     public async Task<IActionResult> Details(int? id)
     {
-        if (id is null) return NotFound();
+        if (id is null)
+            return NotFound();
 
         var tedarikci = await _context.Tedarikciler
-            .Include(x => x.Urunler)
-            .FirstOrDefaultAsync(x => x.Id == id);
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id.Value);
 
-        if (tedarikci is null) return NotFound();
+        if (tedarikci is null)
+            return NotFound();
 
-        return View(tedarikci);
+        var urunler = await _context.Urunler
+            .AsNoTracking()
+            .Include(x => x.Kategori)
+            .Include(x => x.AltKategori)
+            .Where(x => x.TedarikciId == id.Value)
+            .OrderBy(x => x.UrunAdi)
+            .ToListAsync();
+
+        var ilkUrunKayitTarihi = urunler.Any()
+            ? urunler.Min(x => (DateTime?)x.OlusturmaTarihi)
+            : null;
+
+        var sonUrunKayitTarihi = urunler.Any()
+            ? urunler.Max(x => (DateTime?)x.OlusturmaTarihi)
+            : null;
+
+        var sonStokHareketiTarihi = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(x => x.Urun.TedarikciId == id.Value)
+            .OrderByDescending(x => x.Tarih)
+            .Select(x => (DateTime?)x.Tarih)
+            .FirstOrDefaultAsync();
+
+        var toplamStokAlisDegeri = urunler.Sum(x => x.StokMiktari * x.AlisFiyati);
+        var toplamStokSatisDegeri = urunler.Sum(x => x.StokMiktari * x.SatisFiyati);
+
+        var ortalamaAlisFiyati = urunler.Any()
+            ? urunler.Average(x => x.AlisFiyati)
+            : 0;
+
+        var ortalamaSatisFiyati = urunler.Any()
+            ? urunler.Average(x => x.SatisFiyati)
+            : 0;
+
+        var ortalamaKarMarji = ortalamaAlisFiyati > 0
+            ? ((ortalamaSatisFiyati - ortalamaAlisFiyati) / ortalamaAlisFiyati) * 100
+            : 0;
+
+        var model = new TedarikciDetayViewModel
+        {
+            Tedarikci = tedarikci,
+
+            ToplamUrunCesidi = urunler.Count,
+            ToplamStokAdedi = urunler.Sum(x => x.StokMiktari),
+            KritikStokSayisi = urunler.Count(x => x.StokMiktari <= x.MinimumStok),
+
+            ToplamStokAlisDegeri = toplamStokAlisDegeri,
+            ToplamStokSatisDegeri = toplamStokSatisDegeri,
+            ToplamMaliyet = toplamStokAlisDegeri,
+            OrtalamaAlisFiyati = ortalamaAlisFiyati,
+            OrtalamaSatisFiyati = ortalamaSatisFiyati,
+            OrtalamaKarMarji = ortalamaKarMarji,
+            TedarikciIndirimOrani = tedarikci.IndirimOrani,
+
+            IlkUrunKayitTarihi = ilkUrunKayitTarihi,
+            SonUrunKayitTarihi = sonUrunKayitTarihi,
+            SonStokHareketiTarihi = sonStokHareketiTarihi,
+            YaklasikCalismaSuresi = CalismaSuresiHesapla(ilkUrunKayitTarihi),
+
+            Urunler = urunler.Select(x => new TedarikciUrunDetayViewModel
+            {
+                Id = x.Id,
+                UrunAdi = x.UrunAdi,
+                Barkod = x.Barkod,
+                AnaKategori = x.Kategori.KategoriAdi,
+                AltKategori = x.AltKategori != null ? x.AltKategori.AltKategoriAdi : "-",
+                Beden = x.Beden,
+                Renk = x.Renk,
+                AlisFiyati = x.AlisFiyati,
+                SatisFiyati = x.SatisFiyati,
+                KarMarji = x.AlisFiyati > 0
+                    ? ((x.SatisFiyati - x.AlisFiyati) / x.AlisFiyati) * 100
+                    : null,
+                StokMiktari = x.StokMiktari,
+                MinimumStok = x.MinimumStok,
+                AktifMi = x.AktifMi
+            }).ToList()
+        };
+
+        return View(model);
     }
 
     public IActionResult Create()
@@ -174,5 +255,35 @@ public class TedarikcilerController : Controller
         }
 
         return RedirectToAction(nameof(Index));
+    }
+    private static string CalismaSuresiHesapla(DateTime? baslangicTarihi)
+    {
+        if (!baslangicTarihi.HasValue)
+            return "Hesaplanamadı";
+
+        var bugun = DateTime.Today;
+        var baslangic = baslangicTarihi.Value.Date;
+
+        if (baslangic > bugun)
+            return "Hesaplanamadı";
+
+        var toplamAy = ((bugun.Year - baslangic.Year) * 12) + bugun.Month - baslangic.Month;
+
+        if (bugun.Day < baslangic.Day)
+            toplamAy--;
+
+        if (toplamAy < 1)
+            return "1 aydan az";
+
+        var yil = toplamAy / 12;
+        var ay = toplamAy % 12;
+
+        if (yil > 0 && ay > 0)
+            return $"{yil} yıl {ay} ay";
+
+        if (yil > 0)
+            return $"{yil} yıl";
+
+        return $"{ay} ay";
     }
 }

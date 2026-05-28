@@ -1,39 +1,320 @@
-﻿@model GiyimMagazasiERP.Models.Tedarikci
+﻿@model GiyimMagazasiERP.ViewModels.TedarikciDetayViewModel
 
 @{
     ViewData["Title"] = "Tedarikçi Detayı";
+
+    string Tl(decimal tutar) => tutar.ToString("N2") + " TL";
+    string Tarih(DateTime? tarih) => tarih.HasValue ? tarih.Value.ToString("dd.MM.yyyy") : "Henüz kayıt yok";
+    string TarihSaat(DateTime? tarih) => tarih.HasValue ? tarih.Value.ToString("dd.MM.yyyy HH:mm") : "Henüz kayıt yok";
+    string Yuzde(decimal oran) => oran.ToString("N2") + " %";
 }
 
 <div class="container py-4">
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            <h1 class="h4 fw-bold mb-4">Tedarikçi Detayı</h1>
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Tedarikçi Detayı</h1>
+            <p class="text-muted mb-0">
+                Firma bilgileri, ticari ilişki özeti ve tedarik edilen ürünler.
+            </p>
+        </div>
 
-            <dl class="row">
-                <dt class="col-sm-3">Firma Adı</dt>
-                <dd class="col-sm-9">@Model.FirmaAdi</dd>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit"
+               asp-route-id="@Model.Tedarikci.Id"
+               class="btn btn-warning">
+                Düzenle
+            </a>
 
-                <dt class="col-sm-3">Telefon</dt>
-                <dd class="col-sm-9">@(Model.Telefon ?? "-")</dd>
-
-                <dt class="col-sm-3">Email</dt>
-                <dd class="col-sm-9">@(Model.Email ?? "-")</dd>
-
-                <dt class="col-sm-3">Adres</dt>
-                <dd class="col-sm-9">@(Model.Adres ?? "-")</dd>
-
-                <dt class="col-sm-3">İndirim Oranı</dt>
-                <dd class="col-sm-9">% @Model.IndirimOrani.ToString("N2")</dd>
-
-                <dt class="col-sm-3">Ürün Sayısı</dt>
-                <dd class="col-sm-9">@Model.Urunler.Count</dd>
-
-                <dt class="col-sm-3">Durum</dt>
-                <dd class="col-sm-9">@(Model.AktifMi ? "Aktif" : "Pasif")</dd>
-            </dl>
-
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
-            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Listeye Dön
+            </a>
         </div>
     </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 fw-bold mb-1">@Model.Tedarikci.FirmaAdi</h2>
+                            <p class="text-muted mb-0">Tedarikçi bilgileri</p>
+                        </div>
+
+                        @if (Model.Tedarikci.AktifMi)
+                        {
+                            <span class="badge text-bg-success">Aktif</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-secondary">Pasif</span>
+                        }
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Telefon / İletişim</div>
+                                <strong>@(Model.Tedarikci.Telefon ?? "-")</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Email</div>
+                                <strong>@(Model.Tedarikci.Email ?? "-")</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <div class="text-muted small">Adres</div>
+                                <strong>@(Model.Tedarikci.Adres ?? "-")</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small">Bize Uyguladığı İndirim</div>
+                                @if (Model.TedarikciIndirimOrani > 0)
+                                {
+                                    <strong class="text-success">@Yuzde(Model.TedarikciIndirimOrani)</strong>
+                                }
+                                else
+                                {
+                                    <strong class="text-muted">İndirim tanımlı değil</strong>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-6">
+            <section class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-1">Ticari İlişki Bilgileri</h2>
+                    <p class="text-muted mb-3">Ürün kayıtları ve stok hareketlerine göre hesaplanır.</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">İlk Ürün Kayıt Tarihi</div>
+                                <strong>@Tarih(Model.IlkUrunKayitTarihi)</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Yaklaşık Çalışma Süresi</div>
+                                <strong>@Model.YaklasikCalismaSuresi</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Son Ürün Kayıt Tarihi</div>
+                                <strong>@Tarih(Model.SonUrunKayitTarihi)</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="text-muted small">Son Stok Hareketi</div>
+                                <strong>@TarihSaat(Model.SonStokHareketiTarihi)</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="text-muted small">Bu Tedarikçiden Alınan Ürünlerin Toplam Maliyeti</div>
+                                <strong class="text-success">@Tl(Model.ToplamMaliyet)</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <section class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Ürün Çeşidi</p>
+                    <h3 class="h4 fw-bold text-primary mb-0">@Model.ToplamUrunCesidi</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Stok Adedi</p>
+                    <h3 class="h4 fw-bold text-info mb-0">@Model.ToplamStokAdedi</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Kritik Stoktaki Ürün</p>
+                    <h3 class="h4 fw-bold text-warning mb-0">@Model.KritikStokSayisi</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Maliyet</p>
+                    <h3 class="h5 fw-bold text-success mb-0">@Tl(Model.ToplamMaliyet)</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Toplam Satış Değeri</p>
+                    <h3 class="h5 fw-bold text-success mb-0">@Tl(Model.ToplamStokSatisDegeri)</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Ortalama Alış</p>
+                    <h3 class="h5 fw-bold text-secondary mb-0">@Tl(Model.OrtalamaAlisFiyati)</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Ortalama Satış</p>
+                    <h3 class="h5 fw-bold text-secondary mb-0">@Tl(Model.OrtalamaSatisFiyati)</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+                <div class="card-body">
+                    <p class="text-muted mb-2">Ortalama Kâr Marjı</p>
+                    <h3 class="h5 fw-bold @(Model.OrtalamaKarMarji >= 0 ? "text-success" : "text-danger") mb-0">
+                        @Yuzde(Model.OrtalamaKarMarji)
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Bu Tedarikçiden Alınan Ürünler</h2>
+                    <p class="text-muted mb-0">Ürün, kategori, maliyet, satış ve stok bilgileri.</p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ürün Adı</th>
+                            <th>Barkod</th>
+                            <th>Ana Kategori</th>
+                            <th>Alt Kategori</th>
+                            <th>Beden</th>
+                            <th>Renk</th>
+                            <th class="text-end">Alış Fiyatı</th>
+                            <th class="text-end">Satış Fiyatı</th>
+                            <th class="text-end">Kâr Marjı</th>
+                            <th class="text-end">Stok</th>
+                            <th class="text-end">Minimum</th>
+                            <th>Durum</th>
+                            <th class="text-end">İşlemler</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (!Model.Urunler.Any())
+                        {
+                            <tr>
+                                <td colspan="13" class="text-center text-muted py-4">
+                                    Bu tedarikçiye bağlı ürün bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var urun in Model.Urunler)
+                            {
+                                var kritikMi = urun.StokMiktari <= urun.MinimumStok;
+
+                                <tr class="@(kritikMi ? "table-warning" : "")">
+                                    <td class="fw-semibold">@urun.UrunAdi</td>
+                                    <td>@urun.Barkod</td>
+                                    <td>@urun.AnaKategori</td>
+                                    <td>@urun.AltKategori</td>
+                                    <td>@urun.Beden</td>
+                                    <td>@urun.Renk</td>
+                                    <td class="text-end">@Tl(urun.AlisFiyati)</td>
+                                    <td class="text-end">@Tl(urun.SatisFiyati)</td>
+                                    <td class="text-end">
+                                        @if (urun.KarMarji.HasValue)
+                                        {
+                                            <span class="fw-semibold @(urun.KarMarji.Value >= 0 ? "text-success" : "text-danger")">
+                                                @Yuzde(urun.KarMarji.Value)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold">@urun.StokMiktari</td>
+                                    <td class="text-end">@urun.MinimumStok</td>
+                                    <td>
+                                        @if (urun.AktifMi)
+                                        {
+                                            <span class="badge text-bg-success">Aktif</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Pasif</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-controller="Urunler"
+                                               asp-action="Details"
+                                               asp-route-id="@urun.Id"
+                                               class="btn btn-outline-info">
+                                                Detay
+                                            </a>
+
+                                            <a asp-controller="Urunler"
+                                               asp-action="Edit"
+                                               asp-route-id="@urun.Id"
+                                               class="btn btn-outline-primary">
+                                                Düzenle
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
