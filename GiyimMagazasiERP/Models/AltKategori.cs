@@ -10,6 +10,9 @@ public class AltKategori
     public string? Aciklama { get; set; }
 
     public bool AktifMi { get; set; } = true;
+
+    public ICollection<TedarikciAltKategori> TedarikciAltKategoriler { get; set; }
+    = new List<TedarikciAltKategori>();
     public DateTime OlusturmaTarihi { get; set; } = DateTime.Now;
 
     public Kategori Kategori { get; set; } = null!;

@@ -159,7 +159,97 @@ public class TedarikcilerController : Controller
             }).ToList()
         };
 
+        ViewData["Kategoriler"] = await _context.Kategoriler
+    .AsNoTracking()
+    .OrderBy(x => x.KategoriAdi)
+    .ToListAsync();
+
+        ViewData["AltKategoriler"] = await _context.AltKategoriler
+            .AsNoTracking()
+            .Include(x => x.Kategori)
+            .Where(x => x.AktifMi)
+            .OrderBy(x => x.Kategori.KategoriAdi)
+            .ThenBy(x => x.AltKategoriAdi)
+            .ToListAsync();
+
+        ViewData["TedarikciAltKategoriler"] = await _context.TedarikciAltKategoriler
+            .AsNoTracking()
+            .Include(x => x.AltKategori)
+                .ThenInclude(x => x.Kategori)
+            .Where(x => x.TedarikciId == id.Value)
+            .OrderBy(x => x.AltKategori.Kategori.KategoriAdi)
+            .ThenBy(x => x.AltKategori.AltKategoriAdi)
+            .ToListAsync();
+
+
         return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AltKategoriEkle(int tedarikciId, int altKategoriId)
+    {
+        var tedarikciVarMi = await _context.Tedarikciler
+            .AnyAsync(x => x.Id == tedarikciId);
+
+        if (!tedarikciVarMi)
+            return NotFound();
+
+        var altKategoriVarMi = await _context.AltKategoriler
+            .AnyAsync(x => x.Id == altKategoriId);
+
+        if (!altKategoriVarMi)
+            return NotFound();
+
+        var mevcutIliski = await _context.TedarikciAltKategoriler
+            .FirstOrDefaultAsync(x =>
+                x.TedarikciId == tedarikciId &&
+                x.AltKategoriId == altKategoriId);
+
+        if (mevcutIliski is not null)
+        {
+            if (!mevcutIliski.AktifMi)
+            {
+                mevcutIliski.AktifMi = true;
+                await _context.SaveChangesAsync();
+                TempData["Basari"] = "Alt kategori tekrar aktif hale getirildi.";
+            }
+            else
+            {
+                TempData["Hata"] = "Bu alt kategori zaten tedarikçiye tanımlı.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = tedarikciId });
+        }
+
+        _context.TedarikciAltKategoriler.Add(new TedarikciAltKategori
+        {
+            TedarikciId = tedarikciId,
+            AltKategoriId = altKategoriId,
+            AktifMi = true,
+            OlusturmaTarihi = DateTime.Now
+        });
+
+        await _context.SaveChangesAsync();
+
+        TempData["Basari"] = "Alt kategori tedarikçiye eklendi.";
+        return RedirectToAction(nameof(Details), new { id = tedarikciId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AltKategoriDurumDegistir(int id)
+    {
+        var iliski = await _context.TedarikciAltKategoriler
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (iliski is null)
+            return NotFound();
+
+        iliski.AktifMi = !iliski.AktifMi;
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Details), new { id = iliski.TedarikciId });
     }
 
     public IActionResult Create()

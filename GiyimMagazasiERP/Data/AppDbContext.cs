@@ -22,6 +22,8 @@ public class AppDbContext : DbContext
     public DbSet<StokHareketi> StokHareketleri => Set<StokHareketi>();
     public DbSet<FinansHareketi> FinansHareketleri => Set<FinansHareketi>();
     public DbSet<MagazaBilgileri> MagazaBilgileri { get; set; }
+
+    public DbSet<TedarikciAltKategori> TedarikciAltKategoriler => Set<TedarikciAltKategori>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -196,9 +198,37 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.KullaniciId);
         });
         modelBuilder.Entity<Kullanici>()
-    .HasOne(k => k.Personel)
-    .WithMany()
-    .HasForeignKey(k => k.PersonelId)
-    .OnDelete(DeleteBehavior.SetNull);
+                .HasOne(k => k.Personel)
+                .WithMany()
+                .HasForeignKey(k => k.PersonelId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TedarikciAltKategori>(entity =>
+        {
+            entity.ToTable("TedarikciAltKategoriler");
+
+            entity.HasKey(x => x.Id);
+
+            entity.HasIndex(x => new { x.TedarikciId, x.AltKategoriId })
+                .IsUnique();
+
+            entity.Property(x => x.AktifMi)
+                .HasDefaultValue(true);
+
+            entity.Property(x => x.OlusturmaTarihi)
+                .HasDefaultValueSql("GETDATE()");
+
+            entity.HasOne(x => x.Tedarikci)
+                .WithMany(x => x.TedarikciAltKategoriler)
+                .HasForeignKey(x => x.TedarikciId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AltKategori)
+                .WithMany(x => x.TedarikciAltKategoriler)
+                .HasForeignKey(x => x.AltKategoriId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
     }
 }

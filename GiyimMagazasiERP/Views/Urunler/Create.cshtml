@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Yeni Ürün";
     var altKategorilerJson = JsonSerializer.Serialize(ViewData["AltKategorilerJson"]);
+    var tedarikciAltKategorilerJson = JsonSerializer.Serialize(ViewData["TedarikciAltKategorilerJson"]);
 }
 
 <div class="container py-4">
@@ -28,6 +29,17 @@
                     </div>
 
                     <div class="col-md-4">
+                        <label asp-for="TedarikciId" class="form-label">Tedarikçi</label>
+                        <select asp-for="TedarikciId"
+                                asp-items="ViewBag.TedarikciId"
+                                class="form-select"
+                                id="tedarikciSecimi">
+                            <option value="">Tedarikçi Seçiniz</option>
+                        </select>
+                        <span asp-validation-for="TedarikciId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
                         <label asp-for="KategoriId" class="form-label">Ana Kategori</label>
                         <select asp-for="KategoriId"
                                 asp-items="ViewBag.KategoriId"
@@ -35,6 +47,7 @@
                                 id="kategoriSecimi">
                             <option value="">Ana Kategori Seçiniz</option>
                         </select>
+                        <span asp-validation-for="KategoriId" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-4">
@@ -44,14 +57,14 @@
                                 id="altKategoriSecimi">
                             <option value="">Alt Kategori Seçiniz</option>
                         </select>
-                        <div class="form-text">Ana kategoriye göre filtrelenir. Zorunlu değildir.</div>
-                    </div>
 
-                    <div class="col-md-4">
-                        <label asp-for="TedarikciId" class="form-label">Tedarikçi</label>
-                        <select asp-for="TedarikciId" asp-items="ViewBag.TedarikciId" class="form-select">
-                            <option value="">Tedarikçi Seçiniz</option>
-                        </select>
+                        <div class="form-text">
+                            Tedarikçi ve ana kategoriye göre filtrelenir. Zorunlu değildir.
+                        </div>
+
+                        <div id="tedarikciKategoriUyarisi" class="form-text text-warning"></div>
+
+                        <span asp-validation-for="AltKategoriId" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-3">
@@ -102,21 +115,86 @@
 </div>
 
 <script type="application/json" id="altKategorilerJson">@Html.Raw(altKategorilerJson)</script>
+<script type="application/json" id="tedarikciAltKategorilerJson">@Html.Raw(tedarikciAltKategorilerJson)</script>
 
 @section Scripts {
     <script>
         (() => {
         const altKategoriler = JSON.parse(document.getElementById("altKategorilerJson").textContent || "[]");
+        const tedarikciAltKategoriler = JSON.parse(document.getElementById("tedarikciAltKategorilerJson").textContent || "[]");
+
+        const tedarikciSecimi = document.getElementById("tedarikciSecimi");
         const kategoriSecimi = document.getElementById("kategoriSecimi");
         const altKategoriSecimi = document.getElementById("altKategoriSecimi");
+        const uyariAlani = document.getElementById("tedarikciKategoriUyarisi");
+
+        const seciliKategoriId = "@Model.KategoriId";
         const seciliAltKategoriId = "@(Model.AltKategoriId?.ToString() ?? "")";
+
+        const tumKategoriSecenekleri = Array.from(kategoriSecimi.options)
+        .filter(x => x.value)
+        .map(x => ({ value: x.value, text: x.textContent }));
+
+        function tedarikciIliskileriGetir() {
+        const tedarikciId = Number(tedarikciSecimi.value);
+
+        return tedarikciAltKategoriler
+        .filter(x => Number(x.TedarikciId) === tedarikciId);
+        }
+
+        function kategorileriYukle() {
+        const iliskiler = tedarikciIliskileriGetir();
+        const kategoriIdSet = new Set(iliskiler.map(x => String(x.KategoriId)));
+
+        kategoriSecimi.innerHTML = '<option value="">Ana Kategori Seçiniz</option>';
+        altKategoriSecimi.innerHTML = '<option value="">Alt Kategori Seçiniz</option>';
+
+        if (!tedarikciSecimi.value) {
+        uyariAlani.textContent = "Alt kategori seçimi için önce tedarikçi seçiniz.";
+        kategoriSecimi.disabled = true;
+        altKategoriSecimi.disabled = true;
+        return;
+        }
+
+        if (iliskiler.length === 0) {
+        uyariAlani.textContent = "Bu tedarikçi için sağladığı alt kategori tanımlanmamış.";
+        kategoriSecimi.disabled = true;
+        altKategoriSecimi.disabled = true;
+        return;
+        }
+
+        uyariAlani.textContent = "";
+        kategoriSecimi.disabled = false;
+        altKategoriSecimi.disabled = false;
+
+        tumKategoriSecenekleri
+        .filter(x => kategoriIdSet.has(String(x.value)))
+        .forEach(x => {
+        const option = document.createElement("option");
+        option.value = x.value;
+        option.textContent = x.text;
+
+        if (String(x.value) === String(seciliKategoriId)) {
+        option.selected = true;
+        }
+
+        kategoriSecimi.appendChild(option);
+        });
+
+        altKategorileriYukle();
+        }
 
         function altKategorileriYukle() {
         const kategoriId = Number(kategoriSecimi.value);
+        const iliskiler = tedarikciIliskileriGetir();
+        const izinliAltKategoriSet = new Set(iliskiler.map(x => String(x.AltKategoriId)));
+
         altKategoriSecimi.innerHTML = '<option value="">Alt Kategori Seçiniz</option>';
 
         altKategoriler
-        .filter(x => Number(x.KategoriId) === kategoriId)
+        .filter(x =>
+        Number(x.KategoriId) === kategoriId &&
+        izinliAltKategoriSet.has(String(x.Id)))
         .forEach(x => {
         const option = document.createElement("option");
         option.value = x.Id;
@@ -130,8 +208,10 @@
         });
         }
 
+        tedarikciSecimi.addEventListener("change", kategorileriYukle);
         kategoriSecimi.addEventListener("change", altKategorileriYukle);
-        altKategorileriYukle();
+
+        kategorileriYukle();
         })();
     </script>
 }

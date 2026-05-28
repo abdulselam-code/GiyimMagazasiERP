@@ -110,6 +110,18 @@ public class UrunlerController : Controller
         ModelState.Remove("SatisDetaylari");
         ModelState.Remove("StokHareketleri");
 
+        await TedarikciAltKategoriUyumunuKontrolEt(urun);
+
+        var barkodVarMi = await _context.Urunler
+            .AnyAsync(x => x.Barkod == urun.Barkod);
+
+        if (barkodVarMi)
+        {
+            ModelState.AddModelError(
+                nameof(urun.Barkod),
+                "Bu barkod zaten başka bir üründe kullanılıyor.");
+        }
+
         if (ModelState.IsValid)
         {
             _context.Add(urun);
@@ -150,6 +162,18 @@ public class UrunlerController : Controller
         ModelState.Remove("Tedarikci");
         ModelState.Remove("SatisDetaylari");
         ModelState.Remove("StokHareketleri");
+
+        await TedarikciAltKategoriUyumunuKontrolEt(urun);
+
+        var barkodVarMi = await _context.Urunler
+            .AnyAsync(x => x.Barkod == urun.Barkod && x.Id != urun.Id);
+
+        if (barkodVarMi)
+        {
+            ModelState.AddModelError(
+                nameof(urun.Barkod),
+                "Bu barkod zaten başka bir üründe kullanılıyor.");
+        }
 
         if (ModelState.IsValid)
         {
@@ -251,6 +275,20 @@ public class UrunlerController : Controller
 
         ViewData["AltKategorilerJson"] = altKategoriler;
 
+        var tedarikciAltKategoriler = await _context.TedarikciAltKategoriler
+            .AsNoTracking()
+            .Include(x => x.AltKategori)
+            .Where(x => x.AktifMi && x.AltKategori.AktifMi)
+            .Select(x => new
+            {
+                x.TedarikciId,
+                x.AltKategoriId,
+                KategoriId = x.AltKategori.KategoriId
+            })
+            .ToListAsync();
+
+        ViewData["TedarikciAltKategorilerJson"] = tedarikciAltKategoriler;
+
         ViewData["TedarikciId"] = new SelectList(
             await _context.Tedarikciler
                 .AsNoTracking()
@@ -259,5 +297,30 @@ public class UrunlerController : Controller
             "Id",
             "FirmaAdi",
             tedarikciId);
+    }
+
+    private async Task TedarikciAltKategoriUyumunuKontrolEt(Urun urun)
+    {
+        if (!urun.AltKategoriId.HasValue)
+            return;
+
+        var tedarikciIcinAktifTanimVarMi = await _context.TedarikciAltKategoriler
+            .AnyAsync(x => x.TedarikciId == urun.TedarikciId && x.AktifMi);
+
+        if (!tedarikciIcinAktifTanimVarMi)
+            return;
+
+        var uyumluMu = await _context.TedarikciAltKategoriler
+            .AnyAsync(x =>
+                x.TedarikciId == urun.TedarikciId &&
+                x.AltKategoriId == urun.AltKategoriId.Value &&
+                x.AktifMi);
+
+        if (!uyumluMu)
+        {
+            ModelState.AddModelError(
+                nameof(urun.AltKategoriId),
+                "Seçilen alt kategori bu tedarikçi için tanımlı değil.");
+        }
     }
 }

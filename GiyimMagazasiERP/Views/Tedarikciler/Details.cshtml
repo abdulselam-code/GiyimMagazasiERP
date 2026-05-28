@@ -7,6 +7,10 @@
     string Tarih(DateTime? tarih) => tarih.HasValue ? tarih.Value.ToString("dd.MM.yyyy") : "Henüz kayıt yok";
     string TarihSaat(DateTime? tarih) => tarih.HasValue ? tarih.Value.ToString("dd.MM.yyyy HH:mm") : "Henüz kayıt yok";
     string Yuzde(decimal oran) => oran.ToString("N2") + " %";
+
+    var kategoriler = ViewData["Kategoriler"] as List<GiyimMagazasiERP.Models.Kategori> ?? new();
+    var altKategoriler = ViewData["AltKategoriler"] as List<GiyimMagazasiERP.Models.AltKategori> ?? new();
+    var tedarikciAltKategoriler = ViewData["TedarikciAltKategoriler"] as List<GiyimMagazasiERP.Models.TedarikciAltKategori> ?? new();
 }
 
 <div class="container py-4">
@@ -215,6 +219,113 @@
         </div>
     </section>
 
+    <section class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Sağladığı Alt Kategoriler</h2>
+                    <p class="text-muted mb-0">Bu tedarikçinin sağlayabildiği ürün grupları.</p>
+                </div>
+            </div>
+
+            @if (TempData["Basari"] is not null)
+            {
+                <div class="alert alert-success">@TempData["Basari"]</div>
+            }
+
+            @if (TempData["Hata"] is not null)
+            {
+                <div class="alert alert-danger">@TempData["Hata"]</div>
+            }
+
+            <form asp-action="AltKategoriEkle" method="post" class="row g-3 align-items-end mb-4">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="tedarikciId" value="@Model.Tedarikci.Id" />
+
+                <div class="col-md-5">
+                    <label class="form-label">Ana Kategori</label>
+                    <select class="form-select" id="tedarikciKategoriSecimi">
+                        <option value="">Ana Kategori Seçiniz</option>
+                        @foreach (var kategori in kategoriler)
+                        {
+                            <option value="@kategori.Id">@kategori.KategoriAdi</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label">Alt Kategori</label>
+                    <select class="form-select" name="altKategoriId" id="tedarikciAltKategoriSecimi" required>
+                        <option value="">Alt Kategori Seçiniz</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary">Ekle</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ana Kategori</th>
+                            <th>Alt Kategori</th>
+                            <th>Durum</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!tedarikciAltKategoriler.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    Bu tedarikçi için sağladığı alt kategori tanımlanmamış.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in tedarikciAltKategoriler)
+                            {
+                                <tr>
+                                    <td>@item.AltKategori.Kategori.KategoriAdi</td>
+                                    <td class="fw-semibold">@item.AltKategori.AltKategoriAdi</td>
+                                    <td>
+                                        @if (item.AktifMi)
+                                        {
+                                            <span class="badge text-bg-success">Aktif</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Pasif</span>
+                                        }
+                                    </td>
+                                    <td>@item.OlusturmaTarihi.ToString("dd.MM.yyyy")</td>
+                                    <td class="text-end">
+                                        <form asp-action="AltKategoriDurumDegistir"
+                                              asp-route-id="@item.Id"
+                                              method="post"
+                                              class="d-inline">
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="btn btn-sm @(item.AktifMi ? "btn-outline-warning" : "btn-outline-success")">
+                                                @(item.AktifMi ? "Pasifleştir" : "Aktifleştir")
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
     <section class="card border-0 shadow-sm">
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -318,3 +429,43 @@
         </div>
     </section>
 </div>
+
+<script type="application/json" id="tedarikciDetayAltKategorilerJson">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            altKategoriler.Select(x => new
+            {
+                    x.Id,
+                    x.KategoriId,
+                    x.AltKategoriAdi
+            })
+    ))
+</script>
+
+<script>
+    (() => {
+        const altKategoriler = JSON.parse(document.getElementById("tedarikciDetayAltKategorilerJson").textContent || "[]");
+        const kategoriSecimi = document.getElementById("tedarikciKategoriSecimi");
+        const altKategoriSecimi = document.getElementById("tedarikciAltKategoriSecimi");
+
+        if (!kategoriSecimi || !altKategoriSecimi) {
+            return;
+        }
+
+        function altKategorileriYukle() {
+            const kategoriId = Number(kategoriSecimi.value);
+
+            altKategoriSecimi.innerHTML = '<option value="">Alt Kategori Seçiniz</option>';
+
+            altKategoriler
+                .filter(x => Number(x.KategoriId) === kategoriId)
+                .forEach(x => {
+                    const option = document.createElement("option");
+                    option.value = x.Id;
+                    option.textContent = x.AltKategoriAdi;
+                    altKategoriSecimi.appendChild(option);
+                });
+        }
+
+        kategoriSecimi.addEventListener("change", altKategorileriYukle);
+    })();
+</script>
