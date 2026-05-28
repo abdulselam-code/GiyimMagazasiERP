@@ -1,5 +1,6 @@
 ﻿using GiyimMagazasiERP.Data;
 using GiyimMagazasiERP.Models;
+using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -17,33 +18,89 @@ public class AltKategorilerController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? arama)
+    public async Task<IActionResult> Index(
+      string? arama,
+      int? kategoriId,
+      string durum = "Tumu",
+      int page = 1,
+      int pageSize = 10)
     {
-        var query = _context.AltKategoriler
+        if (page < 1)
+            page = 1;
+
+        if (pageSize != 10 && pageSize != 20 && pageSize != 50)
+            pageSize = 10;
+
+        durum = string.IsNullOrWhiteSpace(durum) ? "Tumu" : durum;
+
+        var sorgu = _context.AltKategoriler
             .AsNoTracking()
             .Include(x => x.Kategori)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(arama))
         {
-            arama = arama.Trim();
+            var aranan = arama.Trim();
 
-            query = query.Where(x =>
-                x.AltKategoriAdi.Contains(arama) ||
-                x.Kategori.KategoriAdi.Contains(arama) ||
-                (x.Aciklama != null && x.Aciklama.Contains(arama)));
+            sorgu = sorgu.Where(x =>
+                x.AltKategoriAdi.Contains(aranan) ||
+                (x.Aciklama != null && x.Aciklama.Contains(aranan)) ||
+                x.Kategori.KategoriAdi.Contains(aranan));
         }
 
-        var altKategoriler = await query
+        if (kategoriId.HasValue)
+        {
+            sorgu = sorgu.Where(x => x.KategoriId == kategoriId.Value);
+        }
+
+        if (durum == "Aktif")
+        {
+            sorgu = sorgu.Where(x => x.AktifMi);
+        }
+        else if (durum == "Pasif")
+        {
+            sorgu = sorgu.Where(x => !x.AktifMi);
+        }
+
+        var totalCount = await sorgu.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        if (totalPages > 0 && page > totalPages)
+            page = totalPages;
+
+        var items = await sorgu
             .OrderBy(x => x.Kategori.KategoriAdi)
             .ThenBy(x => x.AltKategoriAdi)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        ViewBag.Arama = arama;
+        var kategoriler = await _context.Kategoriler
+     .AsNoTracking()
+     .OrderBy(x => x.KategoriAdi)
+     .Select(x => new SelectListItem
+     {
+         Value = x.Id.ToString(),
+         Text = x.KategoriAdi,
+         Selected = kategoriId.HasValue && x.Id == kategoriId.Value
+     })
+     .ToListAsync();
 
-        return View(altKategoriler);
+        var model = new AltKategoriListeViewModel
+        {
+            Arama = arama,
+            KategoriId = kategoriId,
+            Durum = durum,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            Items = items,
+            Kategoriler = kategoriler
+        };
+
+        return View(model);
     }
-
     public async Task<IActionResult> Details(int? id)
     {
         if (id is null)
