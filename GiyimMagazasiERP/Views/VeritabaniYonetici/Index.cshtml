@@ -23,27 +23,39 @@
             <span class="db-side-title">Çalışma Alanı</span>
 
             <nav class="db-nav">
-                <button type="button" class="db-nav-item active" data-panel="schemaPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "schemaPanel" ? "active" : "")"
+                        data-panel="schemaPanel">
                     Şema Görünümü
                 </button>
 
-                <button type="button" class="db-nav-item" data-panel="sqlPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "sqlPanel" ? "active" : "")"
+                        data-panel="sqlPanel">
                     SQL Editörü
                 </button>
 
-                <button type="button" class="db-nav-item" data-panel="queriesPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "queriesPanel" ? "active" : "")"
+                        data-panel="queriesPanel">
                     Kayıtlı Sorgular
                 </button>
 
-                <button type="button" class="db-nav-item" data-panel="tableBrowserPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "tableBrowserPanel" ? "active" : "")"
+                        data-panel="tableBrowserPanel">
                     Tablo Tarayıcı
                 </button>
 
-                <button type="button" class="db-nav-item" data-panel="relationsPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "relationsPanel" ? "active" : "")"
+                        data-panel="relationsPanel">
                     İlişki Haritası
                 </button>
 
-                <button type="button" class="db-nav-item" data-panel="statsPanel">
+                <button type="button"
+                        class="db-nav-item @(Model.AktifPanel == "statsPanel" ? "active" : "")"
+                        data-panel="statsPanel">
                     İstatistikler
                 </button>
             </nav>
@@ -93,7 +105,9 @@
                 {
                     <a asp-controller="VeritabaniYonetici"
                        asp-action="Index"
-                       asp-route-tablo="@tablo">
+                       asp-route-tablo="@tablo"
+                       asp-route-limit="@Model.TabloTarayiciLimit"
+                       asp-route-panel="tableBrowserPanel">
                         <span>@tablo</span>
                         <small>Table</small>
                     </a>
@@ -183,7 +197,7 @@
                 </div>
             }
 
-            <section id="schemaPanel" class="db-panel active">
+            <section id="schemaPanel" class="db-panel @(Model.AktifPanel == "schemaPanel" ? "active" : "")">
                 <div class="db-panel-header">
                     <div>
                         <p class="db-kicker">Database Schema</p>
@@ -195,7 +209,7 @@
                     </div>
 
                     <div class="db-panel-number">
-                        <strong>10</strong>
+                        <strong>@Model.Istatistikler.ToplamTabloSayisi</strong>
                         <span>Tablo</span>
                     </div>
                 </div>
@@ -253,7 +267,7 @@
                 </div>
             </section>
 
-            <section id="sqlPanel" class="db-panel">
+            <section id="sqlPanel" class="db-panel @(Model.AktifPanel == "sqlPanel" ? "active" : "")">
                 <div class="db-panel-header">
                     <div>
                         <p class="db-kicker">Query Workspace</p>
@@ -350,7 +364,7 @@
                 }
             </section>
 
-            <section id="queriesPanel" class="db-panel">
+            <section id="queriesPanel" class="db-panel @(Model.AktifPanel == "queriesPanel" ? "active" : "")">
                 <div class="db-panel-header">
                     <div>
                         <p class="db-kicker">Saved Queries</p>
@@ -446,7 +460,7 @@
                 }
             </section>
 
-            <section id="tableBrowserPanel" class="db-panel">
+            <section id="tableBrowserPanel" class="db-panel @(Model.AktifPanel == "tableBrowserPanel" ? "active" : "")">
                 <div class="db-panel-header db-table-browser-header">
                     <div>
                         <p class="db-kicker">Table Browser</p>
@@ -460,6 +474,7 @@
                           asp-action="Index"
                           method="get"
                           class="db-table-limit-form">
+                        <input type="hidden" name="panel" value="tableBrowserPanel" />
                         @if (!string.IsNullOrWhiteSpace(Model.SeciliTablo))
                         {
                             <input type="hidden" name="tablo" value="@Model.SeciliTablo" />
@@ -470,32 +485,11 @@
                         <select id="tableLimit"
                                 name="limit"
                                 onchange="this.form.submit()">
-                            @if (Model.TabloTarayiciLimit == "50")
-                            {
-                                <option value="50" selected>50</option>
-                            }
-                            else
-                            {
-                                <option value="50">50</option>
-                            }
-
-                            @if (Model.TabloTarayiciLimit == "100")
-                            {
-                                <option value="100" selected>100</option>
-                            }
-                            else
-                            {
-                                <option value="100">100</option>
-                            }
-
-                            @if (Model.TabloTarayiciLimit == "all")
-                            {
-                                <option value="all" selected>Tümü</option>
-                            }
-                            else
-                            {
-                                <option value="all">Tümü</option>
-                            }
+                            <option value="10" selected="@(Model.TabloTarayiciLimit == "10")">10</option>
+                            <option value="25" selected="@(Model.TabloTarayiciLimit == "25")">25</option>
+                            <option value="50" selected="@(Model.TabloTarayiciLimit == "50")">50</option>
+                            <option value="100" selected="@(Model.TabloTarayiciLimit == "100")">100</option>
+                            <option value="all" selected="@(Model.TabloTarayiciLimit == "all")">Tümü</option>
                         </select>
                     </form>
                 </div>
@@ -508,6 +502,7 @@
                                asp-action="Index"
                                asp-route-tablo="@tablo"
                                asp-route-limit="@Model.TabloTarayiciLimit"
+                               asp-route-panel="tableBrowserPanel"
                                class="db-browser-item">
                                 <span>▤</span>
 
@@ -589,7 +584,7 @@
                 }
             </section>
 
-            <section id="relationsPanel" class="db-panel">
+            <section id="relationsPanel" class="db-panel @(Model.AktifPanel == "relationsPanel" ? "active" : "")">
                 <div class="db-panel-header db-relation-panel-header">
                     <div>
                         <p class="db-kicker">Relationship Map</p>
@@ -800,7 +795,7 @@
                 </article>
             </section>
 
-            <section id="statsPanel" class="db-panel">
+            <section id="statsPanel" class="db-panel @(Model.AktifPanel == "statsPanel" ? "active" : "")">
                 <div class="db-panel-header">
                     <div>
                         <p class="db-kicker">Database Metrics</p>
@@ -895,6 +890,8 @@
                 openPanel(item.dataset.panel);
             });
         });
+
+        openPanel("@Model.AktifPanel");
 
         const params = new URLSearchParams(window.location.search);
         const path = window.location.pathname.toLowerCase();

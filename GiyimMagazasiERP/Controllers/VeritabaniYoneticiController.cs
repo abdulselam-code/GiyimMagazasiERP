@@ -13,33 +13,31 @@ public class VeritabaniYoneticiController : Controller
 {
     private readonly AppDbContext _context;
 
-    private static readonly string[] TabloAdlari =
-    {
-        "Kullanicilar",
-        "Personeller",
-        "Musteriler",
-        "Kategoriler",
-        "Tedarikciler",
-        "Urunler",
-        "Satislar",
-        "SatisDetaylari",
-        "StokHareketleri",
-        "FinansHareketleri"
-    };
+    
 
     public VeritabaniYoneticiController(AppDbContext context)
     {
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? raporKod, string? tablo, string? limit)
+    public async Task<IActionResult> Index(
+     string? raporKod,
+     string? tablo,
+     string? limit,
+     string? panel)
     {
         var model = await ModelOlustur();
+
+        model.AktifPanel = string.IsNullOrWhiteSpace(panel)
+            ? "schemaPanel"
+            : panel;
 
         model.TabloTarayiciLimit = LimitDegeriniGetir(limit);
 
         if (!string.IsNullOrWhiteSpace(raporKod))
         {
+            model.AktifPanel = "queriesPanel";
+
             var kayitliSorgu = KayitliSqlSorgulari()
                 .FirstOrDefault(x => x.Kod == raporKod);
 
@@ -60,25 +58,28 @@ public class VeritabaniYoneticiController : Controller
 
         if (!string.IsNullOrWhiteSpace(tablo))
         {
-            if (!TabloAdlari.Contains(tablo))
+            model.AktifPanel = "tableBrowserPanel";
+
+            if (!model.TabloTarayiciTablolari.Contains(tablo))
             {
                 model.HataMesaji = "Seçilen tablo görüntülenemez.";
                 return View(model);
             }
 
             var gecerliLimit = LimitDegeriniGetir(limit);
+            var tabloNesneAdi = await TabloNesneAdiniGetir(tablo);
 
             model.SeciliTablo = tablo;
             model.TabloTarayiciLimit = gecerliLimit;
 
-            var toplamKayitSayisi = await TabloKayitSayisiniGetir(tablo);
-            var sql = TabloTarayiciSqlOlustur(tablo, gecerliLimit);
+            var toplamKayitSayisi = await TabloKayitSayisiniGetir(tabloNesneAdi);
+            var sql = TabloTarayiciSqlOlustur(tabloNesneAdi, gecerliLimit);
 
             model.SonucTablosu = await SqlSonucuGetir(
                 sql,
                 $"{tablo} Tablo Tarayıcı",
                 "Bu tabloda kayıt bulunamadı.",
-                gecerliLimit == "all" ? null : LimitSatirSayisiniGetir(gecerliLimit));
+                LimitSatirSayisiniGetir(gecerliLimit));
 
             model.SonucTablosu.ToplamKayitSayisi = toplamKayitSayisi;
             model.SonucTablosu.KayitBilgisi = TabloKayitBilgisiOlustur(
@@ -98,6 +99,7 @@ public class VeritabaniYoneticiController : Controller
     public async Task<IActionResult> CalistirSql(string sqlSorgusu)
     {
         var model = await ModelOlustur();
+        model.AktifPanel = "sqlPanel";
         model.SqlSorgusu = sqlSorgusu ?? "";
 
         if (!SerbestSqlGuvenliMi(model.SqlSorgusu, out var hata))
@@ -127,6 +129,12 @@ public class VeritabaniYoneticiController : Controller
 
     private async Task<VeritabaniYoneticiViewModel> ModelOlustur()
     {
+        var semaTablolari = await SemaTablolariGetir();
+        var tabloAdlari = semaTablolari
+            .Select(x => x.TabloAdi)
+            .OrderBy(x => x)
+            .ToList();
+
         var toplamGelir = await _context.FinansHareketleri
             .AsNoTracking()
             .Where(x => x.HareketTipi == "Gelir")
@@ -141,7 +149,7 @@ public class VeritabaniYoneticiController : Controller
         {
             Istatistikler = new VeritabaniIstatistikViewModel
             {
-                ToplamTabloSayisi = 10,
+                ToplamTabloSayisi = tabloAdlari.Count,
 
                 ToplamUrunSayisi = await _context.Urunler.CountAsync(),
 
@@ -160,7 +168,7 @@ public class VeritabaniYoneticiController : Controller
                 NetKazanc = toplamGelir - toplamGider
             },
 
-            SemaTablolari = SemaTablolariGetir(),
+            SemaTablolari = semaTablolari,
 
             KayitliSorgular = KayitliSqlSorgulari()
                 .Select(x => new KayitliSorguViewModel
@@ -172,38 +180,47 @@ public class VeritabaniYoneticiController : Controller
                 })
                 .ToList(),
 
-            TabloTarayiciTablolari = TabloAdlari.ToList(),
+            TabloTarayiciTablolari = tabloAdlari,
             TabloTarayiciLimit = "50"
         };
     }
 
     private static string LimitDegeriniGetir(string? limit)
     {
-        if (string.Equals(limit, "100", StringComparison.OrdinalIgnoreCase))
-            return "100";
-
-        if (string.Equals(limit, "all", StringComparison.OrdinalIgnoreCase))
-            return "all";
-
-        return "50";
+        return limit switch
+        {
+            "10" => "10",
+            "25" => "25",
+            "50" => "50",
+            "100" => "100",
+            "all" => "all",
+            _ => "50"
+        };
     }
 
     private static int LimitSatirSayisiniGetir(string limit)
     {
-        return limit == "100" ? 100 : 50;
+        return limit switch
+        {
+            "10" => 10,
+            "25" => 25,
+            "50" => 50,
+            "100" => 100,
+            "all" => 1000,
+            _ => 50
+        };
     }
 
-    private static string TabloTarayiciSqlOlustur(string tablo, string limit)
+    private static string TabloTarayiciSqlOlustur(string tabloNesneAdi, string limit)
     {
-        if (limit == "all")
-            return $"SELECT * FROM [{tablo}] ORDER BY Id DESC";
+        var satirSayisi = LimitSatirSayisiniGetir(limit);
 
-        return $"SELECT TOP ({limit}) * FROM [{tablo}] ORDER BY Id DESC";
+        return $"SELECT TOP ({satirSayisi}) * FROM {tabloNesneAdi}";
     }
 
-    private async Task<int> TabloKayitSayisiniGetir(string tablo)
+    private async Task<int> TabloKayitSayisiniGetir(string tabloNesneAdi)
     {
-        var sql = $"SELECT COUNT(*) FROM [{tablo}]";
+        var sql = $"SELECT COUNT(*) FROM {tabloNesneAdi}";
 
         var connection = _context.Database.GetDbConnection();
         var baglantiAcildiMi = connection.State != ConnectionState.Open;
@@ -234,7 +251,12 @@ public class VeritabaniYoneticiController : Controller
         string limit)
     {
         if (limit == "all")
+        {
+            if (toplamKayitSayisi > 1000)
+                return $"Performans için en fazla 1000 kayıt gösterilir. Toplam kayıt: {toplamKayitSayisi}.";
+
             return $"Tüm {toplamKayitSayisi} kayıt gösteriliyor.";
+        }
 
         return $"Toplam {toplamKayitSayisi} kayıttan {gosterilenKayitSayisi} kayıt gösteriliyor.";
     }
@@ -727,110 +749,167 @@ public class VeritabaniYoneticiController : Controller
         };
     }
 
-    private static List<SemaTabloViewModel> SemaTablolariGetir()
+    private async Task<List<SemaTabloViewModel>> SemaTablolariGetir()
     {
-        return new List<SemaTabloViewModel>
+        var tablolar = new Dictionary<string, SemaTabloViewModel>();
+
+        const string sql = """
+        SELECT
+            s.name AS SchemaName,
+            t.name AS TableName,
+            c.name AS ColumnName,
+            ty.name AS TypeName,
+            c.max_length AS MaxLength,
+            c.precision AS PrecisionValue,
+            c.scale AS ScaleValue,
+            c.is_nullable AS IsNullable,
+            CASE WHEN ic.column_id IS NULL THEN 0 ELSE 1 END AS IsPrimaryKey,
+            CASE WHEN fkc.parent_column_id IS NULL THEN 0 ELSE 1 END AS IsForeignKey
+        FROM sys.tables t
+        INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
+        INNER JOIN sys.columns c ON c.object_id = t.object_id
+        INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id
+        LEFT JOIN sys.indexes i
+            ON i.object_id = t.object_id
+           AND i.is_primary_key = 1
+        LEFT JOIN sys.index_columns ic
+            ON ic.object_id = t.object_id
+           AND ic.index_id = i.index_id
+           AND ic.column_id = c.column_id
+        LEFT JOIN sys.foreign_key_columns fkc
+            ON fkc.parent_object_id = t.object_id
+           AND fkc.parent_column_id = c.column_id
+        WHERE t.is_ms_shipped = 0
+        ORDER BY t.name, c.column_id
+        """;
+
+        var connection = _context.Database.GetDbConnection();
+        var baglantiAcildiMi = connection.State != ConnectionState.Open;
+
+        if (baglantiAcildiMi)
+            await connection.OpenAsync();
+
+        try
         {
-            Tablo("Kullanicilar",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("KullaniciAdi", "NVARCHAR(50)"),
-                Alan("Email", "NVARCHAR(100)"),
-                Alan("SifreHash", "NVARCHAR(255)"),
-                Alan("Rol", "NVARCHAR(30)"),
-                Alan("AktifMi", "BIT"),
-                Alan("OlusturmaTarihi", "DATETIME2")),
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.CommandTimeout = 15;
 
-            Tablo("Personeller",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("AdSoyad", "NVARCHAR(100)"),
-                Alan("Telefon", "NVARCHAR(20)", notNull: false),
-                Alan("Email", "NVARCHAR(100)", notNull: false),
-                Alan("Pozisyon", "NVARCHAR(50)"),
-                Alan("Maas", "DECIMAL(18,2)"),
-                Alan("PrimOrani", "DECIMAL(5,2)"),
-                Alan("GirisSaati", "TIME", notNull: false),
-                Alan("CikisSaati", "TIME", notNull: false),
-                Alan("MesaiSaati", "DECIMAL(5,2)"),
-                Alan("IzinGunu", "INT"),
-                Alan("Departman", "NVARCHAR(50)"),
-                Alan("AktifMi", "BIT"),
-                Alan("IseBaslamaTarihi", "DATE")),
+            await using var reader = await command.ExecuteReaderAsync();
 
-            Tablo("Musteriler",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("AdSoyad", "NVARCHAR(100)"),
-                Alan("Telefon", "NVARCHAR(20)", notNull: false),
-                Alan("Email", "NVARCHAR(100)", notNull: false),
-                Alan("SadakatPuani", "INT"),
-                Alan("IndirimOrani", "DECIMAL(5,2)"),
-                Alan("ToplamHarcama", "DECIMAL(18,2)"),
-                Alan("KayitTarihi", "DATETIME2")),
+            while (await reader.ReadAsync())
+            {
+                var tabloAdi = reader["TableName"].ToString() ?? "";
+                var kolonAdi = reader["ColumnName"].ToString() ?? "";
+                var tipAdi = reader["TypeName"].ToString() ?? "";
 
-            Tablo("Kategoriler",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("KategoriAdi", "NVARCHAR(100)"),
-                Alan("Aciklama", "NVARCHAR(250)", notNull: false)),
+                if (!tablolar.ContainsKey(tabloAdi))
+                {
+                    tablolar[tabloAdi] = new SemaTabloViewModel
+                    {
+                        TabloAdi = tabloAdi
+                    };
+                }
 
-            Tablo("Tedarikciler",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("FirmaAdi", "NVARCHAR(150)"),
-                Alan("Telefon", "NVARCHAR(20)", notNull: false),
-                Alan("Email", "NVARCHAR(100)", notNull: false),
-                Alan("Adres", "NVARCHAR(250)", notNull: false),
-                Alan("IndirimOrani", "DECIMAL(5,2)"),
-                Alan("AktifMi", "BIT")),
+                tablolar[tabloAdi].Alanlar.Add(new SemaAlanViewModel
+                {
+                    AlanAdi = kolonAdi,
+                    VeriTipi = VeriTipiniYazdir(
+                        tipAdi,
+                        Convert.ToInt16(reader["MaxLength"]),
+                        Convert.ToByte(reader["PrecisionValue"]),
+                        Convert.ToByte(reader["ScaleValue"])),
+                    PrimaryKeyMi = Convert.ToInt32(reader["IsPrimaryKey"]) == 1,
+                    ForeignKeyMi = Convert.ToInt32(reader["IsForeignKey"]) == 1,
+                    NotNullMi = !Convert.ToBoolean(reader["IsNullable"])
+                });
+            }
+        }
+        finally
+        {
+            if (baglantiAcildiMi)
+                await connection.CloseAsync();
+        }
 
-            Tablo("Urunler",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("UrunAdi", "NVARCHAR(150)"),
-                Alan("Barkod", "NVARCHAR(50)"),
-                Alan("KategoriId", "INT", fk: true),
-                Alan("TedarikciId", "INT", fk: true),
-                Alan("Beden", "NVARCHAR(20)"),
-                Alan("Renk", "NVARCHAR(50)"),
-                Alan("AlisFiyati", "DECIMAL(18,2)"),
-                Alan("SatisFiyati", "DECIMAL(18,2)"),
-                Alan("StokMiktari", "INT"),
-                Alan("MinimumStok", "INT"),
-                Alan("AktifMi", "BIT"),
-                Alan("OlusturmaTarihi", "DATETIME2")),
+        return tablolar.Values
+            .OrderBy(x => x.TabloAdi)
+            .ToList();
+    }
 
-            Tablo("Satislar",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("MusteriId", "INT", fk: true, notNull: false),
-                Alan("PersonelId", "INT", fk: true),
-                Alan("SatisTarihi", "DATETIME2"),
-                Alan("ToplamTutar", "DECIMAL(18,2)"),
-                Alan("IndirimTutari", "DECIMAL(18,2)"),
-                Alan("NetTutar", "DECIMAL(18,2)"),
-                Alan("OdemeTipi", "NVARCHAR(30)")),
+    private async Task<string> TabloNesneAdiniGetir(string tablo)
+    {
+        const string sql = """
+        SELECT TOP (1)
+            s.name AS SchemaName,
+            t.name AS TableName
+        FROM sys.tables t
+        INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
+        WHERE t.is_ms_shipped = 0
+          AND t.name = @tablo
+        """;
 
-            Tablo("SatisDetaylari",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("SatisId", "INT", fk: true),
-                Alan("UrunId", "INT", fk: true),
-                Alan("Adet", "INT"),
-                Alan("BirimFiyat", "DECIMAL(18,2)"),
-                Alan("ToplamTutar", "DECIMAL(18,2)")),
+        var connection = _context.Database.GetDbConnection();
+        var baglantiAcildiMi = connection.State != ConnectionState.Open;
 
-            Tablo("StokHareketleri",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("UrunId", "INT", fk: true),
-                Alan("HareketTipi", "NVARCHAR(30)"),
-                Alan("Miktar", "INT"),
-                Alan("Tarih", "DATETIME2"),
-                Alan("Aciklama", "NVARCHAR(250)", notNull: false)),
+        if (baglantiAcildiMi)
+            await connection.OpenAsync();
 
-            Tablo("FinansHareketleri",
-                Alan("Id", "INT IDENTITY", pk: true),
-                Alan("SatisId", "INT", fk: true, notNull: false),
-                Alan("KullaniciId", "INT", fk: true),
-                Alan("HareketTipi", "NVARCHAR(20)"),
-                Alan("Kategori", "NVARCHAR(100)"),
-                Alan("Tutar", "DECIMAL(18,2)"),
-                Alan("Tarih", "DATETIME2"),
-                Alan("Aciklama", "NVARCHAR(250)", notNull: false))
-        };
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.CommandTimeout = 15;
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@tablo";
+            parameter.Value = tablo;
+            command.Parameters.Add(parameter);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                var schemaName = reader["SchemaName"].ToString() ?? "dbo";
+                var tableName = reader["TableName"].ToString() ?? tablo;
+
+                return $"[{schemaName.Replace("]", "]]")}].[{tableName.Replace("]", "]]")}]";
+            }
+        }
+        finally
+        {
+            if (baglantiAcildiMi)
+                await connection.CloseAsync();
+        }
+
+        return $"[dbo].[{tablo.Replace("]", "]]")}]";
+    }
+
+    private static string VeriTipiniYazdir(
+        string tipAdi,
+        short maxLength,
+        byte precision,
+        byte scale)
+    {
+        if (tipAdi is "nvarchar" or "nchar")
+        {
+            if (maxLength == -1)
+                return $"{tipAdi}(MAX)";
+
+            return $"{tipAdi}({maxLength / 2})";
+        }
+
+        if (tipAdi is "varchar" or "char" or "varbinary" or "binary")
+        {
+            if (maxLength == -1)
+                return $"{tipAdi}(MAX)";
+
+            return $"{tipAdi}({maxLength})";
+        }
+
+        if (tipAdi is "decimal" or "numeric")
+            return $"{tipAdi}({precision},{scale})";
+
+        return tipAdi.ToUpperInvariant();
     }
 
     private static SemaTabloViewModel Tablo(string ad, params SemaAlanViewModel[] alanlar)

@@ -6,6 +6,7 @@ public class VeritabaniYoneticiViewModel
     public string? HataMesaji { get; set; }
     public string? BasariMesaji { get; set; }
 
+    public string AktifPanel { get; set; } = "schemaPanel";
     public VeritabaniIstatistikViewModel Istatistikler { get; set; } = new();
 
     public List<SemaTabloViewModel> SemaTablolari { get; set; } = new();
