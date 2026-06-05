@@ -303,28 +303,53 @@ public class DashboardController : Controller
             })
             .ToListAsync();
 
-        await GrafikVerileriniDoldur(model);
+        await GrafikVerileriniDoldur(model, satisSorgusu);
 
         return View(model);
     }
 
-    private async Task GrafikVerileriniDoldur(DashboardViewModel model)
+    private async Task GrafikVerileriniDoldur(
+     DashboardViewModel model,
+     IQueryable<GiyimMagazasiERP.Models.Satis> satisSorgusu)
     {
-        var gunlukSatislar = await _context.Satislar
-            .AsNoTracking()
-            .GroupBy(x => x.SatisTarihi.Date)
-            .Select(g => new
-            {
-                Gun = g.Key,
-                NetTutar = g.Sum(x => x.NetTutar)
-            })
-            .OrderByDescending(x => x.Gun)
-            .Take(10)
-            .OrderBy(x => x.Gun)
-            .ToListAsync();
+        var baslangic = DateTime.Today.AddDays(-6);
+        var bitis = DateTime.Today.AddDays(1);
 
-        model.GunlukSatisLabels = gunlukSatislar.Select(x => x.Gun.ToString("dd/MM")).ToList();
-        model.GunlukSatisValues = gunlukSatislar.Select(x => x.NetTutar).ToList();
+        var gunlukSatisHamVeri = await satisSorgusu
+      .Where(x => x.SatisTarihi >= baslangic && x.SatisTarihi < bitis)
+      .GroupBy(x => new
+      {
+          Yil = x.SatisTarihi.Year,
+          Ay = x.SatisTarihi.Month,
+          Gun = x.SatisTarihi.Day
+      })
+      .Select(g => new
+      {
+          g.Key.Yil,
+          g.Key.Ay,
+          g.Key.Gun,
+          NetTutar = g.Sum(x => x.NetTutar)
+      })
+      .OrderBy(x => x.Yil)
+      .ThenBy(x => x.Ay)
+      .ThenBy(x => x.Gun)
+      .ToListAsync();
+
+        var gunlukSatislar = gunlukSatisHamVeri
+            .Select(x => new
+            {
+                Gun = new DateTime(x.Yil, x.Ay, x.Gun),
+                x.NetTutar
+            })
+            .ToList();
+
+        model.GunlukSatisLabels = gunlukSatislar
+            .Select(x => x.Gun.ToString("dd/MM"))
+            .ToList();
+
+        model.GunlukSatisValues = gunlukSatislar
+            .Select(x => x.NetTutar)
+            .ToList();
 
         model.GelirGiderLabels = new() { "Gelir", "Gider" };
         model.GelirGiderValues = new() { model.ToplamGelir, model.ToplamGider };
@@ -422,12 +447,12 @@ public class DashboardController : Controller
         if (User.IsInRole("Kasiyer"))
         {
             return new()
-            {
-                Link("Satış Yap", "SatisIslemleri", "Create", "success"),
-                Link("Satışlar", "Satislar"),
-                Link("Müşteriler", "Musteriler"),
-                Link("Faturalar", "Faturalar")
-            };
+    {
+        Link("Satış Yap", "SatisIslemleri", "Create", "success"),
+        Link("Satışlarım", "Satislar"),
+        Link("Kendi Faturalarım", "Faturalar"),
+        Link("Fatura Ara / Yazdır", "Faturalar", "Index", "info")
+    };
         }
 
         if (User.IsInRole("Depo"))

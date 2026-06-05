@@ -3,6 +3,7 @@ using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace GiyimMagazasiERP.Controllers;
 
@@ -16,12 +17,47 @@ public class FaturalarController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? arama)
     {
-        var faturalar = await _context.Satislar
+        var query = _context.Satislar
             .AsNoTracking()
             .Include(x => x.Musteri)
             .Include(x => x.Personel)
+            .AsQueryable();
+
+        if (User.IsInRole("Kasiyer"))
+        {
+            var personelId = await GirisYapanKullanicininPersonelIdGetir();
+
+            if (!personelId.HasValue)
+            {
+                query = query.Where(x => false);
+                ViewData["KasiyerUyari"] = "Bu kullanıcıya bağlı personel kaydı bulunamadı.";
+            }
+            else
+            {
+                query = query.Where(x => x.PersonelId == personelId.Value);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(arama))
+        {
+            arama = arama.Trim();
+
+            if (arama.StartsWith("FAT-", StringComparison.OrdinalIgnoreCase) &&
+                int.TryParse(arama.Replace("FAT-", "", StringComparison.OrdinalIgnoreCase), out var faturaId))
+            {
+                query = query.Where(x => x.Id == faturaId);
+            }
+            else
+            {
+                query = query.Where(x =>
+                    (x.Musteri != null && x.Musteri.AdSoyad.Contains(arama)) ||
+                    x.OdemeTipi.Contains(arama));
+            }
+        }
+
+        var faturalar = await query
             .OrderByDescending(x => x.SatisTarihi)
             .Select(x => new FaturaListeViewModel
             {
@@ -39,6 +75,8 @@ public class FaturalarController : Controller
             })
             .ToListAsync();
 
+        ViewData["Arama"] = arama;
+
         return View(faturalar);
     }
 
@@ -54,6 +92,13 @@ public class FaturalarController : Controller
 
         if (satis is null)
             return NotFound();
+        if (User.IsInRole("Kasiyer"))
+        {
+            var personelId = await GirisYapanKullanicininPersonelIdGetir();
+
+            if (!personelId.HasValue || satis.PersonelId != personelId.Value)
+                return Forbid();
+        }
 
         ViewBag.Magaza = await _context.MagazaBilgileri
             .AsNoTracking()
@@ -96,5 +141,18 @@ public class FaturalarController : Controller
         };
 
         return View(viewModel);
+    }
+    private async Task<int?> GirisYapanKullanicininPersonelIdGetir()
+    {
+        var kullaniciIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(kullaniciIdText, out var kullaniciId))
+            return null;
+
+        return await _context.Kullanicilar
+            .AsNoTracking()
+            .Where(x => x.Id == kullaniciId && x.AktifMi)
+            .Select(x => x.PersonelId)
+            .FirstOrDefaultAsync();
     }
 }

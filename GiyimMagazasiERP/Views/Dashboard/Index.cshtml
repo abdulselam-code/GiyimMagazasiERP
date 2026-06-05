@@ -443,8 +443,15 @@
             <div class="col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
                     <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Satış</p>
+                        <p class="text-muted mb-2">Bugünkü Kendi Satış Sayım</p>
                         <h3 class="h4 fw-bold text-primary mb-0">@Model.BugunkuSatisSayisi</h3>
+                        <a asp-controller="Satislar"
+                           asp-action="Index"
+                           asp-route-scope="benim"
+                           asp-route-tarih="bugun"
+                           class="btn btn-sm btn-outline-primary mt-3">
+                            Bugünkü Satışlarım
+                        </a>
                     </div>
                 </div>
             </div>
@@ -452,8 +459,15 @@
             <div class="col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
                     <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Gelir</p>
+                        <p class="text-muted mb-2">Bugünkü Kendi Satış Gelirim</p>
                         <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.BugunkuSatisGeliri)</h3>
+                        <a asp-controller="Satislar"
+                           asp-action="Index"
+                           asp-route-scope="benim"
+                           asp-route-tarih="bugun"
+                           class="btn btn-sm btn-outline-primary mt-3">
+                            Bugünkü Satışlarım
+                        </a>
                     </div>
                 </div>
             </div>
@@ -461,8 +475,15 @@
             <div class="col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
                     <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Satış</p>
+                        <p class="text-muted mb-2">Bu Ay Kendi Satış Sayım</p>
                         <h3 class="h4 fw-bold text-primary mb-0">@Model.AylikSatisSayisi</h3>
+                        <a asp-controller="Satislar"
+                           asp-action="Index"
+                           asp-route-scope="benim"
+                           asp-route-donem="buAy"
+                           class="btn btn-sm btn-outline-primary mt-3">
+                            Bu Ayki Satışlarım
+                        </a>
                     </div>
                 </div>
             </div>
@@ -470,8 +491,15 @@
             <div class="col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
                     <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Gelir</p>
+                        <p class="text-muted mb-2">Bu Ay Kendi Satış Gelirim</p>
                         <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.AylikSatisGeliri)</h3>
+                        <a asp-controller="Satislar"
+                           asp-action="Index"
+                           asp-route-scope="benim"
+                           asp-route-donem="buAy"
+                           class="btn btn-sm btn-outline-primary mt-3">
+                            Bu Ayki Satışlarım
+                        </a>
                     </div>
                 </div>
             </div>
@@ -739,7 +767,9 @@
                     <div class="col-lg-6">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
-                                <h3 class="h6 fw-bold">Günlük Satış Grafiği</h3>
+                                <h3 class="h6 fw-bold">
+                                    @(kasiyer ? "Son 7 Gün Kendi Satışlarım" : "Günlük Satış Grafiği")
+                                </h3>
                                 @if (Model.GunlukSatisValues.Any())
                                 {
                                     <canvas id="gunlukSatisChart" height="140"></canvas>

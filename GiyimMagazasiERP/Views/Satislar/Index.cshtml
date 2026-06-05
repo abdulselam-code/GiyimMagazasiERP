@@ -5,13 +5,20 @@
 
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
+
+    var kasiyer = User.IsInRole("Kasiyer");
+    var scope = ViewData["Scope"]?.ToString();
+    var tarih = ViewData["Tarih"]?.ToString();
+    var donem = ViewData["Donem"]?.ToString();
 }
 
 <div class="container py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Satışlar</h1>
-            <p class="text-muted mb-0">Mağaza satış kayıtları ve fatura görüntüleme işlemleri</p>
+            <p class="text-muted mb-0">
+                @(kasiyer ? "Kendi satış kayıtlarınız ve fatura görüntüleme işlemleri" : "Mağaza satış kayıtları ve fatura görüntüleme işlemleri")
+            </p>
         </div>
 
         <a asp-controller="SatisIslemleri"
@@ -21,9 +28,19 @@
         </a>
     </div>
 
+    @if (ViewData["KasiyerUyari"] is not null)
+    {
+        <div class="alert alert-warning">
+            @ViewData["KasiyerUyari"]
+        </div>
+    }
+
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
             <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <input type="hidden" name="scope" value="@scope" />
+                <input type="hidden" name="tarih" value="@tarih" />
+                <input type="hidden" name="donem" value="@donem" />
                 <div class="col-lg-7">
                     <label for="arama" class="form-label">Satış Ara</label>
 
@@ -134,7 +151,10 @@
                         <tr>
                             <th>Satış Tarihi</th>
                             <th>Müşteri</th>
-                            <th>Personel</th>
+                            @if (!kasiyer)
+                            {
+                                <th>Personel</th>
+                            }
                             <th>Toplam Tutar</th>
                             <th>İndirim Tutarı</th>
                             <th>Net Tutar</th>
@@ -164,7 +184,10 @@
                                         }
                                     </td>
 
-                                    <td>@satis.Personel.AdSoyad</td>
+                                    @if (!kasiyer)
+                                    {
+                                        <td>@satis.Personel.AdSoyad</td>
+                                    }
                                     <td>@satis.ToplamTutar.ToString("N2") TL</td>
                                     <td>@satis.IndirimTutari.ToString("N2") TL</td>
 
@@ -192,7 +215,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="@(kasiyer ? 7 : 8)" class="text-center text-muted py-4">
                                     Kayıt bulunamadı.
                                 </td>
                             </tr>
@@ -210,7 +233,10 @@
                    asp-action="Index"
                    asp-route-page="@oncekiSayfa"
                    asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
+                   asp-route-arama="@Model.Arama"
+                   asp-route-scope="@scope"
+                   asp-route-tarih="@tarih"
+                   asp-route-donem="@donem">
                     Önceki
                 </a>
             </li>

@@ -48,6 +48,11 @@ public class SatisIslemleriController : Controller
         model.SepetUrunleri ??= new List<SatisSepetUrunViewModel>();
         model.SatisTuru = model.SatisTuru == "Toptan" ? "Toptan" : "Perakende";
 
+        if (User.IsInRole("Kasiyer") && model.SatisTuru == "Toptan")
+        {
+            ModelState.AddModelError(nameof(model.SatisTuru), "Kasiyer rolü toptan satış yapamaz.");
+        }
+
         if (model.SatisTuru == "Toptan" && !model.MusteriId.HasValue)
         {
             ModelState.AddModelError(nameof(model.MusteriId), "Toptan satış için müşteri seçilmelidir.");

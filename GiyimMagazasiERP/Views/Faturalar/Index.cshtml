@@ -27,6 +27,32 @@
             </a>
         </div>
     </div>
+    @if (ViewData["KasiyerUyari"] is not null)
+    {
+        <div class="alert alert-warning">
+            @ViewData["KasiyerUyari"]
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="row g-2 align-items-end">
+                <div class="col-md-9">
+                    <label for="arama" class="form-label">Fatura Ara</label>
+                    <input id="arama"
+                           name="arama"
+                           value="@ViewData["Arama"]"
+                           class="form-control"
+                           placeholder="FAT-000025, müşteri veya ödeme tipi ara" />
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">Ara</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary flex-fill">Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-body">

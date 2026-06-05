@@ -5,6 +5,8 @@
 @{
     ViewData["Title"] = "Satış Yap";
 
+    var kasiyer = User.IsInRole("Kasiyer");
+
     var musterilerJson = JsonSerializer.Serialize(ViewData["MusterilerJson"]);
     var urunlerJson = JsonSerializer.Serialize(ViewData["UrunlerJson"]);
     var mevcutSepetJson = JsonSerializer.Serialize(Model.SepetUrunleri ?? new List<GiyimMagazasiERP.ViewModels.SatisSepetUrunViewModel>());
@@ -48,10 +50,13 @@
                 <span>Hızlı mağaza satışı</span>
             </button>
 
-            <button type="button" class="sales-type-tab" data-type="Toptan">
-                <strong>Toptan Satış</strong>
-                <span>Kurumsal / toplu satış</span>
-            </button>
+            @if (!kasiyer)
+            {
+                <button type="button" class="sales-type-tab" data-type="Toptan">
+                    <strong>Toptan Satış</strong>
+                    <span>Kurumsal / toplu satış</span>
+                </button>
+            }
         </div>
 
         <div class="row g-4 align-items-start">
@@ -576,6 +581,9 @@
         }
         });
 
+        if ("@kasiyer".toLowerCase() === "true") {
+        satisTuruInput.value = "Perakende";
+        }
         satisTuruAyarla(satisTuruInput.value || "Perakende");
         urunBilgisiniGuncelle();
         sepetiGuncelle();

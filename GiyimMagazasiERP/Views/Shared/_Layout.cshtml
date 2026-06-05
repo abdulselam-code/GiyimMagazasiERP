@@ -99,7 +99,7 @@
                                 </li>
                             }
 
-                            @if (admin || yonetici || depo || kasiyer || ik)
+                            @if (admin || yonetici || depo || ik || muhasebe)
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle erp-menu-link @(yonetimAktif ? "active fw-semibold" : "")"
@@ -149,7 +149,7 @@
                                             </li>
                                         }
 
-                                        @if (admin || yonetici || kasiyer)
+                                        @if (admin || yonetici || muhasebe)
                                         {
                                             <li>
                                                 <a class="dropdown-item @(aktifController == "Musteriler" ? "active" : "")"
