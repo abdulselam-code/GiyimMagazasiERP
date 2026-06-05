@@ -1,10 +1,25 @@
 ﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.Urun>
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Text.Json
 
 @{
     ViewData["Title"] = "Ürünler";
 
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+
+    var kategoriId = ViewData["KategoriId"] as int?;
+    var altKategoriId = ViewData["AltKategoriId"] as int?;
+    var tedarikciId = ViewData["TedarikciId"] as int?;
+    var durum = ViewData["Durum"]?.ToString() ?? "hepsi";
+    var kritikStok = ViewData["KritikStok"] as bool? ?? false;
+
+    var kategoriler = ViewData["Kategoriler"] as List<SelectListItem> ?? new();
+    var altKategoriler = ViewData["AltKategoriler"] as List<SelectListItem> ?? new();
+    var tedarikciler = ViewData["Tedarikciler"] as List<SelectListItem> ?? new();
+    
+    var altKategorilerJson = JsonSerializer.Serialize(ViewData["AltKategorilerJson"]);
 }
 
 <div class="container py-4">
@@ -24,40 +39,96 @@
 
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
-            <form asp-action="Index" method="get" class="row g-3 align-items-end">
-                <div class="col-lg-7">
-                    <label for="arama" class="form-label">Ürün Ara</label>
+            <form asp-action="Index" method="get" class="row g-3 align-items-end" id="urunFiltreFormu">
+                <div class="col-lg-6">
+                    <label for="arama" class="form-label">Arama</label>
                     <input type="text"
                            id="arama"
                            name="arama"
                            value="@Model.Arama"
                            class="form-control"
-                           placeholder="Ürün adı, barkod, beden, renk, kategori, alt kategori veya tedarikçi ara" />
+                           placeholder="Ürün adı, barkod, beden, renk, kategori, tedarikçi ara" />
                 </div>
 
-                <div class="col-sm-6 col-lg-2">
-                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
-                    <select id="pageSize"
-                            name="pageSize"
-                            class="form-select"
-                            onchange="this.form.submit()">
-                        @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                <div class="col-md-6 col-lg-3">
+                    <label for="kategoriId" class="form-label">Ana Kategori</label>
+                    <select id="kategoriId" name="kategoriId" class="form-select">
+                        <option value="">Tümü</option>
+                        @foreach (var kategori in kategoriler)
                         {
-                            if (Model.PageSize == size)
-                            {
-                                <option value="@size" selected>@size</option>
-                            }
-                            else
-                            {
-                                <option value="@size">@size</option>
-                            }
+                            <option value="@kategori.Value" selected="@kategori.Selected">
+                                @kategori.Text
+                            </option>
                         }
                     </select>
                 </div>
 
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-md-6 col-lg-3">
+                    <label for="altKategoriId" class="form-label">Alt Kategori</label>
+                    <select id="altKategoriId" name="altKategoriId" class="form-select">
+                        <option value="">Tümü</option>
+                        @foreach (var altKategori in altKategoriler)
+                        {
+                            <option value="@altKategori.Value" selected="@altKategori.Selected">
+                                @altKategori.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <label for="tedarikciId" class="form-label">Tedarikçi</label>
+                    <select id="tedarikciId" name="tedarikciId" class="form-select">
+                        <option value="">Tümü</option>
+                        @foreach (var tedarikci in tedarikciler)
+                        {
+                            <option value="@tedarikci.Value" selected="@tedarikci.Selected">
+                                @tedarikci.Text
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select id="durum" name="durum" class="form-select">
+                        <option value="hepsi" selected="@(durum == "hepsi")">Tümü</option>
+                        <option value="aktif" selected="@(durum == "aktif")">Aktif</option>
+                        <option value="pasif" selected="@(durum == "pasif")">Pasif</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select">
+                        @foreach (var size in new[] { 5, 10, 25, 50, 100 })
+                        {
+                            <option value="@size" selected="@(Model.PageSize == size)">
+                                @size
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <div class="form-check mb-2">
+                        <input type="checkbox"
+                               id="kritikStok"
+                               name="kritikStok"
+                               value="true"
+                               class="form-check-input"
+                               checked="@kritikStok" />
+                        <label for="kritikStok" class="form-check-label">
+                            Sadece kritik stok
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-lg-3">
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">Ara</button>
+                        <button type="submit" class="btn btn-primary flex-fill">Filtrele</button>
                         <a asp-action="Index" class="btn btn-outline-secondary flex-fill">Temizle</a>
                     </div>
                 </div>
@@ -67,11 +138,12 @@
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
         <div class="text-muted small">
-            Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
+            Toplam <strong>@Model.TotalCount</strong> ürün listeleniyor.
         </div>
 
         <div class="text-muted small">
-            Sayfa <strong>@Model.Page</strong> / <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
+            Sayfa <strong>@Model.Page</strong> /
+            <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
         </div>
     </div>
 
@@ -81,6 +153,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
+                            <th>#</th>
                             <th>Ürün Adı</th>
                             <th>Barkod</th>
                             <th>Ana Kategori</th>
@@ -101,13 +174,17 @@
                         {
                             @foreach (var urun in Model.Items)
                             {
-                                <tr class="@(urun.StokMiktari <= urun.MinimumStok ? "table-warning" : "")">
+                                var kritikMi = urun.StokMiktari <= urun.MinimumStok;
+
+                                <tr class="@(kritikMi ? "table-warning" : "")">
+                                    <td>@(siraNo++)</td>
+
                                     <td class="fw-semibold">
                                         @urun.UrunAdi
 
-                                        @if (urun.StokMiktari <= urun.MinimumStok)
+                                        @if (kritikMi)
                                         {
-                                            <span class="badge text-bg-warning ms-1">Kritik Stok</span>
+                                            <span class="badge text-bg-warning ms-1">Kritik</span>
                                         }
                                     </td>
 
@@ -152,8 +229,8 @@
                         else
                         {
                             <tr>
-                                <td colspan="12" class="text-center text-muted py-4">
-                                    Kayıt bulunamadı.
+                                <td colspan="13" class="text-center text-muted py-4">
+                                    Arama kriterlerine uygun ürün bulunamadı.
                                 </td>
                             </tr>
                         }
@@ -163,40 +240,139 @@
         </div>
     </div>
 
-    <nav class="mt-4" aria-label="Ürün sayfalama">
-        <ul class="pagination justify-content-center flex-wrap">
-            <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@oncekiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
-                    Önceki
-                </a>
-            </li>
-
-            @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
-            {
-                <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Ürün sayfalama">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
                     <a class="page-link"
                        asp-action="Index"
-                       asp-route-page="@sayfaNo"
+                       asp-route-page="@oncekiSayfa"
                        asp-route-pageSize="@Model.PageSize"
-                       asp-route-arama="@Model.Arama">
-                        @sayfaNo
+                       asp-route-arama="@Model.Arama"
+                       asp-route-kategoriId="@kategoriId"
+                       asp-route-altKategoriId="@altKategoriId"
+                       asp-route-tedarikciId="@tedarikciId"
+                       asp-route-durum="@durum"
+                       asp-route-kritikStok="@kritikStok">
+                        Önceki
                     </a>
                 </li>
+
+                @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
+                {
+                    <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@sayfaNo"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-arama="@Model.Arama"
+                           asp-route-kategoriId="@kategoriId"
+                           asp-route-altKategoriId="@altKategoriId"
+                           asp-route-tedarikciId="@tedarikciId"
+                           asp-route-durum="@durum"
+                           asp-route-kritikStok="@kritikStok">
+                            @sayfaNo
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@sonrakiSayfa"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-arama="@Model.Arama"
+                       asp-route-kategoriId="@kategoriId"
+                       asp-route-altKategoriId="@altKategoriId"
+                       asp-route-tedarikciId="@tedarikciId"
+                       asp-route-durum="@durum"
+                       asp-route-kritikStok="@kritikStok">
+                        Sonraki
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+<script type="application/json" id="altKategorilerJson">
+    @Html.Raw(altKategorilerJson)
+</script>
+
+@section Scripts {
+    <script>
+        (() => {
+            const form = document.getElementById("urunFiltreFormu");
+            const kategoriSecimi = document.getElementById("kategoriId");
+            const altKategoriSecimi = document.getElementById("altKategoriId");
+            const tedarikciSecimi = document.getElementById("tedarikciId");
+            const durumSecimi = document.getElementById("durum");
+            const kritikStokSecimi = document.getElementById("kritikStok");
+            const pageSizeSecimi = document.getElementById("pageSize");
+
+            const altKategoriler = JSON.parse(
+                document.getElementById("altKategorilerJson").textContent || "[]"
+            );
+
+            const seciliAltKategoriId = "@(altKategoriId?.ToString() ?? "")";
+
+            function altKategorileriYukle(submitEdilsin) {
+                const kategoriId = Number(kategoriSecimi.value);
+                const oncekiAltKategoriId = altKategoriSecimi.value;
+
+                altKategoriSecimi.innerHTML = '<option value="">Tümü</option>';
+
+                let eskiSecimHalaGecerli = false;
+
+                altKategoriler
+                    .filter(x => !kategoriId || Number(x.KategoriId) === kategoriId)
+                    .forEach(x => {
+                        const option = document.createElement("option");
+                        option.value = x.Id;
+                        option.textContent = x.KategoriAdi + " - " + x.AltKategoriAdi;
+
+                        if (String(x.Id) === oncekiAltKategoriId || String(x.Id) === seciliAltKategoriId) {
+                            option.selected = true;
+                            eskiSecimHalaGecerli = true;
+                        }
+
+                        altKategoriSecimi.appendChild(option);
+                    });
+
+                if (kategoriId && oncekiAltKategoriId && !eskiSecimHalaGecerli) {
+                    altKategoriSecimi.value = "";
+                }
+
+                if (submitEdilsin) {
+                    form.submit();
+                }
             }
 
-            <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@sonrakiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
-                    Sonraki
-                </a>
-            </li>
-        </ul>
-    </nav>
-</div>
+            kategoriSecimi.addEventListener("change", () => {
+                altKategorileriYukle(true);
+            });
+
+            altKategoriSecimi.addEventListener("change", () => {
+                form.submit();
+            });
+
+            tedarikciSecimi.addEventListener("change", () => {
+                form.submit();
+            });
+
+            durumSecimi.addEventListener("change", () => {
+                form.submit();
+            });
+
+            kritikStokSecimi.addEventListener("change", () => {
+                form.submit();
+            });
+
+            pageSizeSecimi.addEventListener("change", () => {
+                form.submit();
+            });
+
+            altKategorileriYukle(false);
+        })();
+    </script>
+}

@@ -18,7 +18,15 @@ public class UrunlerController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? arama, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(
+       string? arama,
+       int? kategoriId,
+       int? altKategoriId,
+       int? tedarikciId,
+       string? durum,
+       bool? kritikStok,
+       int page = 1,
+       int pageSize = 10)
     {
         var izinliPageSizeDegerleri = new[] { 5, 10, 25, 50, 100 };
 
@@ -28,7 +36,12 @@ public class UrunlerController : Controller
         if (!izinliPageSizeDegerleri.Contains(pageSize))
             pageSize = 10;
 
+        durum = string.IsNullOrWhiteSpace(durum)
+            ? "hepsi"
+            : durum.Trim().ToLowerInvariant();
+
         var query = _context.Urunler
+            .AsNoTracking()
             .Include(x => x.Kategori)
             .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
@@ -46,6 +59,35 @@ public class UrunlerController : Controller
                 x.Kategori.KategoriAdi.Contains(arama) ||
                 (x.AltKategori != null && x.AltKategori.AltKategoriAdi.Contains(arama)) ||
                 x.Tedarikci.FirmaAdi.Contains(arama));
+        }
+
+        if (kategoriId.HasValue)
+        {
+            query = query.Where(x => x.KategoriId == kategoriId.Value);
+        }
+
+        if (altKategoriId.HasValue)
+        {
+            query = query.Where(x => x.AltKategoriId == altKategoriId.Value);
+        }
+
+        if (tedarikciId.HasValue)
+        {
+            query = query.Where(x => x.TedarikciId == tedarikciId.Value);
+        }
+
+        if (durum == "aktif")
+        {
+            query = query.Where(x => x.AktifMi);
+        }
+        else if (durum == "pasif")
+        {
+            query = query.Where(x => !x.AktifMi);
+        }
+
+        if (kritikStok == true)
+        {
+            query = query.Where(x => x.StokMiktari <= x.MinimumStok);
         }
 
         var totalCount = await query.CountAsync();
@@ -70,9 +112,80 @@ public class UrunlerController : Controller
             TotalPages = totalPages
         };
 
+        await UrunListeFiltreleriniDoldur(
+            kategoriId,
+            altKategoriId,
+            tedarikciId,
+            durum,
+            kritikStok);
+
         return View(model);
     }
 
+    private async Task UrunListeFiltreleriniDoldur(
+    int? kategoriId,
+    int? altKategoriId,
+    int? tedarikciId,
+    string? durum,
+    bool? kritikStok)
+    {
+        ViewData["KategoriId"] = kategoriId;
+        ViewData["AltKategoriId"] = altKategoriId;
+        ViewData["TedarikciId"] = tedarikciId;
+        ViewData["Durum"] = string.IsNullOrWhiteSpace(durum) ? "hepsi" : durum;
+        ViewData["KritikStok"] = kritikStok == true;
+
+        ViewData["Kategoriler"] = await _context.Kategoriler
+            .AsNoTracking()
+            .OrderBy(x => x.KategoriAdi)
+            .Select(x => new SelectListItem
+            {
+                Value = x.Id.ToString(),
+                Text = x.KategoriAdi,
+                Selected = kategoriId.HasValue && x.Id == kategoriId.Value
+            })
+            .ToListAsync();
+
+        ViewData["AltKategoriler"] = await _context.AltKategoriler
+            .AsNoTracking()
+            .Include(x => x.Kategori)
+            .Where(x => x.AktifMi)
+            .OrderBy(x => x.Kategori.KategoriAdi)
+            .ThenBy(x => x.AltKategoriAdi)
+            .Select(x => new SelectListItem
+            {
+                Value = x.Id.ToString(),
+                Text = x.Kategori.KategoriAdi + " - " + x.AltKategoriAdi,
+                Selected = altKategoriId.HasValue && x.Id == altKategoriId.Value
+            })
+            .ToListAsync();
+
+        ViewData["AltKategorilerJson"] = await _context.AltKategoriler
+    .AsNoTracking()
+    .Include(x => x.Kategori)
+    .Where(x => x.AktifMi)
+    .OrderBy(x => x.Kategori.KategoriAdi)
+    .ThenBy(x => x.AltKategoriAdi)
+    .Select(x => new
+    {
+        x.Id,
+        x.KategoriId,
+        x.AltKategoriAdi,
+        KategoriAdi = x.Kategori.KategoriAdi
+    })
+    .ToListAsync();
+
+        ViewData["Tedarikciler"] = await _context.Tedarikciler
+            .AsNoTracking()
+            .OrderBy(x => x.FirmaAdi)
+            .Select(x => new SelectListItem
+            {
+                Value = x.Id.ToString(),
+                Text = x.FirmaAdi,
+                Selected = tedarikciId.HasValue && x.Id == tedarikciId.Value
+            })
+            .ToListAsync();
+    }
     public async Task<IActionResult> Details(int? id)
     {
         if (id is null)

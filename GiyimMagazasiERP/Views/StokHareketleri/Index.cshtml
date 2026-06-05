@@ -5,6 +5,7 @@
 
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
 }
 
 <div class="container py-4">
@@ -135,6 +136,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
+                            <th>#</th>
                             <th>Tarih</th>
                             <th>Ürün</th>
                             <th>Hareket Tipi</th>
@@ -158,6 +160,7 @@
                                     hareket.HareketTipi == "FireCikis";
 
                                 <tr>
+                                    <td>@(siraNo++)</td>
                                     <td>@hareket.Tarih.ToString("dd/MM/yyyy")</td>
                                     <td class="fw-semibold">@hareket.Urun.UrunAdi</td>
 
@@ -210,7 +213,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     Kayıt bulunamadı.
                                 </td>
                             </tr>

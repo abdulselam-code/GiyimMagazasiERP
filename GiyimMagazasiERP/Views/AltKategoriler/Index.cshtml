@@ -5,6 +5,7 @@
 
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
 }
 
 <div class="container py-4">
@@ -103,6 +104,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
+                            <th>#</th>
                             <th>Ana Kategori</th>
                             <th>Alt Kategori</th>
                             <th>Açıklama</th>
@@ -116,7 +118,7 @@
                         @if (!Model.Items.Any())
                         {
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7<td colspan="7" class="text-center text-muted py-4">" class="text-center text-muted py-4">
                                     Arama kriterlerine uygun alt kategori bulunamadı.
                                 </td>
                             </tr>
@@ -126,6 +128,7 @@
                             @foreach (var item in Model.Items)
                             {
                                 <tr>
+                                    <td>@(siraNo++)</td>
                                     <td>@item.Kategori.KategoriAdi</td>
                                     <td class="fw-semibold">@item.AltKategoriAdi</td>
                                     <td>@(string.IsNullOrWhiteSpace(item.Aciklama) ? "-" : item.Aciklama)</td>

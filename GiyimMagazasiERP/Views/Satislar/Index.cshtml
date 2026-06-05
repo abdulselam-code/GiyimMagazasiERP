@@ -5,7 +5,7 @@
 
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
-
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
     var kasiyer = User.IsInRole("Kasiyer");
     var scope = ViewData["Scope"]?.ToString();
     var tarih = ViewData["Tarih"]?.ToString();
@@ -41,6 +41,7 @@
                 <input type="hidden" name="scope" value="@scope" />
                 <input type="hidden" name="tarih" value="@tarih" />
                 <input type="hidden" name="donem" value="@donem" />
+
                 <div class="col-lg-7">
                     <label for="arama" class="form-label">Satış Ara</label>
 
@@ -149,6 +150,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
+                            <th>#</th>
                             <th>Satış Tarihi</th>
                             <th>Müşteri</th>
                             @if (!kasiyer)
@@ -169,6 +171,8 @@
                             @foreach (var satis in Model.Items)
                             {
                                 <tr>
+                                    <td>@(siraNo++)</td>
+
                                     <td>@satis.SatisTarihi.ToString("dd/MM/yyyy")</td>
 
                                     <td>
@@ -188,6 +192,7 @@
                                     {
                                         <td>@satis.Personel.AdSoyad</td>
                                     }
+
                                     <td>@satis.ToplamTutar.ToString("N2") TL</td>
                                     <td>@satis.IndirimTutari.ToString("N2") TL</td>
 
@@ -215,7 +220,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="@(kasiyer ? 7 : 8)" class="text-center text-muted py-4">
+                                <td colspan="@(kasiyer ? 8 : 9)" class="text-center text-muted py-4">
                                     Kayıt bulunamadı.
                                 </td>
                             </tr>
@@ -226,43 +231,52 @@
         </div>
     </div>
 
-    <nav class="mt-4" aria-label="Satış sayfalama">
-        <ul class="pagination justify-content-center flex-wrap">
-            <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@oncekiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama"
-                   asp-route-scope="@scope"
-                   asp-route-tarih="@tarih"
-                   asp-route-donem="@donem">
-                    Önceki
-                </a>
-            </li>
-
-            @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
-            {
-                <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Satış sayfalama">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
                     <a class="page-link"
                        asp-action="Index"
-                       asp-route-page="@sayfaNo"
+                       asp-route-page="@oncekiSayfa"
                        asp-route-pageSize="@Model.PageSize"
-                       asp-route-arama="@Model.Arama">
-                        @sayfaNo
+                       asp-route-arama="@Model.Arama"
+                       asp-route-scope="@scope"
+                       asp-route-tarih="@tarih"
+                       asp-route-donem="@donem">
+                        Önceki
                     </a>
                 </li>
-            }
 
-            <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@sonrakiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
-                    Sonraki
-                </a>
-            </li>
-        </ul>
-    </nav>
+                @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
+                {
+                    <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@sayfaNo"
+                           asp-route-pageSize="@Model.PageSize"
+                           asp-route-arama="@Model.Arama"
+                           asp-route-scope="@scope"
+                           asp-route-tarih="@tarih"
+                           asp-route-donem="@donem">
+                            @sayfaNo
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@sonrakiSayfa"
+                       asp-route-pageSize="@Model.PageSize"
+                       asp-route-arama="@Model.Arama"
+                       asp-route-scope="@scope"
+                       asp-route-tarih="@tarih"
+                       asp-route-donem="@donem">
+                        Sonraki
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>
