@@ -425,6 +425,7 @@ public class DashboardController : Controller
                 Link("Ürünleri Yönet", "Urunler"),
                 Link("Müşteriler", "Musteriler"),
                 Link("Finans Hareketleri", "FinansHareketleri", "Index", "warning"),
+                Link("Faturalar", "Faturalar", "Index", "info"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("SQL Panel", "SqlYonetici", "Index", "dark"),
                 Link("DB Panel", "VeritabaniYonetici", "Index", "dark")
@@ -440,7 +441,7 @@ public class DashboardController : Controller
                 Link("Müşteriler", "Musteriler"),
                 Link("Personeller", "Personeller"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
-                Link("Faturalar", "Faturalar")
+                Link("Faturalar", "Faturalar", "Index", "info")
             };
         }
 
@@ -472,7 +473,7 @@ public class DashboardController : Controller
             {
                 Link("Finans Hareketleri", "FinansHareketleri", "Index", "warning"),
                 Link("Satışlar", "Satislar"),
-                Link("Faturalar", "Faturalar"),
+                Link("Faturalar", "Faturalar", "Index", "info"),
                 Link("Raporlar", "Raporlar", "Index", "info")
             };
         }

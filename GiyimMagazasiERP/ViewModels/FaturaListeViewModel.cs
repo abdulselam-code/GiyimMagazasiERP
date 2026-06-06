@@ -8,5 +8,6 @@ public class FaturaListeViewModel
     public string MusteriAdi { get; set; } = null!;
     public string SatisTuru { get; set; } = "Perakende";
     public string OdemeTipi { get; set; } = null!;
+    public string PersonelAdi { get; set; } = "-";
     public decimal ToplamTutar { get; set; }
 }

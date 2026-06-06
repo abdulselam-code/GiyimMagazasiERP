@@ -1,8 +1,23 @@
-﻿@model List<GiyimMagazasiERP.ViewModels.FaturaListeViewModel>
+﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.ViewModels.FaturaListeViewModel>
+@using Microsoft.AspNetCore.Mvc.Rendering
 
 @{
     ViewData["Title"] = "Faturalar";
-    var siraNo = 1;
+
+    var kasiyerMi = ViewData["KasiyerMi"] as bool? ?? User.IsInRole("Kasiyer");
+
+    var baslangicTarihi = ViewData["BaslangicTarihi"]?.ToString();
+    var bitisTarihi = ViewData["BitisTarihi"]?.ToString();
+    var satisTuru = ViewData["SatisTuru"]?.ToString() ?? "Tumu";
+    var odemeTipi = ViewData["OdemeTipi"]?.ToString() ?? "Tumu";
+    var personelId = ViewData["PersonelId"] as int?;
+
+    var personeller = ViewData["Personeller"] as List<SelectListItem> ?? new();
+    var odemeTipleri = ViewData["OdemeTipleri"] as List<string> ?? new();
+
+    var oncekiSayfa = Model.Page - 1;
+    var sonrakiSayfa = Model.Page + 1;
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
 }
 
 <div class="container py-4">
@@ -10,7 +25,7 @@
         <div>
             <h1 class="h3 fw-bold mb-1">Faturalar</h1>
             <p class="text-muted mb-0">
-                Oluşturulan satış faturalarını görüntüleyin.
+                @(kasiyerMi ? "Kendi faturalarınızı görüntüleyin." : "Oluşturulan satış faturalarını görüntüleyin.")
             </p>
         </div>
 
@@ -38,47 +53,145 @@
 
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
-            <form asp-action="Index" method="get" class="row g-2 align-items-end">
-                <div class="col-md-9">
+            <form asp-action="Index" method="get" class="row g-3 align-items-end">
+                <div class="col-lg-4">
                     <label for="arama" class="form-label">Fatura Ara</label>
                     <input id="arama"
                            name="arama"
-                           value="@ViewData["Arama"]"
+                           value="@Model.Arama"
                            class="form-control"
-                           placeholder="FAT-000025, müşteri veya ödeme tipi ara" />
+                           placeholder="Fatura no, müşteri, ödeme tipi veya satış no ara" />
                 </div>
 
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-fill">Ara</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary flex-fill">Temizle</a>
+                <div class="col-md-6 col-lg-2">
+                    <label for="baslangicTarihi" class="form-label">Başlangıç Tarihi</label>
+                    <input type="date"
+                           id="baslangicTarihi"
+                           name="baslangicTarihi"
+                           value="@baslangicTarihi"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="bitisTarihi" class="form-label">Bitiş Tarihi</label>
+                    <input type="date"
+                           id="bitisTarihi"
+                           name="bitisTarihi"
+                           value="@bitisTarihi"
+                           class="form-control" />
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="satisTuru" class="form-label">Satış Türü</label>
+                    <select id="satisTuru"
+                            name="satisTuru"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        <option value="Tumu" selected="@(satisTuru == "Tumu")">Tümü</option>
+                        <option value="Perakende" selected="@(satisTuru == "Perakende")">Perakende</option>
+                        <option value="Toptan" selected="@(satisTuru == "Toptan")">Toptan</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="odemeTipi" class="form-label">Ödeme Tipi</label>
+                    <select id="odemeTipi"
+                            name="odemeTipi"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        <option value="Tumu" selected="@(odemeTipi == "Tumu")">Tümü</option>
+
+                        @foreach (var tip in odemeTipleri)
+                        {
+                            <option value="@tip" selected="@(odemeTipi == tip)">
+                                @tip
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                @if (!kasiyerMi)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <label for="personelId" class="form-label">Personel / Kasiyer</label>
+                        <select id="personelId"
+                                name="personelId"
+                                class="form-select"
+                                asp-items="personeller"
+                                onchange="this.form.submit()">
+                            <option value="">Tümü</option>
+                        </select>
+                    </div>
+                }
+
+                <div class="col-md-6 col-lg-2">
+                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        <option value="10" selected="@(Model.PageSize == 10)">10</option>
+                        <option value="25" selected="@(Model.PageSize == 25)">25</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                        <option value="100" selected="@(Model.PageSize == 100)">100</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            Filtrele
+                        </button>
+
+                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">
+                            Temizle
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="text-muted small">
+            Toplam <strong>@Model.TotalCount</strong> fatura bulundu.
+        </div>
+
+        <div class="text-muted small">
+            Sayfa <strong>@Model.Page</strong> /
+            <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
+        </div>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            @if (Model.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Satış No</th>
-                                <th>Fatura No</th>
-                                <th>Tarih</th>
-                                <th>Saat</th>
-                                <th>Müşteri</th>
-                                <th>Satış Türü</th>
-                                <th>Ödeme Tipi</th>
-                                <th class="text-end">Toplam Tutar</th>
-                                <th class="text-end">İşlem</th>
-                            </tr>
-                        </thead>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Satış No</th>
+                            <th>Fatura No</th>
+                            <th>Tarih</th>
+                            <th>Saat</th>
+                            <th>Müşteri</th>
 
-                        <tbody>
-                            @foreach (var fatura in Model)
+                            @if (!kasiyerMi)
+                            {
+                                <th>Personel / Kasiyer</th>
+                            }
+
+                            <th>Satış Türü</th>
+                            <th>Ödeme Tipi</th>
+                            <th class="text-end">Toplam Tutar</th>
+                            <th class="text-end">İşlem</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var fatura in Model.Items)
                             {
                                 <tr>
                                     <td>@(siraNo++)</td>
@@ -87,15 +200,24 @@
                                     <td>@fatura.SatisTarihi.ToString("dd.MM.yyyy")</td>
                                     <td>@fatura.SatisTarihi.ToString("HH:mm")</td>
                                     <td>@fatura.MusteriAdi</td>
+
+                                    @if (!kasiyerMi)
+                                    {
+                                        <td>@fatura.PersonelAdi</td>
+                                    }
+
                                     <td>
                                         <span class="badge text-bg-primary">
                                             @fatura.SatisTuru
                                         </span>
                                     </td>
+
                                     <td>@fatura.OdemeTipi</td>
+
                                     <td class="text-end fw-semibold">
                                         @fatura.ToplamTutar.ToString("N2") TL
                                     </td>
+
                                     <td class="text-end">
                                         <a asp-controller="Faturalar"
                                            asp-action="Detay"
@@ -106,15 +228,72 @@
                                     </td>
                                 </tr>
                             }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="@(kasiyerMi ? 10 : 11)" class="text-center text-muted py-5">
+                                    Arama kriterlerine uygun fatura kaydı bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
             {
-                <div class="text-center text-muted py-5">
-                    Henüz fatura kaydı bulunmuyor.
-                </div>
+                <nav class="mt-4" aria-label="Fatura sayfalama">
+                    <ul class="pagination justify-content-center flex-wrap mb-0">
+                        <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@oncekiSayfa"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-baslangicTarihi="@baslangicTarihi"
+                               asp-route-bitisTarihi="@bitisTarihi"
+                               asp-route-satisTuru="@satisTuru"
+                               asp-route-odemeTipi="@odemeTipi"
+                               asp-route-personelId="@personelId">
+                                Önceki
+                            </a>
+                        </li>
+
+                        @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
+                        {
+                            <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-page="@sayfaNo"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-baslangicTarihi="@baslangicTarihi"
+                                   asp-route-bitisTarihi="@bitisTarihi"
+                                   asp-route-satisTuru="@satisTuru"
+                                   asp-route-odemeTipi="@odemeTipi"
+                                   asp-route-personelId="@personelId">
+                                    @sayfaNo
+                                </a>
+                            </li>
+                        }
+
+                        <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-page="@sonrakiSayfa"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-baslangicTarihi="@baslangicTarihi"
+                               asp-route-bitisTarihi="@bitisTarihi"
+                               asp-route-satisTuru="@satisTuru"
+                               asp-route-odemeTipi="@odemeTipi"
+                               asp-route-personelId="@personelId">
+                                Sonraki
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
             }
         </div>
     </div>

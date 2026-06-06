@@ -2,6 +2,7 @@
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -17,67 +18,168 @@ public class FaturalarController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? arama)
+    public async Task<IActionResult> Index(
+       string? arama,
+       DateTime? baslangicTarihi,
+       DateTime? bitisTarihi,
+       string? satisTuru,
+       string? odemeTipi,
+       int? personelId,
+       int page = 1,
+       int pageSize = 10)
     {
+        var izinliPageSize = new[] { 10, 25, 50, 100 };
+
+        if (!izinliPageSize.Contains(pageSize))
+            pageSize = 10;
+
+        if (page < 1)
+            page = 1;
+
+        var kasiyerMi = User.IsInRole("Kasiyer");
+
         var query = _context.Satislar
             .AsNoTracking()
             .Include(x => x.Musteri)
             .Include(x => x.Personel)
             .AsQueryable();
 
-        if (User.IsInRole("Kasiyer"))
+        if (kasiyerMi)
         {
-            var personelId = await GirisYapanKullanicininPersonelIdGetir();
+            var girisYapanPersonelId = await GirisYapanKullanicininPersonelIdGetir();
 
-            if (!personelId.HasValue)
+            if (!girisYapanPersonelId.HasValue)
             {
                 query = query.Where(x => false);
                 ViewData["KasiyerUyari"] = "Bu kullanıcıya bağlı personel kaydı bulunamadı.";
             }
             else
             {
-                query = query.Where(x => x.PersonelId == personelId.Value);
+                query = query.Where(x => x.PersonelId == girisYapanPersonelId.Value);
             }
+
+            personelId = null;
+        }
+        else if (personelId.HasValue)
+        {
+            query = query.Where(x => x.PersonelId == personelId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(arama))
         {
             arama = arama.Trim();
 
-            if (arama.StartsWith("FAT-", StringComparison.OrdinalIgnoreCase) &&
-                int.TryParse(arama.Replace("FAT-", "", StringComparison.OrdinalIgnoreCase), out var faturaId))
+            int? arananSatisId = null;
+
+            if (arama.StartsWith("FAT-", StringComparison.OrdinalIgnoreCase))
             {
-                query = query.Where(x => x.Id == faturaId);
+                var faturaNo = arama.Replace("FAT-", "", StringComparison.OrdinalIgnoreCase);
+                if (int.TryParse(faturaNo, out var parsedId))
+                    arananSatisId = parsedId;
             }
-            else
+            else if (int.TryParse(arama, out var normalId))
             {
-                query = query.Where(x =>
-                    (x.Musteri != null && x.Musteri.AdSoyad.Contains(arama)) ||
-                    x.OdemeTipi.Contains(arama));
+                arananSatisId = normalId;
+            }
+
+            query = query.Where(x =>
+                (arananSatisId.HasValue && x.Id == arananSatisId.Value) ||
+                (x.Musteri != null && x.Musteri.AdSoyad.Contains(arama)) ||
+                x.OdemeTipi.Contains(arama) ||
+                (x.SatisTuru != null && x.SatisTuru.Contains(arama)));
+        }
+
+        if (baslangicTarihi.HasValue)
+        {
+            var baslangic = baslangicTarihi.Value.Date;
+            query = query.Where(x => x.SatisTarihi >= baslangic);
+        }
+
+        if (bitisTarihi.HasValue)
+        {
+            var bitisExclusive = bitisTarihi.Value.Date.AddDays(1);
+            query = query.Where(x => x.SatisTarihi < bitisExclusive);
+        }
+
+        if (!string.IsNullOrWhiteSpace(satisTuru) && satisTuru != "Tumu")
+        {
+            if (satisTuru == "Perakende")
+            {
+                query = query.Where(x => x.SatisTuru == null || x.SatisTuru == "" || x.SatisTuru == "Perakende");
+            }
+            else if (satisTuru == "Toptan")
+            {
+                query = query.Where(x => x.SatisTuru == "Toptan");
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(odemeTipi) && odemeTipi != "Tumu")
+        {
+            query = query.Where(x => x.OdemeTipi == odemeTipi);
+        }
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        if (totalPages > 0 && page > totalPages)
+            page = totalPages;
+
         var faturalar = await query
             .OrderByDescending(x => x.SatisTarihi)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(x => new FaturaListeViewModel
             {
                 SatisId = x.Id,
                 FaturaNo = "FAT-" + x.Id.ToString("D6"),
                 SatisTarihi = x.SatisTarihi,
-                MusteriAdi = x.Musteri != null
-                    ? x.Musteri.AdSoyad
-                    : "Nihai Tüketici",
-                SatisTuru = string.IsNullOrWhiteSpace(x.SatisTuru)
-                    ? "Perakende"
-                    : x.SatisTuru,
+                MusteriAdi = x.Musteri != null ? x.Musteri.AdSoyad : "Nihai Tüketici",
+                PersonelAdi = x.Personel != null ? x.Personel.AdSoyad : "-",
+                SatisTuru = string.IsNullOrWhiteSpace(x.SatisTuru) ? "Perakende" : x.SatisTuru,
                 OdemeTipi = x.OdemeTipi,
                 ToplamTutar = x.NetTutar
             })
             .ToListAsync();
 
         ViewData["Arama"] = arama;
+        ViewData["BaslangicTarihi"] = baslangicTarihi?.ToString("yyyy-MM-dd");
+        ViewData["BitisTarihi"] = bitisTarihi?.ToString("yyyy-MM-dd");
+        ViewData["SatisTuru"] = string.IsNullOrWhiteSpace(satisTuru) ? "Tumu" : satisTuru;
+        ViewData["OdemeTipi"] = string.IsNullOrWhiteSpace(odemeTipi) ? "Tumu" : odemeTipi;
+        ViewData["PersonelId"] = personelId;
+        ViewData["KasiyerMi"] = kasiyerMi;
 
-        return View(faturalar);
+        ViewData["Personeller"] = await _context.Personeller
+    .AsNoTracking()
+    .Where(x => x.AktifMi)
+    .OrderBy(x => x.AdSoyad)
+    .Select(x => new SelectListItem
+    {
+        Value = x.Id.ToString(),
+        Text = x.AdSoyad + " - " + x.Pozisyon,
+        Selected = personelId.HasValue && x.Id == personelId.Value
+    })
+    .ToListAsync();
+
+        ViewData["OdemeTipleri"] = await _context.Satislar
+            .AsNoTracking()
+            .Where(x => !string.IsNullOrWhiteSpace(x.OdemeTipi))
+            .Select(x => x.OdemeTipi)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync();
+
+        var model = new PagedResultViewModel<FaturaListeViewModel>
+        {
+            Items = faturalar,
+            Arama = arama,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
+
+        return View(model);
     }
 
     public async Task<IActionResult> Detay(int id)
