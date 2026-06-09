@@ -1,0 +1,301 @@
+﻿@model GiyimMagazasiERP.Models.IadeDegisimTalebi
+
+@{
+    ViewData["Title"] = "İade Talebi Detayı";
+
+    string DurumMetni(string d) => d switch
+    {
+        "YoneticiOnayiBekliyor" => "Yönetici Onayı Bekliyor",
+        "MuhasebeOnayiBekliyor" => "Muhasebe Onayı Bekliyor",
+        "Reddedildi" => "Reddedildi",
+        "IptalEdildi" => "İptal Edildi",
+        "Tamamlandi" => "Tamamlandı",
+        _ => d
+    };
+
+    string DurumRengi(string d) => d switch
+    {
+        "YoneticiOnayiBekliyor" => "warning",
+        "MuhasebeOnayiBekliyor" => "info",
+        "Reddedildi" => "danger",
+        "IptalEdildi" => "secondary",
+        "Tamamlandi" => "success",
+        _ => "secondary"
+    };
+
+    string UrunDurumuMetni(string d) => d switch
+    {
+        "Satilabilir" => "Satılabilir",
+        "Hasarli" => "Hasarlı",
+        "IncelemeGerekli" => "İnceleme Gerekli",
+        _ => d
+    };
+
+    var tumTalepleriGorebilir =
+        User.IsInRole("Admin") ||
+        User.IsInRole("Yonetici") ||
+        User.IsInRole("Muhasebe") ||
+        User.IsInRole("Depo");
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İade Talebi Detayı</h1>
+            <p class="text-muted mb-0">@Model.TalepNo</p>
+        </div>
+
+        <a asp-action="@(tumTalepleriGorebilir ? "Index" : "BenimTaleplerim")"
+           class="btn btn-outline-secondary">
+            Listeye Dön
+        </a>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    <div class="alert alert-info">
+        Bu aşamada stok, finans, satış ve fatura kayıtları değiştirilmemiştir.
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between gap-3">
+            <div>
+                <strong class="fs-5">@Model.TalepNo</strong>
+                <div class="text-muted">
+                    @Model.TalepTarihi.ToString("dd.MM.yyyy HH:mm")
+                </div>
+            </div>
+
+            <div>
+                <span class="badge text-bg-primary me-2">
+                    @(Model.IslemTipi == "Degisim" ? "Değişim" : "İade")
+                </span>
+
+                <span class="badge text-bg-@DurumRengi(Model.Durum)">
+                    @DurumMetni(Model.Durum)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">Talep Bilgileri</h2>
+
+                    <dl class="row mb-0">
+                        <dt class="col-5">Satış No</dt>
+                        <dd class="col-7">#@Model.SatisId</dd>
+
+                        <dt class="col-5">Fatura No</dt>
+                        <dd class="col-7">@(Model.Satis?.FaturaNo ?? "-")</dd>
+
+                        <dt class="col-5">Ödeme Tipi</dt>
+                        <dd class="col-7">@(Model.OdemeTipiSnapshot ?? "-")</dd>
+
+                        <dt class="col-5">Açıklama</dt>
+                        <dd class="col-7">@(Model.Aciklama ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">
+                        Müşteri ve Talep Eden
+                    </h2>
+
+                    <dl class="row mb-0">
+                        <dt class="col-5">Müşteri</dt>
+                        <dd class="col-7">
+                            @(Model.Musteri?.AdSoyad ?? "Nihai Tüketici")
+                        </dd>
+
+                        <dt class="col-5">Telefon</dt>
+                        <dd class="col-7">@(Model.Musteri?.Telefon ?? "-")</dd>
+
+                        <dt class="col-5">Talep Eden Personel</dt>
+                        <dd class="col-7">
+                            @(Model.TalepEdenPersonel?.AdSoyad ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Talep Eden Kullanıcı</dt>
+                        <dd class="col-7">
+                            @(Model.TalepEdenKullanici?.AdSoyad
+                              ?? Model.TalepEdenKullanici?.KullaniciAdi
+                              ?? "-")
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-3">İade Edilecek Ürünler</h2>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ürün</th>
+                            <th>Barkod</th>
+                            <th>İade Adedi</th>
+                            <th>Birim Fiyat</th>
+                            <th>KDV</th>
+                            <th>İndirim</th>
+                            <th>İade Tutarı</th>
+                            <th>Ürün Durumu</th>
+                            <th>Stoğa Dönüş</th>
+                            <th>İade Nedeni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Detaylar.Any())
+                        {
+                            @foreach (var detay in Model.Detaylar)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@detay.UrunAdiSnapshot</strong>
+                                        <div class="small text-muted">
+                                            @detay.BedenSnapshot |
+                                            @detay.RenkSnapshot
+                                        </div>
+                                    </td>
+                                    <td>@(detay.BarkodSnapshot ?? "-")</td>
+                                    <td>@detay.IadeAdedi</td>
+                                    <td>@detay.BirimFiyat.ToString("N2") TL</td>
+                                    <td>
+                                        %@detay.KdvOrani.ToString("N2")
+                                        <div class="small text-muted">
+                                            @detay.KdvTutari.ToString("N2") TL
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @detay.SatirIndirimTutari.ToString("N2") TL
+                                    </td>
+                                    <td class="fw-semibold">
+                                        @detay.VergiDahilTutar.ToString("N2") TL
+                                    </td>
+                                    <td>@UrunDurumuMetni(detay.UrunDurumu)</td>
+                                    <td>
+                                        <span class="badge text-bg-@(detay.StogaGeriAlinsinMi ? "success" : "secondary")">
+                                            @(detay.StogaGeriAlinsinMi ? "Evet" : "Hayır")
+                                        </span>
+                                    </td>
+                                    <td>@(detay.IadeNedeni ?? "-")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10"
+                                    class="text-center text-muted py-4">
+                                    Talebe bağlı ürün bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">Hareket Geçmişi</h2>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Kullanıcı</th>
+                                    <th>Önceki Durum</th>
+                                    <th>Yeni Durum</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Hareketler.Any())
+                                {
+                                    @foreach (var hareket in Model.Hareketler
+                                        .OrderByDescending(x => x.IslemTarihi))
+                                    {
+                                        <tr>
+                                            <td>
+                                                @hareket.IslemTarihi.ToString("dd.MM.yyyy HH:mm")
+                                            </td>
+                                            <td>
+                                                @(hareket.Kullanici?.AdSoyad
+                                                  ?? hareket.Kullanici?.KullaniciAdi
+                                                  ?? "-")
+                                            </td>
+                                            <td>
+                                                @(hareket.OncekiDurum is null
+                                                    ? "-"
+                                                    : DurumMetni(hareket.OncekiDurum))
+                                            </td>
+                                            <td>@DurumMetni(hareket.YeniDurum)</td>
+                                            <td>@(hareket.Aciklama ?? "-")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5"
+                                            class="text-center text-muted py-3">
+                                            Hareket kaydı bulunamadı.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">İade Toplamları</h2>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Vergi Hariç Toplam</span>
+                        <strong>@Model.VergiHaricToplam.ToString("N2") TL</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Toplam KDV</span>
+                        <strong>@Model.ToplamKdvTutari.ToString("N2") TL</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span>Vergi Dahil Toplam</span>
+                        <strong>@Model.VergiDahilToplam.ToString("N2") TL</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between py-3 fs-5">
+                        <span class="fw-bold">Toplam İade Tutarı</span>
+                        <strong class="text-success">
+                            @Model.ToplamIadeTutari.ToString("N2") TL
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

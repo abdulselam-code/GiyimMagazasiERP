@@ -1,0 +1,253 @@
+﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.IadeDegisimTalebi>
+
+@{
+    ViewData["Title"] = "İade / Değişim Talepleri";
+    var durum = ViewData["Durum"]?.ToString() ?? "Tumu";
+    var islemTipi = ViewData["IslemTipi"]?.ToString() ?? "Tumu";
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+
+    string DurumMetni(string deger) => deger switch
+    {
+        "YoneticiOnayiBekliyor" => "Yönetici Onayı Bekliyor",
+        "MuhasebeOnayiBekliyor" => "Muhasebe Onayı Bekliyor",
+        "Reddedildi" => "Reddedildi",
+        "IptalEdildi" => "İptal Edildi",
+        "Tamamlandi" => "Tamamlandı",
+        _ => deger
+    };
+
+    string DurumRengi(string deger) => deger switch
+    {
+        "YoneticiOnayiBekliyor" => "warning",
+        "MuhasebeOnayiBekliyor" => "info",
+        "Reddedildi" => "danger",
+        "IptalEdildi" => "secondary",
+        "Tamamlandi" => "success",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İade / Değişim Talepleri</h1>
+            <p class="text-muted mb-0">
+                Sistemde oluşturulan iade taleplerini inceleyin.
+            </p>
+        </div>
+
+        @if (!User.IsInRole("Depo"))
+        {
+            <a asp-action="BenimTaleplerim"
+               class="btn btn-outline-secondary">
+                Benim Taleplerim
+            </a>
+        }
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label for="arama" class="form-label">Arama</label>
+                    <input id="arama"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control"
+                           placeholder="Talep no, satış no, müşteri veya personel" />
+                </div>
+
+                <div class="col-lg-3">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select id="durum" name="durum" class="form-select">
+                        <option value="Tumu" selected="@(durum == "Tumu")">Tümü</option>
+                        <option value="YoneticiOnayiBekliyor"
+                                selected="@(durum == "YoneticiOnayiBekliyor")">
+                            Yönetici Onayı Bekliyor
+                        </option>
+                        <option value="MuhasebeOnayiBekliyor"
+                                selected="@(durum == "MuhasebeOnayiBekliyor")">
+                            Muhasebe Onayı Bekliyor
+                        </option>
+                        <option value="Reddedildi"
+                                selected="@(durum == "Reddedildi")">Reddedildi</option>
+                        <option value="IptalEdildi"
+                                selected="@(durum == "IptalEdildi")">İptal Edildi</option>
+                        <option value="Tamamlandi"
+                                selected="@(durum == "Tamamlandi")">Tamamlandı</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2">
+                    <label for="islemTipi" class="form-label">İşlem Tipi</label>
+                    <select id="islemTipi" name="islemTipi" class="form-select">
+                        <option value="Tumu" selected="@(islemTipi == "Tumu")">Tümü</option>
+                        <option value="Iade" selected="@(islemTipi == "Iade")">İade</option>
+                        <option value="Degisim" selected="@(islemTipi == "Degisim")">Değişim</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-1">
+                    <label for="pageSize" class="form-label">Kayıt</label>
+                    <select id="pageSize" name="pageSize" class="form-select">
+                        @foreach (var adet in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@adet"
+                                    selected="@(Model.PageSize == adet)">
+                                @adet
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-2 d-flex gap-2">
+                    <button type="submit"
+                            class="btn btn-primary flex-fill">
+                        Filtrele
+                    </button>
+
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary flex-fill">
+                        Temizle
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <p class="text-muted">
+                Toplam <strong>@Model.TotalCount</strong> talep bulundu.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Talep No</th>
+                            <th>İşlem Tipi</th>
+                            <th>Tarih</th>
+                            <th>Satış No</th>
+                            <th>Müşteri</th>
+                            <th>Talep Eden</th>
+                            <th>Durum</th>
+                            <th class="text-end">Toplam İade</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var talep in Model.Items)
+                            {
+                                <tr>
+                                    <td>@siraNo</td>
+                                    <td class="fw-semibold">@talep.TalepNo</td>
+                                    <td>
+                                        @(talep.IslemTipi == "Degisim"
+                                            ? "Değişim"
+                                            : "İade")
+                                    </td>
+                                    <td>
+                                        @talep.TalepTarihi.ToString("dd.MM.yyyy HH:mm")
+                                    </td>
+                                    <td>#@talep.SatisId</td>
+                                    <td>
+                                        @(talep.Musteri?.AdSoyad ?? "Nihai Tüketici")
+                                    </td>
+                                    <td>
+                                        @(talep.TalepEdenPersonel?.AdSoyad
+                                          ?? talep.TalepEdenKullanici?.AdSoyad
+                                          ?? talep.TalepEdenKullanici?.KullaniciAdi
+                                          ?? "-")
+                                    </td>
+                                    <td>
+                                        <span class="badge text-bg-@DurumRengi(talep.Durum)">
+                                            @DurumMetni(talep.Durum)
+                                        </span>
+                                    </td>
+                                    <td class="text-end fw-semibold">
+                                        @talep.ToplamIadeTutari.ToString("N2") TL
+                                    </td>
+                                    <td>
+                                        <a asp-action="Details"
+                                           asp-route-id="@talep.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Detay
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                siraNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10"
+                                    class="text-center text-muted py-4">
+                                    Arama kriterlerine uygun iade talebi bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="İade talepleri sayfalama">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(!Model.OncekiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-route-page="@(Model.Page - 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@durum"
+                               asp-route-islemTipi="@islemTipi">
+                                Önceki
+                            </a>
+                        </li>
+
+                        @for (var sayfa = 1; sayfa <= Model.TotalPages; sayfa++)
+                        {
+                            <li class="page-item @(sayfa == Model.Page ? "active" : "")">
+                                <a class="page-link"
+                                   asp-route-page="@sayfa"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-durum="@durum"
+                                   asp-route-islemTipi="@islemTipi">
+                                    @sayfa
+                                </a>
+                            </li>
+                        }
+
+                        <li class="page-item @(!Model.SonrakiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-route-page="@(Model.Page + 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@durum"
+                               asp-route-islemTipi="@islemTipi">
+                                Sonraki
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>

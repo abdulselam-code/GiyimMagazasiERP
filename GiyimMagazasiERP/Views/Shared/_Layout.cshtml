@@ -25,10 +25,11 @@
         aktifController == "Tedarikciler";
 
     var hareketlerAktif =
-        aktifController == "Satislar" ||
-        aktifController == "FinansHareketleri" ||
-        aktifController == "ToptanSatisTalepleri" ||
-        aktifController == "StokHareketleri";
+    aktifController == "Satislar" ||
+    aktifController == "FinansHareketleri" ||
+    aktifController == "ToptanSatisTalepleri" ||
+    aktifController == "IadeDegisimTalepleri" ||
+    aktifController == "StokHareketleri";
 
     var analizAktif =
         aktifController == "Raporlar" ||
@@ -237,13 +238,24 @@
                                             </li>
                                         }
 
+                                        @if (admin || yonetici || muhasebe || depo)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "IadeDegisimTalepleri" ? "active" : "")"
+                                                   asp-controller="IadeDegisimTalepleri"
+                                                   asp-action="Index">
+                                                    İade / Değişim Talepleri
+                                                </a>
+                                            </li>
+                                        }
+
                                         @if (admin || yonetici || kasiyer || personel)
                                         {
                                             <li>
-                                                <a class="dropdown-item @(aktifController == "ToptanSatisTalepleri" ? "active" : "")"
-                                                   asp-controller="ToptanSatisTalepleri"
+                                                <a class="dropdown-item @(aktifController == "IadeDegisimTalepleri" ? "active" : "")"
+                                                   asp-controller="IadeDegisimTalepleri"
                                                    asp-action="BenimTaleplerim">
-                                                    Benim Toptan Taleplerim
+                                                    Benim İade Taleplerim
                                                 </a>
                                             </li>
                                         }

@@ -1,0 +1,295 @@
+﻿@model GiyimMagazasiERP.ViewModels.IadeDegisimTalepOlusturViewModel
+
+@{
+    ViewData["Title"] = "İade Talebi Oluştur";
+    var satisTarihi = ViewData["SatisTarihi"] as DateTime?;
+    var satisToplami = ViewData["SatisToplami"] as decimal? ?? 0;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İade Talebi Oluştur</h1>
+            <p class="text-muted mb-0">
+                İade edilecek ürünleri ve adetleri seçin.
+            </p>
+        </div>
+
+        <a asp-action="BenimTaleplerim"
+           class="btn btn-outline-secondary">
+            Taleplerime Dön
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        Bu işlem yalnızca iade talebi oluşturur. Stok, finans, satış ve
+        fatura kayıtları değiştirilmez.
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-3">Satış Bilgileri</h2>
+
+            <div class="row g-3">
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Satış No</small>
+                    <strong>#@Model.SatisId</strong>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Fatura No</small>
+                    <strong>@(ViewData["FaturaNo"] ?? "-")</strong>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Satış Tarihi</small>
+                    <strong>
+                        @(satisTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "-")
+                    </strong>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Müşteri</small>
+                    <strong>@(ViewData["MusteriAdi"] ?? "-")</strong>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Personel</small>
+                    <strong>@(ViewData["PersonelAdi"] ?? "-")</strong>
+                </div>
+                <div class="col-md-4 col-xl-2">
+                    <small class="text-muted d-block">Satış Toplamı</small>
+                    <strong>@satisToplami.ToString("N2") TL</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post" id="iadeTalepFormu">
+        <input asp-for="SatisId" type="hidden" />
+        <input asp-for="IslemTipi" type="hidden" />
+
+        <div asp-validation-summary="All"
+             class="alert alert-danger"></div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Satış Ürünleri</h2>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Seç</th>
+                                <th>Ürün</th>
+                                <th>Satılan</th>
+                                <th>Önceki İade</th>
+                                <th>Bekleyen</th>
+                                <th>İade Edilebilir</th>
+                                <th>İade Adedi</th>
+                                <th>Ürün Durumu</th>
+                                <th>Stoğa Dönsün</th>
+                                <th>İade Nedeni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var urun in Model.Urunler)
+                            {
+                                var secilebilir = urun.IadeEdilebilirAdet > 0;
+                                var secili = Model.SecilenSatisDetayiIdleri
+                                    .Contains(urun.SatisDetayiId);
+
+                                var urunDurumu = Model.UrunDurumlari
+                                    .GetValueOrDefault(
+                                        urun.SatisDetayiId,
+                                        IadeDegisimTalepDetayi
+                                            .UrunDurumuSatilabilir);
+
+                                var stogaDoner =
+                                    urunDurumu == "Satilabilir" &&
+                                    Model.StogaGeriAlinsinMi.GetValueOrDefault(
+                                        urun.SatisDetayiId,
+                                        true);
+
+                                <tr class="@(!secilebilir ? "table-secondary" : "")">
+                                    <td>
+                                        <input type="checkbox"
+                                               name="SecilenSatisDetayiIdleri"
+                                               value="@urun.SatisDetayiId"
+                                               class="form-check-input urun-secimi"
+                                               data-id="@urun.SatisDetayiId"
+                                               checked="@(secili ? "checked" : null)"
+                                               disabled="@(!secilebilir)" />
+                                    </td>
+
+                                    <td>
+                                        <strong>@urun.UrunAdi</strong>
+                                        <div class="small text-muted">
+                                            @urun.Barkod | @urun.Beden | @urun.Renk
+                                        </div>
+                                        <div class="small text-muted">
+                                            @urun.BirimFiyat.ToString("N2") TL |
+                                            KDV %@urun.KdvOrani.ToString("N2")
+                                        </div>
+                                    </td>
+
+                                    <td>@urun.SatilanAdet</td>
+                                    <td>@urun.DahaOnceIadeEdilenAdet</td>
+                                    <td>@urun.AktifBekleyenIadeAdedi</td>
+                                    <td>
+                                        <span class="badge text-bg-@(secilebilir ? "success" : "secondary")">
+                                            @urun.IadeEdilebilirAdet
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        <input type="number"
+                                               name="IadeAdetleri[@urun.SatisDetayiId]"
+                                               value="@Model.IadeAdetleri.GetValueOrDefault(urun.SatisDetayiId, 1)"
+                                               min="1"
+                                               max="@urun.IadeEdilebilirAdet"
+                                               class="form-control form-control-sm satir-alani"
+                                               data-id="@urun.SatisDetayiId"
+                                               disabled="@(!secilebilir)" />
+                                    </td>
+
+                                    <td>
+                                        <select name="UrunDurumlari[@urun.SatisDetayiId]"
+                                                class="form-select form-select-sm urun-durumu satir-alani"
+                                                data-id="@urun.SatisDetayiId"
+                                                disabled="@(!secilebilir)">
+                                            <option value="Satilabilir"
+                                                    selected="@(urunDurumu == "Satilabilir")">
+                                                Satılabilir
+                                            </option>
+                                            <option value="Hasarli"
+                                                    selected="@(urunDurumu == "Hasarli")">
+                                                Hasarlı
+                                            </option>
+                                            <option value="IncelemeGerekli"
+                                                    selected="@(urunDurumu == "IncelemeGerekli")">
+                                                İnceleme Gerekli
+                                            </option>
+                                        </select>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                               name="StogaGeriAlinsinMi[@urun.SatisDetayiId]"
+                                               value="true"
+                                               class="form-check-input stoga-donus satir-alani"
+                                               data-id="@urun.SatisDetayiId"
+                                               checked="@(stogaDoner ? "checked" : null)"
+                                               disabled="@(!secilebilir || urunDurumu != "Satilabilir")" />
+
+                                        <input type="hidden"
+                                               name="StogaGeriAlinsinMi[@urun.SatisDetayiId]"
+                                               value="false" />
+                                    </td>
+
+                                    <td>
+                                        <input name="IadeNedenleri[@urun.SatisDetayiId]"
+                                               value="@Model.IadeNedenleri.GetValueOrDefault(urun.SatisDetayiId)"
+                                               maxlength="300"
+                                               class="form-control form-control-sm satir-alani"
+                                               data-id="@urun.SatisDetayiId"
+                                               placeholder="İade nedeni"
+                                               disabled="@(!secilebilir)" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-9">
+                        <label asp-for="Aciklama" class="form-label">
+                            Genel Açıklama
+                        </label>
+                        <textarea asp-for="Aciklama"
+                                  rows="3"
+                                  maxlength="500"
+                                  class="form-control"></textarea>
+                    </div>
+
+                    <div class="col-lg-3">
+                        <button type="submit"
+                                class="btn btn-success btn-lg w-100"
+                                disabled="@(!Model.Urunler.Any(x => x.IadeEdilebilirAdet > 0))">
+                            İade Talebi Oluştur
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("iadeTalepFormu");
+            const secimler = document.querySelectorAll(".urun-secimi");
+
+            function satiriGuncelle(id) {
+                const secim = document.querySelector(
+                    '.urun-secimi[data-id="' + id + '"]');
+
+                const durum = document.querySelector(
+                    '.urun-durumu[data-id="' + id + '"]');
+
+                const stok = document.querySelector(
+                    '.stoga-donus[data-id="' + id + '"]');
+
+                if (!secim || !durum || !stok) {
+                    return;
+                }
+
+                document.querySelectorAll(
+                    '.satir-alani[data-id="' + id + '"]')
+                    .forEach(function (alan) {
+                        alan.disabled = !secim.checked;
+                    });
+
+                stok.disabled =
+                    !secim.checked || durum.value !== "Satilabilir";
+
+                if (stok.disabled) {
+                    stok.checked = false;
+                }
+            }
+
+            secimler.forEach(function (secim) {
+                secim.addEventListener("change", function () {
+                    satiriGuncelle(secim.dataset.id);
+                });
+
+                satiriGuncelle(secim.dataset.id);
+            });
+
+            document.querySelectorAll(".urun-durumu")
+                .forEach(function (durum) {
+                    durum.addEventListener("change", function () {
+                        satiriGuncelle(durum.dataset.id);
+                    });
+                });
+
+            form.addEventListener("submit", function (event) {
+                const seciliUrunVarMi = Array.from(secimler)
+                    .some(function (secim) {
+                        return secim.checked;
+                    });
+
+                if (!seciliUrunVarMi) {
+                    event.preventDefault();
+                    alert("İade talebi için en az bir ürün seçiniz.");
+                }
+            });
+        });
+    </script>
+}

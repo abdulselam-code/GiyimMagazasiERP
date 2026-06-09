@@ -32,6 +32,17 @@ public class AppDbContext : DbContext
 
     public DbSet<ToptanSatisTalepHareketi> ToptanSatisTalepHareketleri
         => Set<ToptanSatisTalepHareketi>();
+    public DbSet<IadeDegisimTalebi> IadeDegisimTalepleri
+    => Set<IadeDegisimTalebi>();
+
+    public DbSet<IadeDegisimTalepDetayi> IadeDegisimTalepDetaylari
+        => Set<IadeDegisimTalepDetayi>();
+
+    public DbSet<IadeDegisimTalepHareketi> IadeDegisimTalepHareketleri
+        => Set<IadeDegisimTalepHareketi>();
+
+    public DbSet<IadeDegisimYeniUrunDetayi> IadeDegisimYeniUrunDetaylari
+        => Set<IadeDegisimYeniUrunDetayi>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -360,5 +371,253 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
+        modelBuilder.Entity<IadeDegisimTalebi>(entity =>
+        {
+    entity.ToTable("IadeDegisimTalepleri");
+
+    entity.HasKey(x => x.Id);
+
+    entity.Property(x => x.TalepNo)
+        .HasMaxLength(30)
+        .IsRequired();
+
+    entity.Property(x => x.IadeBelgeNo)
+        .HasMaxLength(30);
+
+    entity.Property(x => x.IslemTipi)
+        .HasMaxLength(20)
+        .IsRequired();
+
+    entity.Property(x => x.Durum)
+        .HasMaxLength(40)
+        .IsRequired();
+
+    entity.Property(x => x.Aciklama)
+        .HasMaxLength(500);
+
+    entity.Property(x => x.RedNedeni)
+        .HasMaxLength(500);
+
+    entity.Property(x => x.IptalNedeni)
+        .HasMaxLength(500);
+
+    entity.Property(x => x.OdemeTipiSnapshot)
+        .HasMaxLength(50);
+
+    entity.Property(x => x.ToplamIadeTutari)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.ToplamKdvTutari)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.VergiHaricToplam)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.VergiDahilToplam)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.RowVersion)
+        .IsRowVersion();
+
+    entity.HasIndex(x => x.TalepNo)
+        .IsUnique();
+
+    entity.HasIndex(x => x.IadeBelgeNo)
+        .IsUnique()
+        .HasFilter("[IadeBelgeNo] IS NOT NULL");
+
+    entity.HasIndex(x => x.SatisId);
+    entity.HasIndex(x => x.Durum);
+    entity.HasIndex(x => x.IslemTipi);
+    entity.HasIndex(x => x.TalepTarihi);
+
+    entity.HasOne(x => x.Satis)
+        .WithMany()
+        .HasForeignKey(x => x.SatisId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.Musteri)
+        .WithMany()
+        .HasForeignKey(x => x.MusteriId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.TalepEdenKullanici)
+        .WithMany()
+        .HasForeignKey(x => x.TalepEdenKullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.TalepEdenPersonel)
+        .WithMany()
+        .HasForeignKey(x => x.TalepEdenPersonelId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.YoneticiOnaylayanKullanici)
+        .WithMany()
+        .HasForeignKey(x => x.YoneticiOnaylayanKullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.MuhasebeOnaylayanKullanici)
+        .WithMany()
+        .HasForeignKey(x => x.MuhasebeOnaylayanKullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.ReddedenKullanici)
+        .WithMany()
+        .HasForeignKey(x => x.ReddedenKullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.IptalEdenKullanici)
+        .WithMany()
+        .HasForeignKey(x => x.IptalEdenKullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.FinansHareketi)
+        .WithMany()
+        .HasForeignKey(x => x.FinansHareketiId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<IadeDegisimTalepDetayi>(entity =>
+{
+    entity.ToTable("IadeDegisimTalepDetaylari");
+
+    entity.HasKey(x => x.Id);
+
+    entity.Property(x => x.BirimFiyat)
+        .HasPrecision(18, 2);
+
+entity.Property(x => x.KdvOrani)
+        .HasPrecision(5, 2);
+
+entity.Property(x => x.SatirIndirimTutari)
+        .HasPrecision(18, 2);
+
+entity.Property(x => x.KdvTutari)
+        .HasPrecision(18, 2);
+
+entity.Property(x => x.VergiHaricTutar)
+        .HasPrecision(18, 2);
+
+entity.Property(x => x.VergiDahilTutar)
+        .HasPrecision(18, 2);
+
+entity.Property(x => x.IadeNedeni)
+        .HasMaxLength(300);
+
+entity.Property(x => x.UrunDurumu)
+        .HasMaxLength(40)
+        .IsRequired();
+
+entity.Property(x => x.UrunAdiSnapshot)
+        .HasMaxLength(200)
+        .IsRequired();
+
+entity.Property(x => x.BarkodSnapshot)
+        .HasMaxLength(100);
+
+entity.Property(x => x.BedenSnapshot)
+        .HasMaxLength(50);
+
+entity.Property(x => x.RenkSnapshot)
+        .HasMaxLength(50);
+
+entity.HasIndex(x => x.IadeDegisimTalebiId);
+    entity.HasIndex(x => x.SatisDetayiId);
+    entity.HasIndex(x => x.UrunId);
+
+    entity.HasOne(x => x.IadeDegisimTalebi)
+        .WithMany(x => x.Detaylar)
+        .HasForeignKey(x => x.IadeDegisimTalebiId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+entity.HasOne(x => x.SatisDetayi)
+        .WithMany()
+        .HasForeignKey(x => x.SatisDetayiId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+entity.HasOne(x => x.Urun)
+        .WithMany()
+        .HasForeignKey(x => x.UrunId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<IadeDegisimTalepHareketi>(entity =>
+{
+    entity.ToTable("IadeDegisimTalepHareketleri");
+
+    entity.HasKey(x => x.Id);
+
+    entity.Property(x => x.OncekiDurum)
+        .HasMaxLength(40);
+
+    entity.Property(x => x.YeniDurum)
+        .HasMaxLength(40)
+        .IsRequired();
+
+    entity.Property(x => x.Aciklama)
+        .HasMaxLength(500);
+
+    entity.HasIndex(x => x.IadeDegisimTalebiId);
+    entity.HasIndex(x => x.KullaniciId);
+    entity.HasIndex(x => x.IslemTarihi);
+
+    entity.HasOne(x => x.IadeDegisimTalebi)
+        .WithMany(x => x.Hareketler)
+        .HasForeignKey(x => x.IadeDegisimTalebiId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.Kullanici)
+        .WithMany()
+        .HasForeignKey(x => x.KullaniciId)
+        .OnDelete(DeleteBehavior.NoAction);
+});
+
+modelBuilder.Entity<IadeDegisimYeniUrunDetayi>(entity =>
+{
+    entity.ToTable("IadeDegisimYeniUrunDetaylari");
+
+    entity.HasKey(x => x.Id);
+
+    entity.Property(x => x.BirimFiyat)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.KdvOrani)
+        .HasPrecision(5, 2);
+
+    entity.Property(x => x.KdvTutari)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.VergiHaricTutar)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.VergiDahilTutar)
+        .HasPrecision(18, 2);
+
+    entity.Property(x => x.UrunAdiSnapshot)
+        .HasMaxLength(200)
+        .IsRequired();
+
+    entity.Property(x => x.BarkodSnapshot)
+        .HasMaxLength(100);
+
+    entity.Property(x => x.BedenSnapshot)
+        .HasMaxLength(50);
+
+    entity.Property(x => x.RenkSnapshot)
+        .HasMaxLength(50);
+
+    entity.HasIndex(x => x.IadeDegisimTalebiId);
+    entity.HasIndex(x => x.YeniUrunId);
+
+    entity.HasOne(x => x.IadeDegisimTalebi)
+        .WithMany(x => x.YeniUrunDetaylari)
+        .HasForeignKey(x => x.IadeDegisimTalebiId)
+        .OnDelete(DeleteBehavior.NoAction);
+
+    entity.HasOne(x => x.YeniUrun)
+        .WithMany()
+        .HasForeignKey(x => x.YeniUrunId)
+        .OnDelete(DeleteBehavior.NoAction);
+        });
     }
 }
