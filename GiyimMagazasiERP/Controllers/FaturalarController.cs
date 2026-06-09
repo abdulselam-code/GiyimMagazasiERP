@@ -84,9 +84,10 @@ public class FaturalarController : Controller
 
             query = query.Where(x =>
                 (arananSatisId.HasValue && x.Id == arananSatisId.Value) ||
-                (x.Musteri != null && x.Musteri.AdSoyad.Contains(arama)) ||
-                x.OdemeTipi.Contains(arama) ||
-                (x.SatisTuru != null && x.SatisTuru.Contains(arama)));
+              (x.Musteri != null && x.Musteri.AdSoyad.Contains(arama)) ||
+               x.FaturaNo.Contains(arama) ||
+               x.OdemeTipi.Contains(arama) ||
+              (x.SatisTuru != null && x.SatisTuru.Contains(arama)));
         }
 
         if (baslangicTarihi.HasValue)
@@ -131,7 +132,9 @@ public class FaturalarController : Controller
             .Select(x => new FaturaListeViewModel
             {
                 SatisId = x.Id,
-                FaturaNo = "FAT-" + x.Id.ToString("D6"),
+                FaturaNo = string.IsNullOrWhiteSpace(x.FaturaNo)
+                ? "FAT-" + x.Id.ToString("D6")
+                : x.FaturaNo,
                 SatisTarihi = x.SatisTarihi,
                 MusteriAdi = x.Musteri != null ? x.Musteri.AdSoyad : "Nihai Tüketici",
                 PersonelAdi = x.Personel != null ? x.Personel.AdSoyad : "-",
@@ -203,8 +206,10 @@ public class FaturalarController : Controller
         }
 
         ViewBag.Magaza = await _context.MagazaBilgileri
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.AktifMi);
+          .AsNoTracking()
+          .Where(x => x.AktifMi)
+          .OrderByDescending(x => x.Id)
+          .FirstOrDefaultAsync();
 
         ViewBag.SatisTuru = string.IsNullOrWhiteSpace(satis.SatisTuru)
             ? "Perakende"
@@ -213,7 +218,15 @@ public class FaturalarController : Controller
         var viewModel = new FaturaDetayViewModel
         {
             SatisId = satis.Id,
+            FaturaNo = string.IsNullOrWhiteSpace(satis.FaturaNo)
+                   ? "FAT-" + satis.Id.ToString("D6")
+                   : satis.FaturaNo,
             SatisTarihi = satis.SatisTarihi,
+            FaturaTarihi = satis.FaturaTarihi == default ? satis.SatisTarihi : satis.FaturaTarihi,
+            SatisTuru = string.IsNullOrWhiteSpace(satis.SatisTuru) ? "Perakende" : satis.SatisTuru,
+            BelgeTuru = string.IsNullOrWhiteSpace(satis.BelgeTuru) ? "SatisBelgesi" : satis.BelgeTuru,
+            FaturaDurumu = string.IsNullOrWhiteSpace(satis.FaturaDurumu) ? "Olusturuldu" : satis.FaturaDurumu,
+            UUID = satis.UUID,
             OdemeTipi = satis.OdemeTipi,
 
             KayitliMusteriMi = satis.Musteri is not null,
@@ -221,25 +234,60 @@ public class FaturalarController : Controller
             MusteriTelefon = satis.Musteri?.Telefon,
             MusteriEmail = satis.Musteri?.Email,
 
+            MusteriTipi = satis.Musteri?.MusteriTipi ?? "Bireysel",
+            KurumsalUnvan = satis.Musteri?.KurumsalUnvan,
+            MusteriAdres = satis.Musteri?.Adres,
+            MusteriIl = satis.Musteri?.Il,
+            MusteriIlce = satis.Musteri?.Ilce,
+            MusteriTCKN = satis.Musteri?.TCKN,
+            MusteriVKN = satis.Musteri?.VKN,
+            MusteriVergiDairesi = satis.Musteri?.VergiDairesi,
+
             PersonelAdi = satis.Personel?.AdSoyad ?? "-",
             PersonelPozisyonu = satis.Personel?.Pozisyon ?? "-",
 
             ToplamTutar = satis.ToplamTutar,
             IndirimTutari = satis.IndirimTutari,
             NetTutar = satis.NetTutar,
+            ToplamKdvTutari = satis.ToplamKdvTutari,
+            VergiHaricToplam = satis.VergiHaricToplam,
+            VergiDahilToplam = satis.VergiDahilToplam == 0
+                ? satis.NetTutar
+                : satis.VergiDahilToplam,
 
             Kalemler = satis.SatisDetaylari
-                .Select(x => new FaturaKalemiViewModel
-                {
-                    UrunAdi = x.Urun.UrunAdi,
-                    Barkod = x.Urun.Barkod,
-                    Beden = x.Urun.Beden,
-                    Renk = x.Urun.Renk,
-                    Adet = x.Adet,
-                    BirimFiyat = x.BirimFiyat,
-                    ToplamTutar = x.ToplamTutar
-                })
-                .ToList()
+    .Select(x => new FaturaKalemiViewModel
+    {
+        UrunAdi = string.IsNullOrWhiteSpace(x.UrunAdiSnapshot)
+            ? x.Urun.UrunAdi
+            : x.UrunAdiSnapshot,
+
+        Barkod = string.IsNullOrWhiteSpace(x.BarkodSnapshot)
+            ? x.Urun.Barkod
+            : x.BarkodSnapshot,
+
+        Beden = string.IsNullOrWhiteSpace(x.BedenSnapshot)
+            ? x.Urun.Beden
+            : x.BedenSnapshot,
+
+        Renk = string.IsNullOrWhiteSpace(x.RenkSnapshot)
+            ? x.Urun.Renk
+            : x.RenkSnapshot,
+
+        Adet = x.Adet,
+        BirimFiyat = x.BirimFiyat,
+        IndirimTutari = x.SatirIndirimTutari,
+        KdvOrani = x.KdvOrani,
+        KdvTutari = x.KdvTutari,
+        VergiHaricTutar = x.VergiHaricTutar,
+        VergiDahilTutar = x.VergiDahilTutar == 0
+            ? x.ToplamTutar
+            : x.VergiDahilTutar,
+        ToplamTutar = x.VergiDahilTutar == 0
+            ? x.ToplamTutar
+            : x.VergiDahilTutar
+    })
+    .ToList()
         };
 
         return View(viewModel);

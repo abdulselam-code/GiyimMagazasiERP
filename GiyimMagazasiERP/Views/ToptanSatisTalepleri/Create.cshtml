@@ -1,0 +1,519 @@
+﻿@model GiyimMagazasiERP.ViewModels.ToptanSatisTalepOlusturViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Toptan Satış Talebi Oluştur";
+
+    var musterilerJson =
+        JsonSerializer.Serialize(ViewData["MusterilerJson"]);
+
+    var urunlerJson =
+        JsonSerializer.Serialize(ViewData["UrunlerJson"]);
+
+    var mevcutSepetJson =
+        JsonSerializer.Serialize(Model.Sepet);
+
+    var personelOtomatikMi =
+        ViewData["PersonelOtomatikMi"] as bool? ?? false;
+
+    var otomatikPersonelAdi =
+        ViewData["OtomatikPersonelAdi"]?.ToString()
+        ?? "Bağlı personel bulunamadı";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Toptan Satış Talebi Oluştur</h1>
+            <p class="text-muted mb-0">
+                Yönetici ve muhasebe onayına gönderilecek talebi hazırlayın.
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    <div class="alert alert-info">
+        Bu işlem stok düşürmez, fatura veya finans hareketi oluşturmaz.
+        Talep gerekli onaylardan sonra satışa dönüşecektir.
+    </div>
+
+    <form asp-action="Create" method="post" id="talepFormu">
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+        <div id="uyariAlani"></div>
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Talep Bilgileri</h2>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="MusteriId" class="form-label">
+                                    Müşteri
+                                </label>
+
+                                <select asp-for="MusteriId"
+                                        asp-items="ViewBag.MusteriId"
+                                        id="musteriSecimi"
+                                        class="form-select">
+                                    <option value="">Müşteri Seçiniz</option>
+                                </select>
+
+                                <span asp-validation-for="MusteriId"
+                                      class="text-danger"></span>
+
+                                <div class="form-text">
+                                    Toptan satış talebinde müşteri zorunludur.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Talep Eden Personel</label>
+
+                                @if (personelOtomatikMi)
+                                {
+                                    <input asp-for="TalepEdenPersonelId"
+                                           type="hidden" />
+
+                                    <div class="border rounded p-2 bg-light">
+                                        <strong>@otomatikPersonelAdi</strong>
+                                        <div class="small text-muted">
+                                            Giriş yapan kullanıcıya bağlı personel kullanılır.
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <select asp-for="TalepEdenPersonelId"
+                                            asp-items="ViewBag.TalepEdenPersonelId"
+                                            class="form-select">
+                                        <option value="">Personel Seçiniz</option>
+                                    </select>
+
+                                    <span asp-validation-for="TalepEdenPersonelId"
+                                          class="text-danger"></span>
+                                }
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="OdemeTipi" class="form-label">
+                                    Ödeme Tipi
+                                </label>
+
+                                <select asp-for="OdemeTipi"
+                                        asp-items="ViewBag.OdemeTipleri"
+                                        id="odemeTipiSecimi"
+                                        class="form-select">
+                                    <option value="">Ödeme Tipi Seçiniz</option>
+                                </select>
+
+                                <span asp-validation-for="OdemeTipi"
+                                      class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Aciklama" class="form-label">
+                                    Açıklama
+                                </label>
+
+                                <input asp-for="Aciklama"
+                                       class="form-control"
+                                       maxlength="500"
+                                       placeholder="Talep açıklaması veya satış notu" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Sepete Ürün Ekle</h2>
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-lg-7">
+                                <label for="urunSecimi" class="form-label">
+                                    Ürün
+                                </label>
+
+                                <select id="urunSecimi"
+                                        asp-items="ViewBag.UrunId"
+                                        class="form-select">
+                                    <option value="">Ürün Seçiniz</option>
+                                </select>
+                            </div>
+
+                            <div class="col-lg-2">
+                                <label for="adetGirisi" class="form-label">
+                                    Adet
+                                </label>
+
+                                <input id="adetGirisi"
+                                       type="number"
+                                       min="1"
+                                       value="1"
+                                       class="form-control" />
+                            </div>
+
+                            <div class="col-lg-3">
+                                <button type="button"
+                                        id="sepeteEkle"
+                                        class="btn btn-primary w-100">
+                                    Sepete Ekle
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="urunBilgisi"
+                             class="border rounded bg-light p-3 mt-3 text-muted">
+                            Ürün seçildiğinde fiyat, KDV ve stok bilgisi görünür.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Talep Sepeti</h2>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th class="text-end">Birim Fiyat</th>
+                                        <th class="text-end">KDV</th>
+                                        <th class="text-end">Adet</th>
+                                        <th class="text-end">İndirim</th>
+                                        <th class="text-end">Net Tutar</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sepetGovdesi"></tbody>
+                            </table>
+                        </div>
+
+                        <div id="hiddenAlanlar"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Talep Özeti</h2>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Ürün Sayısı</span>
+                            <strong id="urunSayisi">0</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Toplam Adet</span>
+                            <strong id="toplamAdet">0</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>Ara Toplam</span>
+                            <strong id="araToplam">0,00 TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>İndirim Tutarı</span>
+                            <strong id="indirimTutari">0,00 TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Yapısı</span>
+                            <strong>Ürün Bazlı</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Hariç</span>
+                            <strong id="kdvHaric">0,00 TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span>KDV Tutarı</span>
+                            <strong id="kdvTutari">0,00 TL</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between py-3 fs-5">
+                            <span class="fw-bold">Talep Toplamı</span>
+                            <strong id="genelToplam" class="text-success">
+                                0,00 TL
+                            </strong>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-success btn-lg w-100">
+                            Talebi Oluştur
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script type="application/json" id="musterilerJson">
+    @Html.Raw(musterilerJson)
+</script>
+
+<script type="application/json" id="urunlerJson">
+    @Html.Raw(urunlerJson)
+</script>
+
+<script type="application/json" id="mevcutSepetJson">
+    @Html.Raw(mevcutSepetJson)
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const musteriler = JSON.parse(
+            document.getElementById("musterilerJson").textContent || "[]");
+
+        const urunler = JSON.parse(
+            document.getElementById("urunlerJson").textContent || "[]");
+
+        const mevcutSepet = JSON.parse(
+            document.getElementById("mevcutSepetJson").textContent || "[]");
+
+        const musteriSecimi = document.getElementById("musteriSecimi");
+        const urunSecimi = document.getElementById("urunSecimi");
+        const adetGirisi = document.getElementById("adetGirisi");
+        const sepetGovdesi = document.getElementById("sepetGovdesi");
+        const hiddenAlanlar = document.getElementById("hiddenAlanlar");
+        const urunBilgisi = document.getElementById("urunBilgisi");
+        const uyariAlani = document.getElementById("uyariAlani");
+        const talepFormu = document.getElementById("talepFormu");
+
+        let sepet = Array.isArray(mevcutSepet)
+            ? mevcutSepet.map(x => ({
+                UrunId: Number(x.UrunId),
+                Adet: Number(x.Adet) || 1
+            }))
+            : [];
+
+        function para(tutar) {
+            return new Intl.NumberFormat("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(Math.max(0, tutar)) + " TL";
+        }
+
+        function urunGetir(id) {
+            return urunler.find(x => Number(x.Id) === Number(id));
+        }
+
+        function indirimOraniGetir() {
+            const musteri = musteriler.find(
+                x => Number(x.Id) === Number(musteriSecimi.value));
+
+            return musteri ? Number(musteri.IndirimOrani) || 0 : 0;
+        }
+
+        function uyari(mesaj) {
+            uyariAlani.innerHTML =
+                '<div class="alert alert-danger">' + mesaj + '</div>';
+        }
+
+        function htmlGuvenli(deger) {
+            const alan = document.createElement("div");
+            alan.textContent = deger || "";
+            return alan.innerHTML;
+        }
+
+        function hiddenEkle(index, alan, deger) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "Sepet[" + index + "]." + alan;
+            input.value = deger;
+            hiddenAlanlar.appendChild(input);
+        }
+
+        function sepettenCikar(index) {
+            sepet.splice(index, 1);
+            sepetiGuncelle();
+        }
+
+        window.sepettenCikar = sepettenCikar;
+
+        function sepetiGuncelle() {
+            sepetGovdesi.innerHTML = "";
+            hiddenAlanlar.innerHTML = "";
+
+            let toplamAdetDegeri = 0;
+            let araToplamDegeri = 0;
+            let indirimDegeri = 0;
+            let kdvHaricDegeri = 0;
+            let kdvDegeri = 0;
+            let genelToplamDegeri = 0;
+
+            const indirimOrani = indirimOraniGetir();
+
+            if (sepet.length === 0) {
+                sepetGovdesi.innerHTML =
+                    '<tr><td colspan="7" class="text-center text-muted py-4">' +
+                    'Sepette ürün bulunmuyor.</td></tr>';
+            }
+
+            sepet.forEach((satir, index) => {
+                const urun = urunGetir(satir.UrunId);
+
+                if (!urun) {
+                    return;
+                }
+
+                const birimFiyat = Number(urun.SatisFiyati) || 0;
+                const kdvOrani = Number(urun.KdvOrani) || 0;
+
+                const satirAraToplam =
+                    Math.round(birimFiyat * satir.Adet * 100) / 100;
+
+                const satirIndirim =
+                    Math.round(
+                        satirAraToplam * indirimOrani / 100 * 100) / 100;
+
+                const vergiDahil =
+                    Math.round(
+                        (satirAraToplam - satirIndirim) * 100) / 100;
+
+                const vergiHaric = kdvOrani > 0
+                    ? Math.round(
+                        vergiDahil / (1 + kdvOrani / 100) * 100) / 100
+                    : vergiDahil;
+
+                const kdv =
+                    Math.round((vergiDahil - vergiHaric) * 100) / 100;
+
+                toplamAdetDegeri += satir.Adet;
+                araToplamDegeri += satirAraToplam;
+                indirimDegeri += satirIndirim;
+                kdvHaricDegeri += vergiHaric;
+                kdvDegeri += kdv;
+                genelToplamDegeri += vergiDahil;
+
+                sepetGovdesi.innerHTML +=
+                    '<tr>' +
+                    '<td><strong>' + htmlGuvenli(urun.UrunAdi) + '</strong>' +
+                    '<div class="small text-muted">' +
+                    htmlGuvenli(urun.Barkod) + ' | ' +
+                    htmlGuvenli(urun.Beden) + ' | ' +
+                    htmlGuvenli(urun.Renk) +
+                    '</div></td>' +
+                    '<td class="text-end">' + para(birimFiyat) + '</td>' +
+                    '<td class="text-end">%' + kdvOrani + ' / ' +
+                    para(kdv) + '</td>' +
+                    '<td class="text-end">' + satir.Adet + '</td>' +
+                    '<td class="text-end">' + para(satirIndirim) + '</td>' +
+                    '<td class="text-end fw-semibold">' +
+                    para(vergiDahil) + '</td>' +
+                    '<td><button type="button" ' +
+                    'class="btn btn-sm btn-outline-danger" ' +
+                    'onclick="sepettenCikar(' + index + ')">Çıkar</button></td>' +
+                    '</tr>';
+
+                hiddenEkle(index, "UrunId", satir.UrunId);
+                hiddenEkle(index, "Adet", satir.Adet);
+            });
+
+            document.getElementById("urunSayisi").textContent = sepet.length;
+            document.getElementById("toplamAdet").textContent =
+                toplamAdetDegeri;
+            document.getElementById("araToplam").textContent =
+                para(araToplamDegeri);
+            document.getElementById("indirimTutari").textContent =
+                para(indirimDegeri);
+            document.getElementById("kdvHaric").textContent =
+                para(kdvHaricDegeri);
+            document.getElementById("kdvTutari").textContent =
+                para(kdvDegeri);
+            document.getElementById("genelToplam").textContent =
+                para(genelToplamDegeri);
+        }
+
+        urunSecimi.addEventListener("change", function () {
+            const urun = urunGetir(urunSecimi.value);
+
+            if (!urun) {
+                urunBilgisi.textContent =
+                    "Ürün seçildiğinde fiyat, KDV ve stok bilgisi görünür.";
+                return;
+            }
+
+            urunBilgisi.innerHTML =
+                '<strong>' + htmlGuvenli(urun.UrunAdi) + '</strong>' +
+                '<div class="small mt-1">' +
+                'Fiyat: ' + para(Number(urun.SatisFiyati)) +
+                ' | KDV: %' + urun.KdvOrani +
+                ' | Stok: ' + urun.StokMiktari +
+                '</div>';
+        });
+
+        document.getElementById("sepeteEkle")
+            .addEventListener("click", function () {
+                const urun = urunGetir(urunSecimi.value);
+                const adet = Number(adetGirisi.value);
+
+                if (!urun) {
+                    uyari("Ürün seçiniz.");
+                    return;
+                }
+
+                if (!Number.isInteger(adet) || adet < 1) {
+                    uyari("Adet en az 1 olmalıdır.");
+                    return;
+                }
+
+                const mevcut = sepet.find(
+                    x => x.UrunId === Number(urun.Id));
+
+                const yeniAdet = (mevcut ? mevcut.Adet : 0) + adet;
+
+                if (yeniAdet > Number(urun.StokMiktari)) {
+                    uyari("Talep miktarı mevcut stoktan fazla olamaz.");
+                    return;
+                }
+
+                if (mevcut) {
+                    mevcut.Adet = yeniAdet;
+                } else {
+                    sepet.push({
+                        UrunId: Number(urun.Id),
+                        Adet: adet
+                    });
+                }
+
+                uyariAlani.innerHTML = "";
+                urunSecimi.value = "";
+                adetGirisi.value = 1;
+                sepetiGuncelle();
+            });
+
+        musteriSecimi.addEventListener("change", sepetiGuncelle);
+
+        talepFormu.addEventListener("submit", function (event) {
+            if (!musteriSecimi.value) {
+                event.preventDefault();
+                uyari("Toptan satış talebi için müşteri seçilmelidir.");
+                return;
+            }
+
+            if (sepet.length === 0) {
+                event.preventDefault();
+                uyari("Talep oluşturmak için sepete ürün ekleyiniz.");
+            }
+        });
+
+        sepetiGuncelle();
+    </script>
+}

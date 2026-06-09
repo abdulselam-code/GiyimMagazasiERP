@@ -30,6 +30,49 @@
                         <label asp-for="Email" class="form-label">Email</label>
                         <input asp-for="Email" class="form-control" />
                     </div>
+                    <div class="col-md-6">
+                        <label asp-for="MusteriTipi" class="form-label">Müşteri Tipi</label>
+                        <select asp-for="MusteriTipi" class="form-select">
+                            <option value="Bireysel">Bireysel</option>
+                            <option value="Kurumsal">Kurumsal</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="KurumsalUnvan" class="form-label">Kurumsal Ünvan</label>
+                        <input asp-for="KurumsalUnvan" class="form-control" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="TCKN" class="form-label">TCKN</label>
+                        <input asp-for="TCKN" class="form-control" maxlength="11" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="VKN" class="form-label">VKN</label>
+                        <input asp-for="VKN" class="form-control" maxlength="10" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="VergiDairesi" class="form-label">Vergi Dairesi</label>
+                        <input asp-for="VergiDairesi" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Il" class="form-label">İl</label>
+                        <input asp-for="Il" class="form-control" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Ilce" class="form-label">İlçe</label>
+                        <input asp-for="Ilce" class="form-control" />
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Adres" class="form-label">Adres</label>
+                        <textarea asp-for="Adres" class="form-control" rows="3"></textarea>
+                    </div>
+
 
                     <div class="col-md-3">
                         <label asp-for="SadakatPuani" class="form-label">Sadakat Puanı</label>

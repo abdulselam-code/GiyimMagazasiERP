@@ -17,7 +17,7 @@ public class Urun
 
     public decimal AlisFiyati { get; set; }
     public decimal SatisFiyati { get; set; }
-
+    public decimal KdvOrani { get; set; } = 20m;
     public int StokMiktari { get; set; }
     public int MinimumStok { get; set; }
 

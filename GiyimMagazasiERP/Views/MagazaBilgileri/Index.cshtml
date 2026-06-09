@@ -1,0 +1,75 @@
+﻿@model List<GiyimMagazasiERP.Models.MagazaBilgileri>
+
+@{
+    ViewData["Title"] = "Mağaza Bilgileri";
+    var siraNo = 1;
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Mağaza Bilgileri</h1>
+            <p class="text-muted mb-0">Faturalarda kullanılacak satıcı bilgilerini yönetin.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary">Yeni Mağaza Bilgisi</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Mağaza Adı</th>
+                        <th>Ticari Ünvan</th>
+                        <th>İl / İlçe</th>
+                        <th>Telefon</th>
+                        <th>Vergi No</th>
+                        <th>Durum</th>
+                        <th>İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Any())
+                    {
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(siraNo++)</td>
+                                <td class="fw-semibold">@item.MagazaAdi</td>
+                                <td>@(item.TicariUnvan ?? "-")</td>
+                                <td>@(item.Il ?? "-") / @(item.Ilce ?? "-")</td>
+                                <td>@(item.Telefon ?? "-")</td>
+                                <td>@(item.VergiNo ?? "-")</td>
+                                <td>
+                                    <span class="badge @(item.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                                        @(item.AktifMi ? "Aktif" : "Pasif")
+                                    </span>
+                                </td>
+                                <td class="text-nowrap">
+                                    <a asp-action="Details" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-info">Detay</a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-warning">Düzenle</a>
+                                    @if (item.AktifMi)
+                                    {
+                                        <a asp-action="Delete" asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-danger">Pasifleştir</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                Mağaza bilgisi bulunamadı.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

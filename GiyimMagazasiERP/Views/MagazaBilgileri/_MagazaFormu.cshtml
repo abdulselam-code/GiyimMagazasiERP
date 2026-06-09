@@ -1,0 +1,38 @@
+﻿@model GiyimMagazasiERP.Models.MagazaBilgileri
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <label asp-for="MagazaAdi" class="form-label">Mağaza Adı</label>
+        <input asp-for="MagazaAdi" class="form-control" />
+        <span asp-validation-for="MagazaAdi" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="TicariUnvan" class="form-label">Ticari Ünvan</label>
+        <input asp-for="TicariUnvan" class="form-control" />
+    </div>
+    <div class="col-12">
+        <label asp-for="Adres" class="form-label">Adres</label>
+        <textarea asp-for="Adres" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="col-md-6"><label asp-for="Il" class="form-label">İl</label><input asp-for="Il" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="Ilce" class="form-label">İlçe</label><input asp-for="Ilce" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="Telefon" class="form-label">Telefon</label><input asp-for="Telefon" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="Email" class="form-label">E-posta</label><input asp-for="Email" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="WebAdresi" class="form-label">Web Adresi</label><input asp-for="WebAdresi" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="VergiDairesi" class="form-label">Vergi Dairesi</label><input asp-for="VergiDairesi" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="VergiNo" class="form-label">Vergi No</label><input asp-for="VergiNo" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="MersisNo" class="form-label">Mersis No</label><input asp-for="MersisNo" class="form-control" /></div>
+    <div class="col-md-4"><label asp-for="TicaretSicilNo" class="form-label">Ticaret Sicil No</label><input asp-for="TicaretSicilNo" class="form-control" /></div>
+    <div class="col-md-6">
+        <label asp-for="KurulusTarihi" class="form-label">Kuruluş Tarihi</label>
+        <input asp-for="KurulusTarihi" type="date" class="form-control" />
+    </div>
+    <div class="col-md-6 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input asp-for="AktifMi" class="form-check-input" />
+            <label asp-for="AktifMi" class="form-check-label">Aktif Mi</label>
+        </div>
+    </div>
+</div>

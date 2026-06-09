@@ -19,14 +19,14 @@ public class UrunlerController : Controller
     }
 
     public async Task<IActionResult> Index(
-       string? arama,
-       int? kategoriId,
-       int? altKategoriId,
-       int? tedarikciId,
-       string? durum,
-       bool? kritikStok,
-       int page = 1,
-       int pageSize = 10)
+        string? arama,
+        int? kategoriId,
+        int? altKategoriId,
+        int? tedarikciId,
+        string? durum,
+        bool? kritikStok,
+        int page = 1,
+        int pageSize = 10)
     {
         var izinliPageSizeDegerleri = new[] { 5, 10, 25, 50, 100 };
 
@@ -123,11 +123,11 @@ public class UrunlerController : Controller
     }
 
     private async Task UrunListeFiltreleriniDoldur(
-    int? kategoriId,
-    int? altKategoriId,
-    int? tedarikciId,
-    string? durum,
-    bool? kritikStok)
+        int? kategoriId,
+        int? altKategoriId,
+        int? tedarikciId,
+        string? durum,
+        bool? kritikStok)
     {
         ViewData["KategoriId"] = kategoriId;
         ViewData["AltKategoriId"] = altKategoriId;
@@ -161,19 +161,19 @@ public class UrunlerController : Controller
             .ToListAsync();
 
         ViewData["AltKategorilerJson"] = await _context.AltKategoriler
-    .AsNoTracking()
-    .Include(x => x.Kategori)
-    .Where(x => x.AktifMi)
-    .OrderBy(x => x.Kategori.KategoriAdi)
-    .ThenBy(x => x.AltKategoriAdi)
-    .Select(x => new
-    {
-        x.Id,
-        x.KategoriId,
-        x.AltKategoriAdi,
-        KategoriAdi = x.Kategori.KategoriAdi
-    })
-    .ToListAsync();
+            .AsNoTracking()
+            .Include(x => x.Kategori)
+            .Where(x => x.AktifMi)
+            .OrderBy(x => x.Kategori.KategoriAdi)
+            .ThenBy(x => x.AltKategoriAdi)
+            .Select(x => new
+            {
+                x.Id,
+                x.KategoriId,
+                x.AltKategoriAdi,
+                KategoriAdi = x.Kategori.KategoriAdi
+            })
+            .ToListAsync();
 
         ViewData["Tedarikciler"] = await _context.Tedarikciler
             .AsNoTracking()
@@ -186,6 +186,7 @@ public class UrunlerController : Controller
             })
             .ToListAsync();
     }
+
     public async Task<IActionResult> Details(int? id)
     {
         if (id is null)
@@ -206,13 +207,19 @@ public class UrunlerController : Controller
     public async Task<IActionResult> Create()
     {
         await DropdownlariDoldur();
-        return View(new Urun { AktifMi = true, OlusturmaTarihi = DateTime.Now });
+
+        return View(new Urun
+        {
+            AktifMi = true,
+            KdvOrani = 20m,
+            OlusturmaTarihi = DateTime.Now
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi")]
+        [Bind("UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,KdvOrani,StokMiktari,MinimumStok,AktifMi")]
         Urun urun)
     {
         urun.OlusturmaTarihi = DateTime.Now;
@@ -222,6 +229,13 @@ public class UrunlerController : Controller
         ModelState.Remove("Tedarikci");
         ModelState.Remove("SatisDetaylari");
         ModelState.Remove("StokHareketleri");
+
+        if (urun.KdvOrani < 0 || urun.KdvOrani > 100)
+        {
+            ModelState.AddModelError(
+                nameof(urun.KdvOrani),
+                "KDV oranı 0 ile 100 arasında olmalıdır.");
+        }
 
         await TedarikciAltKategoriUyumunuKontrolEt(urun);
 
@@ -256,6 +270,9 @@ public class UrunlerController : Controller
         if (urun is null)
             return NotFound();
 
+        if (urun.KdvOrani < 0)
+            urun.KdvOrani = 20m;
+
         await DropdownlariDoldur(urun.KategoriId, urun.TedarikciId, urun.AltKategoriId);
         return View(urun);
     }
@@ -264,7 +281,7 @@ public class UrunlerController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        [Bind("Id,UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,StokMiktari,MinimumStok,AktifMi,OlusturmaTarihi")]
+        [Bind("Id,UrunAdi,Barkod,KategoriId,AltKategoriId,TedarikciId,Beden,Renk,AlisFiyati,SatisFiyati,KdvOrani,StokMiktari,MinimumStok,AktifMi,OlusturmaTarihi")]
         Urun urun)
     {
         if (id != urun.Id)
@@ -275,6 +292,13 @@ public class UrunlerController : Controller
         ModelState.Remove("Tedarikci");
         ModelState.Remove("SatisDetaylari");
         ModelState.Remove("StokHareketleri");
+
+        if (urun.KdvOrani < 0 || urun.KdvOrani > 100)
+        {
+            ModelState.AddModelError(
+                nameof(urun.KdvOrani),
+                "KDV oranı 0 ile 100 arasında olmalıdır.");
+        }
 
         await TedarikciAltKategoriUyumunuKontrolEt(urun);
 

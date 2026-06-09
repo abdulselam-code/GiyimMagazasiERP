@@ -1,0 +1,18 @@
+﻿@model GiyimMagazasiERP.Models.MagazaBilgileri
+@{
+    ViewData["Title"] = "Mağaza Bilgisi Düzenle";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h1 class="h4 fw-bold mb-4">Mağaza Bilgisi Düzenle</h1>
+            <form asp-action="Edit" method="post">
+                <input asp-for="Id" type="hidden" />
+                <partial name="_MagazaFormu" model="Model" />
+                <button class="btn btn-warning" type="submit">Güncelle</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">İptal</a>
+            </form>
+        </div>
+    </div>
+</div>

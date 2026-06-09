@@ -15,13 +15,27 @@ public class SatisIslemleriController : Controller
     private readonly AppDbContext _context;
 
     private static readonly string[] SatisPersoneliPozisyonlari =
+{
+    "Kasiyer",
+    "Satış Danışmanı",
+    "Satis Danismani",
+    "Mağaza Müdürü",
+    "Magaza Muduru",
+    "Yönetici",
+    "Yonetici",
+    "Admin"
+};
+
+    private static readonly string[] ToptanSatisPersoneliPozisyonlari =
     {
-        "Kasiyer",
-        "Satış Danışmanı",
-        "Satis Danismani",
-        "Satış Temsilcisi",
-        "Satis Temsilcisi"
-    };
+    "Satış Danışmanı",
+    "Satis Danismani",
+    "Mağaza Müdürü",
+    "Magaza Muduru",
+    "Yönetici",
+    "Yonetici",
+    "Admin"
+};
 
     public SatisIslemleriController(AppDbContext context)
     {
@@ -93,15 +107,30 @@ public class SatisIslemleriController : Controller
         }
 
         var personel = await _context.Personeller
-            .FirstOrDefaultAsync(x =>
-                x.Id == personelId!.Value &&
-                x.AktifMi &&
-                SatisPersoneliPozisyonlari.Contains(x.Pozisyon));
+      .FirstOrDefaultAsync(x =>
+          x.Id == personelId!.Value &&
+          x.AktifMi &&
+          SatisPersoneliPozisyonlari.Contains(x.Pozisyon));
 
         if (personel is null)
         {
             ModelState.AddModelError("", "Satışı yapan uygun personel bulunamadı.");
-            await DropdownlariDoldur(model.MusteriId, personelId, model.SatisTuru, model.OdemeTipi);
+        }
+        else if (model.SatisTuru == "Toptan" && !ToptanSatisYapabilirMi(personel))
+        {
+            ModelState.AddModelError(
+                nameof(model.PersonelId),
+                "Seçilen personel toptan satış yapmaya yetkili değildir.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await DropdownlariDoldur(
+                model.MusteriId,
+                personelId,
+                model.SatisTuru,
+                model.OdemeTipi);
+
             return View(model);
         }
 
@@ -156,20 +185,55 @@ public class SatisIslemleriController : Controller
 
         var indirimOrani = musteri?.IndirimOrani ?? 0;
 
-        decimal toplamTutar = 0;
-        decimal indirimTutari = 0;
+        var satirHesaplari = model.SepetUrunleri
+    .Select(sepetUrunu =>
+    {
+        var urun = urunler.First(x => x.Id == sepetUrunu.UrunId);
 
-        foreach (var sepetUrunu in model.SepetUrunleri)
+        var satirAraToplam = Math.Round(
+            urun.SatisFiyati * sepetUrunu.Adet,
+            2,
+            MidpointRounding.AwayFromZero);
+
+        var satirIndirimTutari = Math.Round(
+            satirAraToplam * indirimOrani / 100m,
+            2,
+            MidpointRounding.AwayFromZero);
+
+        var vergiDahilTutar = Math.Round(
+            satirAraToplam - satirIndirimTutari,
+            2,
+            MidpointRounding.AwayFromZero);
+
+        var kdvOrani = urun.KdvOrani;
+        var kdvCarpani = 1m + (kdvOrani / 100m);
+
+        var vergiHaricTutar = kdvOrani > 0
+            ? Math.Round(vergiDahilTutar / kdvCarpani, 2, MidpointRounding.AwayFromZero)
+            : vergiDahilTutar;
+
+        var kdvTutari = vergiDahilTutar - vergiHaricTutar;
+
+        return new
         {
-            var urun = urunler.First(x => x.Id == sepetUrunu.UrunId);
-            var satirAraToplam = urun.SatisFiyati * sepetUrunu.Adet;
-            var satirIndirim = satirAraToplam * indirimOrani / 100;
+            Urun = urun,
+            sepetUrunu.Adet,
+            SatirAraToplam = satirAraToplam,
+            SatirIndirimTutari = satirIndirimTutari,
+            VergiDahilTutar = vergiDahilTutar,
+            VergiHaricTutar = vergiHaricTutar,
+            KdvOrani = kdvOrani,
+            KdvTutari = kdvTutari
+        };
+    })
+    .ToList();
 
-            toplamTutar += satirAraToplam;
-            indirimTutari += satirIndirim;
-        }
-
-        var netTutar = toplamTutar - indirimTutari;
+        var toplamTutar = satirHesaplari.Sum(x => x.SatirAraToplam);
+        var indirimTutari = satirHesaplari.Sum(x => x.SatirIndirimTutari);
+        var netTutar = satirHesaplari.Sum(x => x.VergiDahilTutar);
+        var toplamKdvTutari = satirHesaplari.Sum(x => x.KdvTutari);
+        var vergiHaricToplam = satirHesaplari.Sum(x => x.VergiHaricTutar);
+        var satisTarihi = DateTime.Now;
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -179,38 +243,62 @@ public class SatisIslemleriController : Controller
             {
                 MusteriId = model.MusteriId,
                 PersonelId = personel.Id,
-                SatisTarihi = DateTime.Now,
+                SatisTarihi = satisTarihi,
                 ToplamTutar = toplamTutar,
                 IndirimTutari = indirimTutari,
                 NetTutar = netTutar,
+                ToplamKdvTutari = toplamKdvTutari,
+                VergiHaricToplam = vergiHaricToplam,
+                VergiDahilToplam = netTutar,
                 OdemeTipi = model.OdemeTipi,
-                SatisTuru = model.SatisTuru == "Toptan" ? "Toptan" : "Perakende"
+                SatisTuru = model.SatisTuru == "Toptan" ? "Toptan" : "Perakende",
+                FaturaNo = "FAT-000000",
+                FaturaSeri = "FAT",
+                FaturaSiraNo = 0,
+                FaturaTarihi = satisTarihi,
+                BelgeTuru = "SatisBelgesi",
+                FaturaDurumu = "Olusturuldu",
+                UUID = null
             };
 
             _context.Satislar.Add(satis);
             await _context.SaveChangesAsync();
 
-            foreach (var sepetUrunu in model.SepetUrunleri)
+            satis.FaturaSiraNo = satis.Id;
+            satis.FaturaNo = $"{satis.FaturaSeri}-{satis.Id:D6}";
+            await _context.SaveChangesAsync();
+
+            foreach (var hesap in satirHesaplari)
             {
-                var urun = urunler.First(x => x.Id == sepetUrunu.UrunId);
-                var satirToplam = urun.SatisFiyati * sepetUrunu.Adet;
+                var urun = hesap.Urun;
 
                 _context.SatisDetaylari.Add(new SatisDetayi
                 {
                     SatisId = satis.Id,
                     UrunId = urun.Id,
-                    Adet = sepetUrunu.Adet,
+                    Adet = hesap.Adet,
                     BirimFiyat = urun.SatisFiyati,
-                    ToplamTutar = satirToplam
+
+                    SatirIndirimTutari = hesap.SatirIndirimTutari,
+                    KdvOrani = hesap.KdvOrani,
+                    KdvTutari = hesap.KdvTutari,
+                    VergiHaricTutar = hesap.VergiHaricTutar,
+                    VergiDahilTutar = hesap.VergiDahilTutar,
+                    ToplamTutar = hesap.VergiDahilTutar,
+
+                    UrunAdiSnapshot = urun.UrunAdi,
+                    BarkodSnapshot = urun.Barkod,
+                    BedenSnapshot = urun.Beden,
+                    RenkSnapshot = urun.Renk
                 });
 
-                urun.StokMiktari -= sepetUrunu.Adet;
+                urun.StokMiktari -= hesap.Adet;
 
                 _context.StokHareketleri.Add(new StokHareketi
                 {
                     UrunId = urun.Id,
                     HareketTipi = "SatisCikis",
-                    Miktar = sepetUrunu.Adet,
+                    Miktar = hesap.Adet,
                     Tarih = DateTime.Now,
                     Aciklama = $"{model.SatisTuru} satış - Satış No: {satis.Id}"
                 });
@@ -260,9 +348,23 @@ public class SatisIslemleriController : Controller
         if (satis is null)
             return NotFound();
 
+        if (User.IsInRole("Kasiyer"))
+        {
+            var personel = await OtomatikPersonelBul();
+
+            if (personel is null || satis.PersonelId != personel.Id)
+                return Forbid();
+        }
+
         return View(satis);
     }
 
+    private static bool ToptanSatisYapabilirMi(Personel personel)
+    {
+        return ToptanSatisPersoneliPozisyonlari.Contains(
+            personel.Pozisyon,
+            StringComparer.OrdinalIgnoreCase);
+    }
     private async Task<int?> SatisPersonelIdBelirle(int? secilenPersonelId)
     {
         if (User.IsInRole("Admin") || User.IsInRole("Yonetici"))
@@ -341,17 +443,30 @@ public class SatisIslemleriController : Controller
         ViewData["MusterilerJson"] = musteriler;
 
         var satisPersonelleri = await _context.Personeller
-            .AsNoTracking()
-            .Where(x => x.AktifMi && SatisPersoneliPozisyonlari.Contains(x.Pozisyon))
-            .OrderBy(x => x.AdSoyad)
+   .AsNoTracking()
+   .Where(x =>
+       x.AktifMi &&
+       SatisPersoneliPozisyonlari.Contains(x.Pozisyon))
+   .OrderBy(x => x.AdSoyad)
+   .ToListAsync();
+
+        var personelSecenekleri = satisPersonelleri
             .Select(x => new
             {
                 x.Id,
-                Etiket = x.AdSoyad + " - " + x.Pozisyon
+                Etiket = x.AdSoyad + " - " + x.Pozisyon,
+                x.Pozisyon,
+                ToptanSatisYapabilir = ToptanSatisYapabilirMi(x)
             })
-            .ToListAsync();
+            .ToList();
 
-        ViewData["PersonelId"] = new SelectList(satisPersonelleri, "Id", "Etiket", personelId);
+        ViewData["PersonelId"] = new SelectList(
+            personelSecenekleri,
+            "Id",
+            "Etiket",
+            personelId);
+
+        ViewData["SatisPersonelleriJson"] = personelSecenekleri;
 
         var otomatikPersonel = await OtomatikPersonelBul();
 
@@ -379,6 +494,7 @@ public class SatisIslemleriController : Controller
                 x.Beden,
                 x.Renk,
                 x.SatisFiyati,
+                x.KdvOrani,
                 x.StokMiktari,
                 Gorunum = x.UrunAdi
                     + " | Barkod: " + x.Barkod
@@ -390,8 +506,18 @@ public class SatisIslemleriController : Controller
         ViewData["UrunId"] = new SelectList(urunler, "Id", "Gorunum");
         ViewData["UrunlerJson"] = urunler;
 
+        var odemeTipleri = new[]
+{
+    new { Value = "Nakit", Text = "Nakit" },
+    new { Value = "KrediKarti", Text = "Kredi Kartı" },
+    new { Value = "BankaKarti", Text = "Banka Kartı" },
+    new { Value = "Havale", Text = "Havale" }
+};
+
         ViewData["OdemeTipleri"] = new SelectList(
-            new[] { "Nakit", "KrediKarti", "BankaKarti", "Havale" },
+            odemeTipleri,
+            "Value",
+            "Text",
             odemeTipi);
 
         ViewData["SatisTuru"] = satisTuru;

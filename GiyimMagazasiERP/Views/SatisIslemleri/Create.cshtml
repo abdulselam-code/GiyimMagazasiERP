@@ -9,6 +9,8 @@
 
     var musterilerJson = JsonSerializer.Serialize(ViewData["MusterilerJson"]);
     var urunlerJson = JsonSerializer.Serialize(ViewData["UrunlerJson"]);
+    var satisPersonelleriJson =
+    JsonSerializer.Serialize(ViewData["SatisPersonelleriJson"]);
     var mevcutSepetJson = JsonSerializer.Serialize(Model.SepetUrunleri ?? new List<GiyimMagazasiERP.ViewModels.SatisSepetUrunViewModel>());
 
     var personelOtomatikMi = ViewData["PersonelOtomatikMi"] as bool? ?? false;
@@ -44,20 +46,27 @@
 
         <input type="hidden" asp-for="SatisTuru" id="satisTuruInput" />
 
-        <div class="sales-type-tabs mb-4">
+        <div class="sales-type-tabs mb-3">
             <button type="button" class="sales-type-tab active" data-type="Perakende">
                 <strong>Perakende Satış</strong>
-                <span>Hızlı mağaza satışı</span>
+                <span>Bireysel veya hızlı kasa satışı</span>
             </button>
 
             @if (!kasiyer)
             {
                 <button type="button" class="sales-type-tab" data-type="Toptan">
                     <strong>Toptan Satış</strong>
-                    <span>Kurumsal / toplu satış</span>
+                    <span>Kurumsal veya toplu satış; müşteri zorunludur</span>
                 </button>
             }
         </div>
+
+        @if (kasiyer)
+        {
+            <div class="alert alert-info py-2 mb-4">
+                Kasiyer rolü yalnızca perakende satış yapabilir.
+            </div>
+        }
 
         <div class="row g-4 align-items-start">
             <div class="col-xl-8">
@@ -66,7 +75,7 @@
                         <h2 class="h5 fw-bold mb-3">Satış Bilgileri</h2>
 
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="musteriAlani">
                                 <label asp-for="MusteriId" class="form-label">Müşteri</label>
                                 <select asp-for="MusteriId"
                                         asp-items="ViewBag.MusteriId"
@@ -75,7 +84,7 @@
                                     <option value="">Nihai Tüketici / Kayıtsız Müşteri</option>
                                 </select>
                                 <div class="form-text" id="musteriAciklama">
-                                    Perakende satışta müşteri seçimi isteğe bağlıdır.
+                                    Müşteri seçilirse sadakat indirimi uygulanır.
                                 </div>
                             </div>
 
@@ -103,9 +112,16 @@
                                     <label asp-for="PersonelId" class="form-label">Satışı Yapan Personel</label>
                                     <select asp-for="PersonelId"
                                             asp-items="ViewBag.PersonelId"
-                                            class="form-select">
+                                            class="form-select"
+                                            id="personelSecimi">
                                         <option value="">Personel Seçiniz</option>
                                     </select>
+
+                                    <span asp-validation-for="PersonelId" class="text-danger"></span>
+
+                                    <div class="form-text" id="personelAciklama">
+                                        Perakende satış için uygun satış personelini seçiniz.
+                                    </div>
                                     <span asp-validation-for="PersonelId" class="text-danger"></span>
                                 }
                             </div>
@@ -254,8 +270,8 @@
                         </div>
 
                         <div class="summary-row">
-                            <span>KDV Oranı</span>
-                            <strong>%20</strong>
+                            <span>KDV Yapısı</span>
+                            <strong>Ürün Bazlı</strong>
                         </div>
 
                         <div class="summary-row">
@@ -295,6 +311,9 @@
 
 <script type="application/json" id="musterilerJson">@Html.Raw(musterilerJson)</script>
 <script type="application/json" id="urunlerJson">@Html.Raw(urunlerJson)</script>
+<script type="application/json" id="satisPersonelleriJson">
+    @Html.Raw(satisPersonelleriJson)
+</script>
 <script type="application/json" id="mevcutSepetJson">@Html.Raw(mevcutSepetJson)</script>
 
 @section Scripts {
@@ -305,13 +324,18 @@
     <script>
         const musteriler = JSON.parse(document.getElementById("musterilerJson").textContent || "[]");
         const urunler = JSON.parse(document.getElementById("urunlerJson").textContent || "[]");
+        const satisPersonelleri = JSON.parse(
+        document.getElementById("satisPersonelleriJson")?.textContent || "[]"
+        );
         const mevcutSepet = JSON.parse(document.getElementById("mevcutSepetJson").textContent || "[]");
 
-        const kdvCarpani = 1.20;
+        
 
         const satisTuruInput = document.getElementById("satisTuruInput");
         const satisTuruButonlari = document.querySelectorAll(".sales-type-tab");
         const musteriSecimi = document.getElementById("musteriSecimi");
+        const personelSecimi = document.getElementById("personelSecimi");
+        const personelAciklama = document.getElementById("personelAciklama");
         const musteriAciklama = document.getElementById("musteriAciklama");
         const odemeTipiSecimi = document.getElementById("odemeTipiSecimi");
         const urunSecimi = document.getElementById("urunSecimi");
@@ -341,6 +365,7 @@
         Beden: x.Beden || "",
         Renk: x.Renk || "",
         BirimFiyat: Number(x.BirimFiyat) || 0,
+        KdvOrani: Number(x.KdvOrani) >= 0 ? Number(x.KdvOrani) : 20,
         Adet: Number(x.Adet) || 1,
         StokMiktari: Number(x.StokMiktari) || 0
         })) : [];
@@ -383,26 +408,72 @@
         function urunuGetir(urunId) {
         return urunler.find(x => Number(x.Id) === Number(urunId));
         }
+        function personelListesiniFiltrele(satisTuru) {
+        if (!personelSecimi) {
+        return;
+        }
 
+        const oncekiSecim = personelSecimi.value;
+
+        const uygunPersoneller = satisPersonelleri.filter(personel =>
+        satisTuru !== "Toptan" ||
+        personel.ToptanSatisYapabilir === true
+        );
+
+        personelSecimi.innerHTML = "";
+
+        const bosSecenek = document.createElement("option");
+        bosSecenek.value = "";
+        bosSecenek.textContent = "Personel Seçiniz";
+        personelSecimi.appendChild(bosSecenek);
+
+        uygunPersoneller.forEach(personel => {
+        const secenek = document.createElement("option");
+
+        secenek.value = personel.Id;
+        secenek.textContent = personel.Etiket;
+
+        personelSecimi.appendChild(secenek);
+        });
+
+        const oncekiPersonelHalaUygun = uygunPersoneller.some(
+        personel => String(personel.Id) === String(oncekiSecim)
+        );
+
+        personelSecimi.value = oncekiPersonelHalaUygun
+        ? oncekiSecim
+        : "";
+
+        if (personelAciklama) {
+        personelAciklama.textContent = satisTuru === "Toptan"
+        ? "Toptan satışta yalnızca yetkili satış personelleri gösterilir."
+        : "Perakende satış için uygun satış personelini seçiniz.";
+        }
+        }
         function satisTuruAyarla(tur) {
         satisTuruInput.value = tur;
         ozetSatisTuru.textContent = tur;
+
+        personelListesiniFiltrele(tur);
 
         satisTuruButonlari.forEach(btn => {
         btn.classList.toggle("active", btn.dataset.type === tur);
         });
 
         if (tur === "Toptan") {
-        musteriAciklama.textContent = "Toptan satışta müşteri seçimi zorunludur.";
+        musteriSecimi.required = true;
+        musteriAciklama.textContent =
+        "Toptan satış için kayıtlı müşteri seçilmelidir.";
         toptanAciklamaAlani.style.display = "";
         } else {
-        musteriAciklama.textContent = "Perakende satışta müşteri seçimi isteğe bağlıdır.";
+        musteriSecimi.required = false;
+        musteriAciklama.textContent =
+        "Müşteri seçilirse sadakat indirimi uygulanır.";
         toptanAciklamaAlani.style.display = "none";
         }
 
         sepetiGuncelle();
         }
-
         function urunBilgisiniGuncelle() {
         const urun = urunuGetir(urunSecimi.value);
 
@@ -414,6 +485,7 @@
         urunBilgiAlani.innerHTML =
         '<strong>' + htmlGuvenliYaz(urun.UrunAdi) + '</strong>' +
         '<span>Fiyat: ' + tlFormatla(Number(urun.SatisFiyati) || 0) + '</span>' +
+        '<span>KDV: ' + oranFormatla(Number(urun.KdvOrani) >= 0 ? Number(urun.KdvOrani) : 20) + '</span>' +
         '<span>Stok: ' + (Number(urun.StokMiktari) || 0) + '</span>' +
         '<span>Beden: ' + htmlGuvenliYaz(urun.Beden) + '</span>' +
         '<span>Renk: ' + htmlGuvenliYaz(urun.Renk) + '</span>';
@@ -460,6 +532,7 @@
         Beden: urun.Beden || "",
         Renk: urun.Renk || "",
         BirimFiyat: Number(urun.SatisFiyati) || 0,
+        KdvOrani: Number(urun.KdvOrani) >= 0 ? Number(urun.KdvOrani) : 20,
         Adet: adet,
         StokMiktari: stokMiktari
         });
@@ -498,6 +571,8 @@
         let araToplam = 0;
         let indirimTutari = 0;
         let genelToplam = 0;
+        let kdvHaricTutar = 0;
+        let kdvTutari = 0;
 
         if (sepet.length === 0) {
         sepetTabloGovdesi.innerHTML =
@@ -505,14 +580,38 @@
         }
 
         sepet.forEach((urun, index) => {
-        const satirAraToplam = urun.BirimFiyat * urun.Adet;
-        const satirIndirim = satirAraToplam * indirimOrani / 100;
-        const satirKdvDahilToplam = satirAraToplam - satirIndirim;
+        const satirAraToplam = Math.round(
+        urun.BirimFiyat * urun.Adet * 100
+        ) / 100;
+
+        const satirIndirim = Math.round(
+        satirAraToplam * indirimOrani / 100 * 100
+        ) / 100;
+
+        const satirKdvDahilToplam = Math.round(
+        (satirAraToplam - satirIndirim) * 100
+        ) / 100;
+
+        const kdvOrani = Number(urun.KdvOrani) >= 0
+        ? Number(urun.KdvOrani)
+        : 20;
+
+        const kdvCarpani = 1 + (kdvOrani / 100);
+
+        const satirKdvHaricTutar = kdvOrani > 0
+        ? Math.round((satirKdvDahilToplam / kdvCarpani) * 100) / 100
+        : satirKdvDahilToplam;
+
+        const satirKdvTutari = Math.round(
+        (satirKdvDahilToplam - satirKdvHaricTutar) * 100
+        ) / 100;
 
         toplamAdet += urun.Adet;
         araToplam += satirAraToplam;
         indirimTutari += satirIndirim;
         genelToplam += satirKdvDahilToplam;
+        kdvHaricTutar += satirKdvHaricTutar;
+        kdvTutari += satirKdvTutari;
 
         sepetTabloGovdesi.innerHTML +=
         '<tr>' +
@@ -535,12 +634,12 @@
         hiddenInputEkle(index, "Beden", urun.Beden);
         hiddenInputEkle(index, "Renk", urun.Renk);
         hiddenInputEkle(index, "BirimFiyat", urun.BirimFiyat);
+        hiddenInputEkle(index, "KdvOrani", urun.KdvOrani);
         hiddenInputEkle(index, "Adet", urun.Adet);
         hiddenInputEkle(index, "StokMiktari", urun.StokMiktari);
         });
 
-        const kdvHaricTutar = genelToplam / kdvCarpani;
-        const kdvTutari = genelToplam - kdvHaricTutar;
+        
 
         ozetUrunSayisi.textContent = sepet.length;
         ozetToplamAdet.textContent = toplamAdet;

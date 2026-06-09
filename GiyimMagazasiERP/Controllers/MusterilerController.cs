@@ -35,8 +35,14 @@ public class MusterilerController : Controller
 
             query = query.Where(x =>
                 x.AdSoyad.Contains(arama) ||
-                x.Telefon.Contains(arama) ||
-                x.Email.Contains(arama));
+                (x.Telefon != null && x.Telefon.Contains(arama)) ||
+                (x.Email != null && x.Email.Contains(arama)) ||
+                (x.KurumsalUnvan != null && x.KurumsalUnvan.Contains(arama)) ||
+                (x.VKN != null && x.VKN.Contains(arama)) ||
+                (x.TCKN != null && x.TCKN.Contains(arama)) ||
+                (x.VergiDairesi != null && x.VergiDairesi.Contains(arama)) ||
+                (x.Il != null && x.Il.Contains(arama)) ||
+                (x.Ilce != null && x.Ilce.Contains(arama)));
         }
 
         var totalCount = await query.CountAsync();
@@ -80,16 +86,24 @@ public class MusterilerController : Controller
 
     public IActionResult Create()
     {
-        return View(new Musteri { KayitTarihi = DateTime.Now });
+        return View(new Musteri
+        {
+            KayitTarihi = DateTime.Now,
+            MusteriTipi = "Bireysel"
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
-        [Bind("AdSoyad,Telefon,Email,SadakatPuani,IndirimOrani,ToplamHarcama")]
+        [Bind("AdSoyad,Telefon,Email,MusteriTipi,KurumsalUnvan,Adres,Il,Ilce,TCKN,VKN,VergiDairesi,SadakatPuani,IndirimOrani,ToplamHarcama")]
         Musteri musteri)
     {
         musteri.KayitTarihi = DateTime.Now;
+
+        musteri.MusteriTipi = string.IsNullOrWhiteSpace(musteri.MusteriTipi)
+            ? "Bireysel"
+            : musteri.MusteriTipi;
 
         if (ModelState.IsValid)
         {
@@ -111,6 +125,9 @@ public class MusterilerController : Controller
         if (musteri is null)
             return NotFound();
 
+        if (string.IsNullOrWhiteSpace(musteri.MusteriTipi))
+            musteri.MusteriTipi = "Bireysel";
+
         return View(musteri);
     }
 
@@ -118,11 +135,15 @@ public class MusterilerController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(
         int id,
-        [Bind("Id,AdSoyad,Telefon,Email,SadakatPuani,IndirimOrani,ToplamHarcama,KayitTarihi")]
+        [Bind("Id,AdSoyad,Telefon,Email,MusteriTipi,KurumsalUnvan,Adres,Il,Ilce,TCKN,VKN,VergiDairesi,SadakatPuani,IndirimOrani,ToplamHarcama,KayitTarihi")]
         Musteri musteri)
     {
         if (id != musteri.Id)
             return NotFound();
+
+        musteri.MusteriTipi = string.IsNullOrWhiteSpace(musteri.MusteriTipi)
+            ? "Bireysel"
+            : musteri.MusteriTipi;
 
         if (ModelState.IsValid)
         {

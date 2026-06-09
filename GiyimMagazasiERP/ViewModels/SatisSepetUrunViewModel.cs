@@ -13,6 +13,7 @@ public class SatisSepetUrunViewModel
     public string? Renk { get; set; }
 
     public decimal BirimFiyat { get; set; }
+    public decimal KdvOrani { get; set; }
 
     [Range(1, 999, ErrorMessage = "Ürün adedi en az 1 olmalıdır.")]
     public int Adet { get; set; }

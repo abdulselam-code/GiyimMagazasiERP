@@ -424,6 +424,7 @@ public class DashboardController : Controller
                 Link("Satış Yap", "SatisIslemleri", "Create", "success"),
                 Link("Ürünleri Yönet", "Urunler"),
                 Link("Müşteriler", "Musteriler"),
+                Link("Mağaza Bilgileri", "MagazaBilgileri", "Index", "secondary"),
                 Link("Finans Hareketleri", "FinansHareketleri", "Index", "warning"),
                 Link("Faturalar", "Faturalar", "Index", "info"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
@@ -439,6 +440,7 @@ public class DashboardController : Controller
                 Link("Satış Yap", "SatisIslemleri", "Create", "success"),
                 Link("Ürünleri Yönet", "Urunler"),
                 Link("Müşteriler", "Musteriler"),
+                Link("Mağaza Bilgileri", "MagazaBilgileri", "Index", "secondary"),
                 Link("Personeller", "Personeller"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("Faturalar", "Faturalar", "Index", "info")

@@ -1,0 +1,323 @@
+﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.ToptanSatisTalebi>
+
+@{
+    ViewData["Title"] = "Benim Toptan Satış Taleplerim";
+
+    var durum = ViewData["Durum"]?.ToString() ?? "Tumu";
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+
+    string DurumMetni(string deger) => deger switch
+    {
+        "YoneticiOnayiBekliyor" => "Yönetici Onayı Bekliyor",
+        "MuhasebeOnayiBekliyor" => "Muhasebe Onayı Bekliyor",
+        "Reddedildi" => "Reddedildi",
+        "SatisaDonusturuldu" => "Satışa Dönüştürüldü",
+        _ => deger
+    };
+
+    string DurumRengi(string deger) => deger switch
+    {
+        "YoneticiOnayiBekliyor" => "warning",
+        "MuhasebeOnayiBekliyor" => "info",
+        "Reddedildi" => "danger",
+        "SatisaDonusturuldu" => "success",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">
+                Benim Toptan Satış Taleplerim
+            </h1>
+
+            <p class="text-muted mb-0">
+                Oluşturduğunuz toptan satış taleplerini görüntüleyin.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            @if (User.IsInRole("Admin") ||
+                 User.IsInRole("Yonetici") ||
+                 User.IsInRole("Muhasebe"))
+            {
+                <a asp-action="Index"
+                   class="btn btn-outline-primary">
+                    Tüm Talepler
+                </a>
+            }
+
+            <a asp-action="Create"
+               class="btn btn-primary">
+                Yeni Talep Oluştur
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get"
+                  id="benimTalepFiltreFormu"
+                  data-auto-filter="true"
+                  class="row g-3 align-items-end">
+
+                <div class="col-lg-5 col-md-6">
+                    <label for="talepArama"
+                           class="form-label">
+                        Talep Ara
+                    </label>
+
+                    <input id="talepArama"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control enter-filtre"
+                           autocomplete="off"
+                           placeholder="Talep no, müşteri veya ödeme tipi" />
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <label for="durum"
+                           class="form-label">
+                        Durum
+                    </label>
+
+                    <select id="durum"
+                            name="durum"
+                            class="form-select otomatik-filtre">
+
+                        <option value="Tumu"
+                                selected="@(durum == "Tumu")">
+                            Tümü
+                        </option>
+
+                        <option value="YoneticiOnayiBekliyor"
+                                selected="@(durum == "YoneticiOnayiBekliyor")">
+                            Yönetici Onayı Bekliyor
+                        </option>
+
+                        <option value="MuhasebeOnayiBekliyor"
+                                selected="@(durum == "MuhasebeOnayiBekliyor")">
+                            Muhasebe Onayı Bekliyor
+                        </option>
+
+                        <option value="Reddedildi"
+                                selected="@(durum == "Reddedildi")">
+                            Reddedildi
+                        </option>
+
+                        <option value="SatisaDonusturuldu"
+                                selected="@(durum == "SatisaDonusturuldu")">
+                            Satışa Dönüştürüldü
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <label for="pageSize"
+                           class="form-label">
+                        Kayıt Sayısı
+                    </label>
+
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select otomatik-filtre">
+
+                        @foreach (var adet in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@adet"
+                                    selected="@(Model.PageSize == adet)">
+                                @adet
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Filtrele
+                    </button>
+
+                    <a asp-action="BenimTaleplerim"
+                       class="btn btn-outline-secondary">
+                        Temizle
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <p class="text-muted">
+                Toplam <strong>@Model.TotalCount</strong> talep bulundu.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Talep No</th>
+                            <th>Tarih</th>
+                            <th>Müşteri</th>
+                            <th>Ödeme</th>
+                            <th>Durum</th>
+                            <th class="text-end">Toplam</th>
+                            <th>Satış/Fatura</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var talep in Model.Items)
+                            {
+                                <tr>
+                                    <td>@siraNo</td>
+
+                                    <td class="fw-semibold">
+                                        @talep.TalepNo
+                                    </td>
+
+                                    <td>
+                                        @talep.TalepTarihi.ToString("dd.MM.yyyy HH:mm")
+                                    </td>
+
+                                    <td>
+                                        @talep.Musteri.AdSoyad
+                                    </td>
+
+                                    <td>
+                                        @talep.OdemeTipi
+                                    </td>
+
+                                    <td>
+                                        <span class="badge text-bg-@DurumRengi(talep.Durum)">
+                                            @DurumMetni(talep.Durum)
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end fw-semibold">
+                                        @talep.VergiDahilToplam.ToString("N2") TL
+                                    </td>
+
+                                    <td>
+                                        @if (talep.SatisId.HasValue)
+                                        {
+                                            <span class="badge text-bg-success">
+                                                Satışa Dönüştü
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">
+                                                Talep
+                                            </span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <a asp-action="Details"
+                                           asp-route-id="@talep.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Detay
+                                        </a>
+                                    </td>
+                                </tr>
+
+                                siraNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9"
+                                    class="text-center text-muted py-4">
+                                    Arama kriterlerine uygun talep bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Benim toptan satış taleplerim sayfalama">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(!Model.OncekiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="BenimTaleplerim"
+                               asp-route-page="@(Model.Page - 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@durum">
+                                Önceki
+                            </a>
+                        </li>
+
+                        @for (var sayfa = 1; sayfa <= Model.TotalPages; sayfa++)
+                        {
+                            <li class="page-item @(sayfa == Model.Page ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="BenimTaleplerim"
+                                   asp-route-page="@sayfa"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-durum="@durum">
+                                    @sayfa
+                                </a>
+                            </li>
+                        }
+
+                        <li class="page-item @(!Model.SonrakiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-action="BenimTaleplerim"
+                               asp-route-page="@(Model.Page + 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@durum">
+                                Sonraki
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const filtreFormu =
+                document.querySelector("form[data-auto-filter='true']");
+
+            if (!filtreFormu) {
+                return;
+            }
+
+            filtreFormu
+                .querySelectorAll(".otomatik-filtre")
+                .forEach(function (alan) {
+                    alan.addEventListener("change", function () {
+                        filtreFormu.requestSubmit();
+                    });
+                });
+
+            filtreFormu
+                .querySelectorAll(".enter-filtre")
+                .forEach(function (alan) {
+                    alan.addEventListener("keydown", function (event) {
+                        if (event.key === "Enter") {
+                            event.preventDefault();
+                            filtreFormu.requestSubmit();
+                        }
+                    });
+                });
+        });
+    </script>
+}

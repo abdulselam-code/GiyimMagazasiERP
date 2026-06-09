@@ -31,6 +31,28 @@
                 <dt class="col-sm-3">Kayıt Tarihi</dt>
                 <dd class="col-sm-9">@Model.KayitTarihi.ToString("dd/MM/yyyy")</dd>
             </dl>
+            <hr class="my-4" />
+            <h2 class="h5 fw-bold mb-3">Fatura Bilgileri</h2>
+
+            <dl class="row">
+                <dt class="col-sm-3">Müşteri Tipi</dt>
+                <dd class="col-sm-9">@Model.MusteriTipi</dd>
+
+                <dt class="col-sm-3">Kurumsal Ünvan</dt>
+                <dd class="col-sm-9">@(Model.KurumsalUnvan ?? "-")</dd>
+
+                <dt class="col-sm-3">TCKN / VKN</dt>
+                <dd class="col-sm-9">@(Model.TCKN ?? "-") / @(Model.VKN ?? "-")</dd>
+
+                <dt class="col-sm-3">Vergi Dairesi</dt>
+                <dd class="col-sm-9">@(Model.VergiDairesi ?? "-")</dd>
+
+                <dt class="col-sm-3">Adres</dt>
+                <dd class="col-sm-9">@(Model.Adres ?? "-")</dd>
+
+                <dt class="col-sm-3">İl / İlçe</dt>
+                <dd class="col-sm-9">@(Model.Il ?? "-") / @(Model.Ilce ?? "-")</dd>
+            </dl>
 
             <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
             <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>

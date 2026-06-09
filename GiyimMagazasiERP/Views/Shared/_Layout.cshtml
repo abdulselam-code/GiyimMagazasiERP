@@ -27,6 +27,7 @@
     var hareketlerAktif =
         aktifController == "Satislar" ||
         aktifController == "FinansHareketleri" ||
+        aktifController == "ToptanSatisTalepleri" ||
         aktifController == "StokHareketleri";
 
     var analizAktif =
@@ -99,6 +100,20 @@
                                 </li>
                             }
 
+                            @if (admin || yonetici || kasiyer || personel)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link erp-menu-link
+                                        @(aktifController == "ToptanSatisTalepleri"
+                                          ? "active fw-semibold"
+                                          : "")"
+                                       asp-controller="ToptanSatisTalepleri"
+                                       asp-action="Create">
+                                        Toptan Satış Talebi
+                                    </a>
+                                </li>
+                            }
+
                             @if (admin || yonetici || depo || ik || muhasebe)
                             {
                                 <li class="nav-item dropdown">
@@ -149,6 +164,17 @@
                                             </li>
                                         }
 
+                                        @if (admin || yonetici)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "MagazaBilgileri" ? "active" : "")"
+                                                   asp-controller="MagazaBilgileri"
+                                                   asp-action="Index">
+                                                    Mağaza Bilgileri
+                                                </a>
+                                            </li>
+                                        }
+
                                         @if (admin || yonetici || muhasebe)
                                         {
                                             <li>
@@ -174,7 +200,7 @@
                                 </li>
                             }
 
-                            @if (admin || yonetici || kasiyer || muhasebe || depo)
+                            @if (admin || yonetici || kasiyer || muhasebe || depo || personel)
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle erp-menu-link @(hareketlerAktif ? "active fw-semibold" : "")"
@@ -196,6 +222,28 @@
                                                    asp-controller="Satislar"
                                                    asp-action="Index">
                                                     Satışlar
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "ToptanSatisTalepleri" ? "active" : "")"
+                                                   asp-controller="ToptanSatisTalepleri"
+                                                   asp-action="Index">
+                                                    Toptan Satış Talepleri
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || kasiyer || personel)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "ToptanSatisTalepleri" ? "active" : "")"
+                                                   asp-controller="ToptanSatisTalepleri"
+                                                   asp-action="BenimTaleplerim">
+                                                    Benim Toptan Taleplerim
                                                 </a>
                                             </li>
                                         }

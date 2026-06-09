@@ -1,38 +1,779 @@
 ﻿@model GiyimMagazasiERP.ViewModels.FaturaDetayViewModel
 
 @{
-    ViewData["Title"] = "Fatura Görüntüleme";
+    ViewData["Title"] = "Satış Faturası";
 
     var magaza = ViewBag.Magaza as GiyimMagazasiERP.Models.MagazaBilgileri;
 
-    var magazaAdi = magaza?.MagazaAdi ?? "Giyim Mağazası ERP";
+    var magazaAdi = !string.IsNullOrWhiteSpace(magaza?.TicariUnvan)
+        ? magaza.TicariUnvan
+        : magaza?.MagazaAdi ?? "Giyim Mağazası ERP";
+
     var adres = magaza?.Adres ?? "Merkez / Türkiye";
+
+    var ilIlce = string.Join(" / ",
+        new[] { magaza?.Ilce, magaza?.Il }
+            .Where(x => !string.IsNullOrWhiteSpace(x)));
+
     var telefon = magaza?.Telefon ?? "0555 000 00 00";
     var email = magaza?.Email ?? "info@giyimerp.local";
+    var webAdresi = magaza?.WebAdresi;
     var vergiDairesi = magaza?.VergiDairesi ?? "Merkez";
     var vergiNo = magaza?.VergiNo ?? "0000000000";
+    var mersisNo = magaza?.MersisNo;
+    var ticaretSicilNo = magaza?.TicaretSicilNo;
 
-    var satisTuru = ViewBag.SatisTuru?.ToString() ?? "Perakende";
+    var satisTuru = string.IsNullOrWhiteSpace(Model.SatisTuru)
+        ? "Perakende"
+        : Model.SatisTuru;
 
-    var genelToplam = Model.NetTutar;
-    var araToplam = Model.ToplamTutar;
-    var indirimTutari = Model.IndirimTutari;
-    var indirimOrani = araToplam > 0 ? (indirimTutari / araToplam) * 100 : 0;
-    var kdvHaric = genelToplam / 1.20m;
-    var kdvTutari = genelToplam - kdvHaric;
+    var belgeTuru = Model.BelgeTuru switch
+    {
+        "SatisBelgesi" => "Satış Belgesi",
+        "SatisFaturasi" => "Satış Faturası",
+        null or "" => "Satış Belgesi",
+        _ => Model.BelgeTuru
+    };
+
+    var belgeDurumu = Model.FaturaDurumu switch
+    {
+        "Olusturuldu" => "Oluşturuldu",
+        "Iptal" => "İptal",
+        "Iade" => "İade",
+        "Taslak" => "Taslak",
+        null or "" => "Oluşturuldu",
+        _ => Model.FaturaDurumu
+    };
+
+    var kurumsalMusteri =
+        Model.KayitliMusteriMi &&
+        string.Equals(
+            Model.MusteriTipi,
+            "Kurumsal",
+            StringComparison.OrdinalIgnoreCase);
+
+    var odenecekTutar = Model.VergiDahilToplam > 0
+        ? Model.VergiDahilToplam
+        : Model.NetTutar;
+
+    var kalemSiraNo = 1;
 }
 
-<div class="container py-4 invoice-page">
-    <div class="d-flex justify-content-between align-items-center mb-3 invoice-print-actions">
+<style>
+    .invoice-page {
+        min-height: 100vh;
+        padding: 32px 16px;
+        background: #eef1f4;
+    }
+
+    .invoice-actions {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto 18px;
+    }
+
+    .invoice-paper {
+        width: 100%;
+        max-width: 1180px;
+        margin: 0 auto;
+        overflow: hidden;
+        color: #26313d;
+        background: #fff;
+        border: 1px solid #dce1e7;
+        box-shadow: 0 16px 42px rgba(30, 41, 59, .10);
+    }
+
+    .invoice-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, .85fr);
+        gap: 32px;
+        padding: 34px 36px;
+        border-top: 5px solid #27364a;
+        border-bottom: 1px solid #dce1e7;
+        background: #fff;
+    }
+
+    .invoice-brand {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+        .invoice-brand h1 {
+            margin: 0 0 10px;
+            color: #172033;
+            font-size: 30px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .invoice-brand h2 {
+            margin: 0 0 8px;
+            color: #334155;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .invoice-brand p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+    .invoice-meta {
+        padding: 20px;
+        background: #f8fafc;
+        border: 1px solid #dce1e7;
+        border-radius: 6px;
+    }
+
+        .invoice-meta h3 {
+            margin: 0 0 14px;
+            padding-bottom: 10px;
+            color: #172033;
+            font-size: 17px;
+            font-weight: 800;
+            border-bottom: 1px solid #dce1e7;
+        }
+
+    .invoice-meta-row {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+        padding: 4px 0;
+        font-size: 13.5px;
+    }
+
+    .invoice-meta-label {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .invoice-meta-value {
+        color: #1f2937;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .invoice-status {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        min-height: 24px;
+        padding: 3px 9px;
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .invoice-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        padding: 26px 36px;
+        background: #fbfcfd;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .invoice-info-box {
+        min-height: 190px;
+        padding: 19px;
+        background: #fff;
+        border: 1px solid #dfe4ea;
+        border-radius: 6px;
+        box-shadow: 0 3px 10px rgba(30, 41, 59, .035);
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+        .invoice-info-box h4,
+        .invoice-delivery h4,
+        .invoice-verification h4,
+        .invoice-return-info h4,
+        .invoice-signature h4 {
+            margin: 0 0 13px;
+            padding-bottom: 9px;
+            color: #172033;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .invoice-info-box p,
+        .invoice-delivery p,
+        .invoice-verification p {
+            margin: 0 0 7px;
+            color: #536171;
+            line-height: 1.45;
+        }
+
+        .invoice-info-box strong,
+        .invoice-delivery strong,
+        .invoice-verification strong {
+            color: #26313d;
+        }
+
+    .customer-name {
+        margin-bottom: 9px;
+        color: #172033;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+
+    .invoice-section {
+        padding: 28px 36px;
+    }
+
+    .invoice-section-title {
+        margin: 0 0 14px;
+        color: #172033;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .invoice-items-wrapper {
+        overflow-x: auto;
+        border: 1px solid #d8dee6;
+        border-radius: 6px;
+    }
+
+    .invoice-items-table {
+        width: 100%;
+        min-width: 940px;
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.35;
+    }
+
+        .invoice-items-table th {
+            padding: 11px 9px;
+            color: #fff;
+            background: #27364a;
+            border-color: #3c4b5f;
+            white-space: nowrap;
+            font-size: 12.5px;
+            font-weight: 700;
+        }
+
+        .invoice-items-table td {
+            padding: 10px 9px;
+            color: #394657;
+            border-color: #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .invoice-items-table tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+    .invoice-product-name {
+        width: 25%;
+        min-width: 180px;
+        color: #172033 !important;
+        font-weight: 700;
+    }
+
+    .invoice-vat-cell {
+        min-width: 96px;
+        white-space: nowrap;
+    }
+
+    .invoice-vat-rate {
+        color: #26313d;
+        font-weight: 700;
+    }
+
+    .invoice-vat-amount {
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .invoice-line-total {
+        min-width: 105px;
+        color: #172033 !important;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .invoice-bottom-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(330px, .85fr);
+        align-items: start;
+        gap: 22px;
+        padding: 0 36px 22px;
+    }
+
+    .invoice-left-bottom {
+        display: grid;
+        gap: 14px;
+    }
+
+    .invoice-delivery,
+    .invoice-verification,
+    .invoice-return-info,
+    .invoice-summary,
+    .invoice-signature {
+        padding: 18px;
+        background: #fff;
+        border: 1px solid #dfe4ea;
+        border-radius: 6px;
+    }
+
+    .invoice-delivery,
+    .invoice-verification {
+        box-shadow: 0 3px 10px rgba(30, 41, 59, .03);
+    }
+
+    .invoice-return-info {
+        color: #475569;
+        background: #f8fafc;
+        border-left: 4px solid #64748b;
+    }
+
+        .invoice-return-info ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .invoice-return-info li {
+            margin-bottom: 7px;
+            line-height: 1.45;
+        }
+
+            .invoice-return-info li:last-child {
+                margin-bottom: 0;
+            }
+
+    .invoice-summary {
+        position: sticky;
+        top: 16px;
+        background: #f8fafc;
+        border-color: #d7dee7;
+        box-shadow: 0 6px 18px rgba(30, 41, 59, .055);
+    }
+
+        .invoice-summary::before {
+            display: block;
+            margin-bottom: 11px;
+            color: #172033;
+            content: "Fatura Toplamları";
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+    .invoice-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 9px 0;
+        color: #536171;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+        .invoice-summary-row strong {
+            color: #26313d;
+            white-space: nowrap;
+        }
+
+    .invoice-payable {
+        align-items: center;
+        margin-top: 10px;
+        padding: 14px 12px;
+        color: #172033;
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        border-bottom: 1px solid #bbf7d0;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+        .invoice-payable strong {
+            color: #15803d;
+            font-size: 18px;
+        }
+
+    .invoice-signature {
+        width: 310px;
+        min-height: 115px;
+        margin: 0 36px 28px auto;
+        background: #fbfcfd;
+        text-align: center;
+    }
+
+        .invoice-signature h4 {
+            margin-bottom: 0;
+        }
+
+    .invoice-signature-line {
+        width: 82%;
+        margin: 52px auto 0;
+        border-top: 1px solid #64748b;
+    }
+
+    @@media (max-width: 992px) {
+        .invoice-header,
+        .invoice-info-grid,
+        .invoice-bottom-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-header {
+            padding: 26px;
+        }
+
+        .invoice-info-grid,
+        .invoice-section {
+            padding-right: 26px;
+            padding-left: 26px;
+        }
+
+        .invoice-bottom-grid {
+            padding-right: 26px;
+            padding-left: 26px;
+        }
+
+        .invoice-summary {
+            position: static;
+        }
+
+        .invoice-signature {
+            width: auto;
+            margin: 0 26px 24px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .invoice-page {
+            padding: 16px 8px;
+        }
+
+        .invoice-header,
+        .invoice-info-grid,
+        .invoice-section {
+            padding-right: 16px;
+            padding-left: 16px;
+        }
+
+        .invoice-bottom-grid {
+            padding-right: 16px;
+            padding-left: 16px;
+        }
+
+        .invoice-meta-row {
+            grid-template-columns: 105px minmax(0, 1fr);
+        }
+
+        .invoice-signature {
+            margin-right: 16px;
+            margin-left: 16px;
+        }
+    }
+
+    @@media print {
+        @@page {
+            size: A4;
+            margin: 5mm;
+        }
+
+        .no-print,
+        .navbar,
+        nav,
+        header:not(.invoice-header),
+        footer {
+            display: none !important;
+        }
+
+        html,
+        body,
+        .invoice-page,
+        .invoice-paper {
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        html,
+        body {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body {
+            font-size: 10.5px !important;
+            line-height: 1.2 !important;
+        }
+
+        .container,
+        main {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .invoice-page {
+            width: 100% !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+        }
+
+        .invoice-paper {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            border: 1px solid #111827;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .invoice-header {
+            display: grid !important;
+            grid-template-columns: 1.25fr .95fr !important;
+            gap: 9px;
+            padding: 9px 11px;
+            border-top-width: 2px;
+            border-bottom: 1px solid #111827;
+        }
+
+        .invoice-brand h1 {
+            margin-bottom: 3px;
+            font-size: 18px;
+        }
+
+        .invoice-brand h2 {
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+
+        .invoice-brand p {
+            font-size: 9.5px;
+        }
+
+        .invoice-meta {
+            padding: 7px 9px;
+            border-radius: 0;
+        }
+
+            .invoice-meta h3 {
+                margin-bottom: 5px;
+                padding-bottom: 4px;
+                font-size: 11px;
+            }
+
+        .invoice-meta-row {
+            grid-template-columns: 84px minmax(0, 1fr);
+            gap: 5px;
+            padding: 1.5px 0;
+            font-size: 9.5px;
+        }
+
+        .invoice-status {
+            min-height: 0;
+            padding: 2px 5px;
+            font-size: 8.5px;
+        }
+
+        .invoice-info-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px;
+            padding: 8px 11px;
+        }
+
+        .invoice-info-box {
+            min-width: 0 !important;
+            min-height: 0 !important;
+            padding: 7px;
+            border-radius: 0;
+            box-shadow: none;
+            font-size: 9.5px;
+            line-height: 1.2;
+        }
+
+            .invoice-info-box h4,
+            .invoice-delivery h4,
+            .invoice-verification h4,
+            .invoice-return-info h4,
+            .invoice-signature h4 {
+                margin-bottom: 4px;
+                padding-bottom: 3px;
+                font-size: 10px;
+            }
+
+            .invoice-info-box p,
+            .invoice-delivery p,
+            .invoice-verification p {
+                margin-bottom: 2px;
+                line-height: 1.2;
+                overflow-wrap: anywhere;
+            }
+
+        .customer-name {
+            margin-bottom: 3px;
+            font-size: 10px;
+        }
+
+        .badge {
+            padding: 2px 5px !important;
+            font-size: 8px !important;
+        }
+
+        .invoice-section {
+            padding: 8px 11px;
+        }
+
+        .invoice-section-title {
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+
+        .invoice-items-wrapper {
+            overflow: visible !important;
+            border-radius: 0;
+        }
+
+        .invoice-items-table {
+            width: 100% !important;
+            min-width: 0 !important;
+            table-layout: auto;
+            font-size: 9.5px;
+            line-height: 1.15;
+        }
+
+            .invoice-items-table th,
+            .invoice-items-table td {
+                padding: 3px 4px !important;
+                line-height: 1.15;
+            }
+
+        .invoice-product-name,
+        .invoice-vat-cell,
+        .invoice-line-total {
+            min-width: 0;
+        }
+
+        .invoice-vat-amount {
+            margin-top: 1px;
+            font-size: 8px;
+        }
+
+        .invoice-bottom-grid {
+            display: grid !important;
+            grid-template-columns: 1.05fr .95fr !important;
+            align-items: start;
+            gap: 6px;
+            padding: 0 11px 6px;
+        }
+
+        .invoice-left-bottom {
+            gap: 5px;
+        }
+
+        .invoice-delivery,
+        .invoice-verification,
+        .invoice-return-info,
+        .invoice-summary {
+            position: static;
+            padding: 6px 8px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .invoice-return-info {
+            border-left-width: 2px;
+        }
+
+            .invoice-return-info ul {
+                margin: 0;
+                padding-left: 14px;
+            }
+
+            .invoice-return-info li {
+                margin-bottom: 1px;
+                line-height: 1.15;
+            }
+
+        .invoice-summary::before {
+            margin-bottom: 4px;
+            font-size: 10px;
+        }
+
+        .invoice-summary-row {
+            gap: 6px;
+            padding: 3px 0;
+        }
+
+        .invoice-payable {
+            margin-top: 3px;
+            padding: 5px 4px;
+            border-radius: 0;
+            font-size: 10px;
+        }
+
+            .invoice-payable strong {
+                font-size: 11px;
+            }
+
+        .invoice-signature {
+            width: 230px;
+            min-height: 62px;
+            margin: 0 11px 4px auto;
+            padding: 5px;
+            border-radius: 0;
+        }
+
+        .invoice-signature-line {
+            margin-top: 28px;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr,
+        .invoice-info-box,
+        .invoice-delivery,
+        .invoice-verification,
+        .invoice-return-info,
+        .invoice-summary,
+        .invoice-signature {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+
+</style>
+
+<div class="invoice-page">
+    <div class="invoice-actions d-flex flex-wrap justify-content-between align-items-center gap-3 no-print">
         <div>
-            <h1 class="h3 fw-bold mb-1">Fatura Görüntüleme</h1>
-            <p class="text-muted mb-0">Satış kaydından oluşturulan fatura özeti</p>
+            <h1 class="h3 fw-bold mb-1">Satış Faturası</h1>
+            <p class="text-muted mb-0">
+                Satış kaydından oluşturulan yazdırılabilir belge
+            </p>
         </div>
 
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-primary" onclick="window.print()">
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()">
                 Yazdır
             </button>
+
+            <a asp-controller="Faturalar"
+               asp-action="Index"
+               class="btn btn-outline-secondary">
+                Faturalara Dön
+            </a>
 
             <a asp-controller="Satislar"
                asp-action="Index"
@@ -42,83 +783,297 @@
         </div>
     </div>
 
-    <article class="invoice-card">
+    <article class="invoice-paper">
         <header class="invoice-header">
-            <div>
-                <h2>@magazaAdi</h2>
-                <p>@adres</p>
-                <p>Telefon: @telefon</p>
-                <p>E-posta: @email</p>
-                <p>Vergi Dairesi: @vergiDairesi</p>
-                <p>VKN: @vergiNo</p>
+            <div class="invoice-brand">
+                <h1>@magazaAdi</h1>
+                <h2>SATIŞ FATURASI</h2>
+                <p>ERP sistemi tarafından oluşturulan satış belgesi</p>
             </div>
 
             <div class="invoice-meta">
-                <h3>FATURA</h3>
-                <p><strong>Fatura No:</strong> FAT-@Model.SatisId.ToString("D6")</p>
-                <p><strong>Tarih:</strong> @Model.SatisTarihi.ToString("dd.MM.yyyy")</p>
-                <p><strong>Saat:</strong> @Model.SatisTarihi.ToString("HH:mm")</p>
-                <p><strong>Satış Türü:</strong> @satisTuru</p>
-                <p><strong>Ödeme Tipi:</strong> @Model.OdemeTipi</p>
+                <h3>Fatura Bilgileri</h3>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Fatura No</span>
+                    <span class="invoice-meta-value">@Model.FaturaNo</span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Satış No</span>
+                    <span class="invoice-meta-value">#@Model.SatisId</span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Fatura Tarihi</span>
+                    <span class="invoice-meta-value">
+                        @Model.FaturaTarihi.ToString("dd.MM.yyyy")
+                    </span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Fatura Saati</span>
+                    <span class="invoice-meta-value">
+                        @Model.FaturaTarihi.ToString("HH:mm")
+                    </span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Satış Türü</span>
+                    <span class="invoice-meta-value">@satisTuru</span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Ödeme Tipi</span>
+                    <span class="invoice-meta-value">@Model.OdemeTipi</span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Belge Türü</span>
+                    <span class="invoice-meta-value">@belgeTuru</span>
+                </div>
+
+                <div class="invoice-meta-row">
+                    <span class="invoice-meta-label">Belge Durumu</span>
+                    <span class="invoice-status">@belgeDurumu</span>
+                </div>
             </div>
         </header>
+
         <section class="invoice-info-grid">
             <div class="invoice-info-box">
-                <h4>Alıcı / Müşteri Bilgileri</h4>
+                <h4>Satıcı / Mağaza Bilgileri</h4>
+                <p><strong>@magazaAdi</strong></p>
+                <p><strong>Adres:</strong> @adres</p>
 
-                @if (Model.KayitliMusteriMi)
+                @if (!string.IsNullOrWhiteSpace(ilIlce))
                 {
-                    <strong>@Model.MusteriAdi</strong>
-                    <p>Telefon: @(Model.MusteriTelefon ?? "-")</p>
-                    <p>Email: @(Model.MusteriEmail ?? "-")</p>
+                    <p><strong>İl / İlçe:</strong> @ilIlce</p>
+                }
+
+                <p><strong>Telefon:</strong> @telefon</p>
+                <p><strong>E-posta:</strong> @email</p>
+
+                @if (!string.IsNullOrWhiteSpace(webAdresi))
+                {
+                    <p><strong>Web:</strong> @webAdresi</p>
+                }
+
+                <p><strong>Vergi Dairesi:</strong> @vergiDairesi</p>
+                <p><strong>Vergi No:</strong> @vergiNo</p>
+
+                @if (!string.IsNullOrWhiteSpace(mersisNo))
+                {
+                    <p><strong>Mersis No:</strong> @mersisNo</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(ticaretSicilNo))
+                {
+                    <p>
+                        <strong>Ticaret Sicil No:</strong>
+                        @ticaretSicilNo
+                    </p>
+                }
+            </div>
+
+            <div class="invoice-info-box">
+                <h4>Müşteri Bilgileri</h4>
+
+                @if (!Model.KayitliMusteriMi)
+                {
+                    <div class="customer-name">Nihai Tüketici</div>
+
+                    <p>
+                        <span class="badge text-bg-secondary">
+                            Kayıtsız Müşteri
+                        </span>
+                    </p>
+
+                    <p><strong>Telefon:</strong> -</p>
+                    <p><strong>E-posta:</strong> -</p>
+                    <p><strong>Adres:</strong> -</p>
+                }
+                else if (kurumsalMusteri)
+                {
+                    var kurumsalAdres = string.Join(" / ",
+                        new[] { Model.MusteriIlce, Model.MusteriIl }
+                            .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+                    <div class="customer-name">
+                        @(Model.KurumsalUnvan ?? Model.MusteriAdi)
+                    </div>
+
+                    <p>
+                        <span class="badge text-bg-primary">Kurumsal</span>
+                    </p>
+
+                    <p>
+                        <strong>Yetkili / Müşteri:</strong>
+                        @Model.MusteriAdi
+                    </p>
+                    <p><strong>VKN:</strong> @(Model.MusteriVKN ?? "-")</p>
+                    <p>
+                        <strong>Vergi Dairesi:</strong>
+                        @(Model.MusteriVergiDairesi ?? "-")
+                    </p>
+                    <p>
+                        <strong>Telefon:</strong>
+                        @(Model.MusteriTelefon ?? "-")
+                    </p>
+                    <p>
+                        <strong>E-posta:</strong>
+                        @(Model.MusteriEmail ?? "-")
+                    </p>
+                    <p>
+                        <strong>Adres:</strong>
+                        @(Model.MusteriAdres ?? "-")
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(kurumsalAdres))
+                    {
+                        <p>
+                            <strong>İl / İlçe:</strong>
+                            @kurumsalAdres
+                        </p>
+                    }
                 }
                 else
                 {
-                    <strong>Nihai Tüketici</strong>
-                    <span class="badge text-bg-secondary mt-2">Kayıtsız Müşteri</span>
+                    var bireyselAdres = string.Join(" / ",
+                        new[] { Model.MusteriIlce, Model.MusteriIl }
+                            .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+                    <div class="customer-name">@Model.MusteriAdi</div>
+
+                    <p>
+                        <span class="badge text-bg-secondary">Bireysel</span>
+                    </p>
+
+                    <p>
+                        <strong>TCKN:</strong>
+                        @(Model.MusteriTCKN ?? "-")
+                    </p>
+                    <p>
+                        <strong>Vergi Dairesi:</strong>
+                        @(Model.MusteriVergiDairesi ?? "-")
+                    </p>
+                    <p>
+                        <strong>Telefon:</strong>
+                        @(Model.MusteriTelefon ?? "-")
+                    </p>
+                    <p>
+                        <strong>E-posta:</strong>
+                        @(Model.MusteriEmail ?? "-")
+                    </p>
+                    <p>
+                        <strong>Adres:</strong>
+                        @(Model.MusteriAdres ?? "-")
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(bireyselAdres))
+                    {
+                        <p>
+                            <strong>İl / İlçe:</strong>
+                            @bireyselAdres
+                        </p>
+                    }
                 }
+            </div>
+
+            <div class="invoice-info-box">
+                <h4>Satış Bilgileri</h4>
+
+                <p>
+                    <strong>Satışı Yapan:</strong>
+                    @Model.PersonelAdi
+
+                    @if (!string.IsNullOrWhiteSpace(Model.PersonelPozisyonu) &&
+                         Model.PersonelPozisyonu != "-")
+                    {
+                        <text> - @Model.PersonelPozisyonu</text>
+                    }
+                </p>
+
+                <p><strong>Satış Türü:</strong> @satisTuru</p>
+                <p><strong>Ödeme Tipi:</strong> @Model.OdemeTipi</p>
+                <p><strong>Belge Türü:</strong> @belgeTuru</p>
+                <p><strong>Fatura Durumu:</strong> @belgeDurumu</p>
+                <p>
+                    <strong>Belge Oluşturma:</strong>
+                    @Model.FaturaTarihi.ToString("dd.MM.yyyy HH:mm")
+                </p>
             </div>
         </section>
 
-        <div class="invoice-operator-note">
-            İşlemi yapan:
-            <strong>
-                @Model.PersonelAdi
-                @if (!string.IsNullOrWhiteSpace(Model.PersonelPozisyonu))
-                {
-                    <text> - @Model.PersonelPozisyonu</text>
-                }
-            </strong>
-        </div>
+        <section class="invoice-section">
+            <h4 class="invoice-section-title">
+                Ürün / Hizmet Kalemleri
+            </h4>
 
-        <section class="mt-4">
-            <h4 class="invoice-section-title">Ürün Kalemleri</h4>
-
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle invoice-table">
+            <div class="invoice-items-wrapper">
+                <table class="table table-bordered invoice-items-table">
                     <thead>
                         <tr>
-                            <th>Ürün Adı</th>
+                            <th>#</th>
+                            <th>Ürün / Hizmet</th>
                             <th>Barkod</th>
                             <th>Beden</th>
                             <th>Renk</th>
-                            <th class="text-end">Adet</th>
+                            <th class="text-end">Miktar</th>
                             <th class="text-end">Birim Fiyat</th>
-                            <th class="text-end">KDV Dahil Toplam</th>
+                            <th class="text-end">İndirim</th>
+                            <th class="text-end">KDV</th>
+                            <th class="text-end">Tutar</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        @foreach (var kalem in Model.Kalemler)
+                        @if (Model.Kalemler.Any())
+                        {
+                            @foreach (var kalem in Model.Kalemler)
+                            {
+                                <tr>
+                                    <td>@(kalemSiraNo++)</td>
+
+                                    <td class="invoice-product-name">
+                                        @kalem.UrunAdi
+                                    </td>
+
+                                    <td>@kalem.Barkod</td>
+                                    <td>@kalem.Beden</td>
+                                    <td>@kalem.Renk</td>
+                                    <td class="text-end">@kalem.Adet</td>
+
+                                    <td class="text-end">
+                                        @kalem.BirimFiyat.ToString("N2") TL
+                                    </td>
+
+                                    <td class="text-end">
+                                        @kalem.IndirimTutari.ToString("N2") TL
+                                    </td>
+
+                                    <td class="text-end invoice-vat-cell">
+                                        <div class="invoice-vat-rate">
+                                            %@kalem.KdvOrani.ToString("N2")
+                                        </div>
+                                        <div class="invoice-vat-amount">
+                                            @kalem.KdvTutari.ToString("N2") TL
+                                        </div>
+                                    </td>
+
+                                    <td class="text-end invoice-line-total">
+                                        @kalem.ToplamTutar.ToString("N2") TL
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
                         {
                             <tr>
-                                <td>@kalem.UrunAdi</td>
-                                <td>@kalem.Barkod</td>
-                                <td>@kalem.Beden</td>
-                                <td>@kalem.Renk</td>
-                                <td class="text-end">@kalem.Adet</td>
-                                <td class="text-end">@kalem.BirimFiyat.ToString("N2") TL</td>
-                                <td class="text-end fw-semibold">@kalem.ToplamTutar.ToString("N2") TL</td>
+                                <td colspan="10"
+                                    class="text-center text-muted py-4">
+                                    Faturaya bağlı ürün kalemi bulunamadı.
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -126,43 +1081,99 @@
             </div>
         </section>
 
-        <section class="invoice-total-wrap">
-            <div class="invoice-total-box">
-                <div>
-                    <span>Ara Toplam</span>
-                    <strong>@araToplam.ToString("N2") TL</strong>
+        <section class="invoice-bottom-grid">
+            <div class="invoice-left-bottom">
+                <div class="invoice-delivery">
+                    <h4>Teslim / İrsaliye Bilgileri</h4>
+                    <p>
+                        <strong>Teslim Tarihi:</strong>
+                        @Model.FaturaTarihi.ToString("dd.MM.yyyy")
+                    </p>
+                    <p><strong>İrsaliye No:</strong> -</p>
+                    <p>
+                        <strong>Teslim Şekli:</strong>
+                        Mağaza Satışı / Elden Teslim
+                    </p>
                 </div>
 
-                <div>
-                    <span>İndirim Oranı</span>
-                    <strong>%@indirimOrani.ToString("N2")</strong>
+                <div class="invoice-verification">
+                    <h4>Belge Doğrulama</h4>
+                    <p><strong>Fatura No:</strong> @Model.FaturaNo</p>
+                    <p><strong>Satış No:</strong> #@Model.SatisId</p>
+                    <p>
+                        <strong>Tarih:</strong>
+                        @Model.FaturaTarihi.ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                    <p>
+                        <strong>Net Tutar:</strong>
+                        @Model.NetTutar.ToString("N2") TL
+                    </p>
+                    <p>
+                        <strong>UUID:</strong>
+                        @(string.IsNullOrWhiteSpace(Model.UUID) ? "-" : Model.UUID)
+                    </p>
                 </div>
 
-                <div>
-                    <span>İndirim Tutarı</span>
-                    <strong>@indirimTutari.ToString("N2") TL</strong>
-                </div>
+                <div class="invoice-return-info">
+                    <h4>İade / Değişim Bilgilendirmesi</h4>
 
-                <div>
-                    <span>KDV Oranı</span>
-                    <strong>%20</strong>
-                </div>
-
-                <div>
-                    <span>KDV Hariç Tutar</span>
-                    <strong>@kdvHaric.ToString("N2") TL</strong>
-                </div>
-
-                <div>
-                    <span>KDV Tutarı</span>
-                    <strong>@kdvTutari.ToString("N2") TL</strong>
-                </div>
-
-                <div class="invoice-grand-total">
-                    <span>KDV Dahil Genel Toplam</span>
-                    <strong>@genelToplam.ToString("N2") TL</strong>
+                    <ul>
+                        <li>
+                            İade ve değişim işlemleri için fatura numarası ile
+                            başvurunuz.
+                        </li>
+                        <li>
+                            İade/değişim talepleri ürün durumu ve mağaza
+                            politikalarına göre değerlendirilir.
+                        </li>
+                        <li>
+                            Onaylanan iadelerde ilgili satış kaydı üzerinden
+                            iade süreci başlatılır.
+                        </li>
+                        <li>
+                            İade işlemi gerçekleşirse sistemde ayrıca iade
+                            kaydı/faturası oluşturulur.
+                        </li>
+                    </ul>
                 </div>
             </div>
+
+            <div class="invoice-summary">
+                <div class="invoice-summary-row">
+                    <span>Vergi Hariç Toplam</span>
+                    <strong>@Model.VergiHaricToplam.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Toplam KDV</span>
+                    <strong>@Model.ToplamKdvTutari.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Ara Toplam</span>
+                    <strong>@Model.ToplamTutar.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Toplam İndirim</span>
+                    <strong>@Model.IndirimTutari.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-summary-row">
+                    <span>Net Toplam</span>
+                    <strong>@Model.NetTutar.ToString("N2") TL</strong>
+                </div>
+
+                <div class="invoice-summary-row invoice-payable">
+                    <span>KDV Dahil Ödenecek Tutar</span>
+                    <strong>@odenecekTutar.ToString("N2") TL</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="invoice-signature">
+            <h4>Yetkili İmza / Kaşe</h4>
+            <div class="invoice-signature-line"></div>
         </section>
     </article>
 </div>

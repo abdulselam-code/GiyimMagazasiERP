@@ -1,0 +1,42 @@
+﻿@model GiyimMagazasiERP.Models.MagazaBilgileri
+@{
+    ViewData["Title"] = "Mağaza Detayı";
+}
+<div class="container py-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h1 class="h3 fw-bold">Mağaza Detayı</h1>
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Genel Bilgiler</h2>
+                    <p><strong>Mağaza:</strong> @Model.MagazaAdi</p>
+                    <p><strong>Ticari Ünvan:</strong> @(Model.TicariUnvan ?? "-")</p>
+                    <p><strong>Adres:</strong> @(Model.Adres ?? "-")</p>
+                    <p><strong>İl / İlçe:</strong> @(Model.Il ?? "-") / @(Model.Ilce ?? "-")</p>
+                    <p><strong>Telefon:</strong> @(Model.Telefon ?? "-")</p>
+                    <p><strong>E-posta:</strong> @(Model.Email ?? "-")</p>
+                    <p><strong>Web:</strong> @(Model.WebAdresi ?? "-")</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Fatura / Vergi Bilgileri</h2>
+                    <p><strong>Vergi Dairesi:</strong> @(Model.VergiDairesi ?? "-")</p>
+                    <p><strong>Vergi No:</strong> @(Model.VergiNo ?? "-")</p>
+                    <p><strong>Mersis No:</strong> @(Model.MersisNo ?? "-")</p>
+                    <p><strong>Ticaret Sicil No:</strong> @(Model.TicaretSicilNo ?? "-")</p>
+                    <p><strong>Kuruluş:</strong> @(Model.KurulusTarihi?.ToString("dd.MM.yyyy") ?? "-")</p>
+                    <p><strong>Durum:</strong> @(Model.AktifMi ? "Aktif" : "Pasif")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
