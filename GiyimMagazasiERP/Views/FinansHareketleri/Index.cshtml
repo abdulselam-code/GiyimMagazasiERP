@@ -1,18 +1,72 @@
-﻿@model GiyimMagazasiERP.ViewModels.PagedResultViewModel<GiyimMagazasiERP.Models.FinansHareketi>
+@model GiyimMagazasiERP.ViewModels.FinansHareketleriIndexViewModel
 
 @{
     ViewData["Title"] = "Finans Hareketleri";
 
-    var oncekiSayfa = Model.Page - 1;
-    var sonrakiSayfa = Model.Page + 1;
-    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+    var liste = Model.Hareketler;
+    var oncekiSayfa = liste.Page - 1;
+    var sonrakiSayfa = liste.Page + 1;
+    var siraNo = ((liste.Page - 1) * liste.PageSize) + 1;
+
+    string Para(decimal tutar) => tutar.ToString("N2") + " TL";
 }
 
-<div class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+<style>
+    .finance-summary-card {
+        height: 100%;
+        border: 1px solid #e2e8f0;
+        border-left-width: 4px;
+        border-radius: 6px;
+        background: #fff;
+    }
+
+    .finance-summary-card .card-body {
+        padding: 16px;
+    }
+
+    .finance-summary-label {
+        margin-bottom: 6px;
+        color: #64748b;
+        font-size: .8rem;
+        font-weight: 700;
+    }
+
+    .finance-summary-value {
+        margin: 0;
+        color: #172033;
+        font-size: 1.25rem;
+        font-weight: 800;
+    }
+
+    .finance-summary-income { border-left-color: #198754; }
+    .finance-summary-expense { border-left-color: #dc3545; }
+    .finance-summary-net { border-left-color: #2563eb; }
+    .finance-summary-return { border-left-color: #ea580c; }
+    .finance-summary-today { border-left-color: #0ea5e9; }
+
+    .finance-return-row > td {
+        background-color: #fff8f1;
+    }
+
+    .finance-description {
+        min-width: 240px;
+        max-width: 420px;
+        white-space: normal;
+        line-height: 1.4;
+    }
+
+    .finance-source {
+        min-width: 110px;
+    }
+</style>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Finans Hareketleri</h1>
-            <p class="text-muted mb-0">Gelir, gider ve finans kayıtları</p>
+            <p class="text-muted mb-0">
+                Gelir, gider, satış ve iade kaynaklı finans kayıtlarını takip edin.
+            </p>
         </div>
 
         <a asp-action="Create" class="btn btn-primary">
@@ -25,167 +79,286 @@
         <div class="alert alert-danger">@TempData["Hata"]</div>
     }
 
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <form asp-action="Index" method="get" class="row g-3 align-items-end">
-                <div class="col-lg-7">
-                    <label for="arama" class="form-label">Finans Hareketi Ara</label>
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
 
-                    <input type="text"
-                           id="arama"
+    <section class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl">
+            <div class="card finance-summary-card finance-summary-income shadow-sm">
+                <div class="card-body">
+                    <div class="finance-summary-label">Toplam Gelir</div>
+                    <p class="finance-summary-value text-success">
+                        @Para(Model.ToplamGelir)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl">
+            <div class="card finance-summary-card finance-summary-expense shadow-sm">
+                <div class="card-body">
+                    <div class="finance-summary-label">Toplam Gider</div>
+                    <p class="finance-summary-value text-danger">
+                        @Para(Model.ToplamGider)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl">
+            <div class="card finance-summary-card finance-summary-net shadow-sm">
+                <div class="card-body">
+                    <div class="finance-summary-label">Net Tutar</div>
+                    <p class="finance-summary-value @(
+                        Model.NetTutar >= 0 ? "text-success" : "text-danger")">
+                        @Para(Model.NetTutar)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl">
+            <div class="card finance-summary-card finance-summary-return shadow-sm">
+                <div class="card-body">
+                    <div class="finance-summary-label">Satış İadeleri</div>
+                    <p class="finance-summary-value text-danger">
+                        @Para(Model.SatisIadeleriToplami)
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl">
+            <div class="card finance-summary-card finance-summary-today shadow-sm">
+                <div class="card-body">
+                    <div class="finance-summary-label">Bugünkü Net</div>
+                    <p class="finance-summary-value @(
+                        Model.BugunkuNet >= 0 ? "text-primary" : "text-danger")">
+                        @Para(Model.BugunkuNet)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form asp-action="Index"
+                  method="get"
+                  class="row g-3 align-items-end">
+                <div class="col-xl-3 col-lg-6">
+                    <label for="arama" class="form-label">Arama</label>
+                    <input id="arama"
                            name="arama"
                            value="@Model.Arama"
                            class="form-control"
-                           placeholder="Hareket tipi, kategori, açıklama veya kullanıcı ara" />
+                           placeholder="Açıklama, kategori, satış no veya kullanıcı" />
                 </div>
 
-                <div class="col-sm-6 col-lg-2">
-                    <label for="pageSize" class="form-label">Kayıt Sayısı</label>
+                <div class="col-xl-2 col-md-4">
+                    <label for="hareketTipi" class="form-label">
+                        Hareket Tipi
+                    </label>
+                    <select id="hareketTipi"
+                            name="hareketTipi"
+                            class="form-select">
+                        <option value="Tumu"
+                                selected="@(Model.HareketTipi == "Tumu")">
+                            Tümü
+                        </option>
+                        <option value="Gelir"
+                                selected="@(Model.HareketTipi == "Gelir")">
+                            Gelir
+                        </option>
+                        <option value="Gider"
+                                selected="@(Model.HareketTipi == "Gider")">
+                            Gider
+                        </option>
+                    </select>
+                </div>
 
-                    <select id="pageSize"
-                            name="pageSize"
-                            class="form-select"
-                            onchange="this.form.submit()">
-                        @if (Model.PageSize == 5)
+                <div class="col-xl-2 col-md-4">
+                    <label for="kategori" class="form-label">Kategori</label>
+                    <select id="kategori"
+                            name="kategori"
+                            class="form-select">
+                        <option value="Tumu"
+                                selected="@(Model.Kategori == "Tumu")">
+                            Tümü
+                        </option>
+                        @foreach (var kategori in Model.Kategoriler)
                         {
-                            <option value="5" selected>5</option>
-                        }
-                        else
-                        {
-                            <option value="5">5</option>
-                        }
-
-                        @if (Model.PageSize == 10)
-                        {
-                            <option value="10" selected>10</option>
-                        }
-                        else
-                        {
-                            <option value="10">10</option>
-                        }
-
-                        @if (Model.PageSize == 25)
-                        {
-                            <option value="25" selected>25</option>
-                        }
-                        else
-                        {
-                            <option value="25">25</option>
-                        }
-
-                        @if (Model.PageSize == 50)
-                        {
-                            <option value="50" selected>50</option>
-                        }
-                        else
-                        {
-                            <option value="50">50</option>
-                        }
-
-                        @if (Model.PageSize == 100)
-                        {
-                            <option value="100" selected>100</option>
-                        }
-                        else
-                        {
-                            <option value="100">100</option>
+                            <option value="@kategori"
+                                    selected="@(Model.Kategori == kategori)">
+                                @kategori
+                            </option>
                         }
                     </select>
                 </div>
 
-                <div class="col-sm-6 col-lg-3">
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">
-                            Ara
-                        </button>
+                <div class="col-xl-2 col-md-4">
+                    <label for="baslangicTarihi" class="form-label">
+                        Başlangıç
+                    </label>
+                    <input id="baslangicTarihi"
+                           name="baslangicTarihi"
+                           type="date"
+                           value="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
 
-                        <a asp-action="Index" class="btn btn-outline-secondary flex-fill">
-                            Temizle
-                        </a>
-                    </div>
+                <div class="col-xl-2 col-md-4">
+                    <label for="bitisTarihi" class="form-label">Bitiş</label>
+                    <input id="bitisTarihi"
+                           name="bitisTarihi"
+                           type="date"
+                           value="@Model.BitisTarihi?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-xl-1 col-md-4">
+                    <label for="pageSize" class="form-label">Kayıt</label>
+                    <select id="pageSize"
+                            name="pageSize"
+                            class="form-select">
+                        @foreach (var adet in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@adet"
+                                    selected="@(liste.PageSize == adet)">
+                                @adet
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary px-4">
+                        Filtrele
+                    </button>
+                    <a asp-action="Index"
+                       class="btn btn-outline-secondary px-4">
+                        Temizle
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
         <div class="text-muted small">
-            @if (!string.IsNullOrWhiteSpace(Model.Arama))
-            {
-                <span>
-                    Arama sonucu <strong>@Model.TotalCount</strong> kayıt bulundu.
-                </span>
-            }
-            else
-            {
-                <span>
-                    Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
-                </span>
-            }
+            Toplam <strong>@liste.TotalCount</strong> kayıt bulundu.
         </div>
-
         <div class="text-muted small">
-            Sayfa <strong>@Model.Page</strong> /
-            <strong>@(Model.TotalPages == 0 ? 1 : Model.TotalPages)</strong>
+            Sayfa <strong>@liste.Page</strong> /
+            <strong>@(liste.TotalPages == 0 ? 1 : liste.TotalPages)</strong>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm">
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-dark">
                         <tr>
-                            <th>#</th>
+                            <th class="ps-3">#</th>
                             <th>Tarih</th>
                             <th>Hareket Tipi</th>
                             <th>Kategori</th>
-                            <th>Tutar</th>
-                            <th>Açıklama</th>
+                            <th class="text-end">Tutar</th>
+                            <th>Kaynak</th>
                             <th>Kullanıcı</th>
-                            <th>İşlemler</th>
+                            <th>Açıklama</th>
+                            <th>İşlem</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        @if (Model.Items.Any())
+                        @if (liste.Items.Any())
                         {
-                            @foreach (var hareket in Model.Items)
+                            @foreach (var hareket in liste.Items)
                             {
-                                var gelirMi = hareket.HareketTipi == "Gelir";
+                                var gelirMi =
+                                    hareket.HareketTipi == "Gelir";
+                                var satisIadesiMi =
+                                    hareket.Kategori == "Satış İadesi";
+                                var kullanici =
+                                    hareket.Kullanici?.AdSoyad
+                                    ?? hareket.Kullanici?.KullaniciAdi
+                                    ?? "-";
 
-                                <tr>
-                                    <td>@(siraNo++)</td>
-                                    <td>@hareket.Tarih.ToString("dd/MM/yyyy")</td>
-
+                                <tr class="@(satisIadesiMi
+                                    ? "finance-return-row"
+                                    : "")">
+                                    <td class="ps-3">@siraNo</td>
+                                    <td class="text-nowrap">
+                                        @hareket.Tarih.ToString(
+                                            "dd.MM.yyyy HH:mm")
+                                    </td>
                                     <td>
-                                        <span class="badge @(gelirMi ? "text-bg-success" : "text-bg-danger")">
+                                        <span class="badge @(
+                                            gelirMi
+                                                ? "text-bg-success"
+                                                : "text-bg-danger")">
                                             @hareket.HareketTipi
                                         </span>
                                     </td>
-
-                                    <td>@hareket.Kategori</td>
-
-                                    <td class="fw-semibold @(gelirMi ? "text-success" : "text-danger")">
-                                        @hareket.Tutar.ToString("N2") TL
+                                    <td>
+                                        <span class="badge @(
+                                            satisIadesiMi
+                                                ? "text-bg-warning"
+                                                : "text-bg-secondary")">
+                                            @hareket.Kategori
+                                        </span>
                                     </td>
-
-                                    <td>@hareket.Aciklama</td>
-                                    <td>@hareket.Kullanici.KullaniciAdi</td>
-
+                                    <td class="text-end fw-bold text-nowrap @(
+                                        gelirMi
+                                            ? "text-success"
+                                            : "text-danger")">
+                                        @(gelirMi ? "+" : "-")@Para(hareket.Tutar)
+                                    </td>
+                                    <td class="finance-source">
+                                        @if (satisIadesiMi)
+                                        {
+                                            <span class="fw-semibold">
+                                                İade İşlemi
+                                            </span>
+                                            @if (hareket.SatisId.HasValue)
+                                            {
+                                                <div class="small text-muted">
+                                                    Satış #@hareket.SatisId
+                                                </div>
+                                            }
+                                        }
+                                        else if (hareket.SatisId.HasValue)
+                                        {
+                                            <span>Satış #@hareket.SatisId</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">
+                                                Manuel Kayıt
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>@kullanici</td>
+                                    <td class="finance-description">
+                                        @(string.IsNullOrWhiteSpace(
+                                            hareket.Aciklama)
+                                            ? "-"
+                                            : hareket.Aciklama)
+                                    </td>
                                     <td class="text-nowrap">
                                         <a asp-action="Details"
                                            asp-route-id="@hareket.Id"
                                            class="btn btn-sm btn-outline-info">
                                             Detay
                                         </a>
-
                                         <a asp-action="Edit"
                                            asp-route-id="@hareket.Id"
                                            class="btn btn-sm btn-outline-warning">
                                             Düzenle
                                         </a>
-
                                         <a asp-action="Delete"
                                            asp-route-id="@hareket.Id"
                                            class="btn btn-sm btn-outline-danger">
@@ -193,13 +366,17 @@
                                         </a>
                                     </td>
                                 </tr>
+
+                                siraNo++;
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
-                                    Kayıt bulunamadı.
+                                <td colspan="9"
+                                    class="text-center text-muted py-5">
+                                    Arama kriterlerine uygun finans hareketi
+                                    bulunamadı.
                                 </td>
                             </tr>
                         }
@@ -209,40 +386,60 @@
         </div>
     </div>
 
-    <nav class="mt-4" aria-label="Finans hareketi sayfalama">
-        <ul class="pagination justify-content-center flex-wrap">
-            <li class="page-item @(Model.OncekiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@oncekiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
-                    Önceki
-                </a>
-            </li>
-
-            @for (var sayfaNo = 1; sayfaNo <= Model.TotalPages; sayfaNo++)
-            {
-                <li class="page-item @(sayfaNo == Model.Page ? "active" : "")">
+    @if (liste.TotalPages > 1)
+    {
+        <nav class="mt-4" aria-label="Finans hareketi sayfalama">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item @(
+                    liste.OncekiSayfaVarMi ? "" : "disabled")">
                     <a class="page-link"
                        asp-action="Index"
-                       asp-route-page="@sayfaNo"
-                       asp-route-pageSize="@Model.PageSize"
-                       asp-route-arama="@Model.Arama">
-                        @sayfaNo
+                       asp-route-page="@oncekiSayfa"
+                       asp-route-pageSize="@liste.PageSize"
+                       asp-route-arama="@Model.Arama"
+                       asp-route-hareketTipi="@Model.HareketTipi"
+                       asp-route-kategori="@Model.Kategori"
+                       asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                       asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">
+                        Önceki
                     </a>
                 </li>
-            }
 
-            <li class="page-item @(Model.SonrakiSayfaVarMi ? "" : "disabled")">
-                <a class="page-link"
-                   asp-action="Index"
-                   asp-route-page="@sonrakiSayfa"
-                   asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
-                    Sonraki
-                </a>
-            </li>
-        </ul>
-    </nav>
+                @for (var sayfaNo = 1;
+                    sayfaNo <= liste.TotalPages;
+                    sayfaNo++)
+                {
+                    <li class="page-item @(
+                        sayfaNo == liste.Page ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-page="@sayfaNo"
+                           asp-route-pageSize="@liste.PageSize"
+                           asp-route-arama="@Model.Arama"
+                           asp-route-hareketTipi="@Model.HareketTipi"
+                           asp-route-kategori="@Model.Kategori"
+                           asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                           asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">
+                            @sayfaNo
+                        </a>
+                    </li>
+                }
+
+                <li class="page-item @(
+                    liste.SonrakiSayfaVarMi ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-page="@sonrakiSayfa"
+                       asp-route-pageSize="@liste.PageSize"
+                       asp-route-arama="@Model.Arama"
+                       asp-route-hareketTipi="@Model.HareketTipi"
+                       asp-route-kategori="@Model.Kategori"
+                       asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                       asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">
+                        Sonraki
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

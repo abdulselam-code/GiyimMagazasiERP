@@ -18,9 +18,16 @@ public class FinansHareketleriController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? arama, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(
+        string? arama,
+        string hareketTipi = "Tumu",
+        string kategori = "Tumu",
+        DateTime? baslangicTarihi = null,
+        DateTime? bitisTarihi = null,
+        int page = 1,
+        int pageSize = 10)
     {
-        var izinliPageSizeDegerleri = new[] { 5, 10, 25, 50, 100 };
+        var izinliPageSizeDegerleri = new[] { 10, 25, 50, 100 };
 
         if (page < 1)
             page = 1;
@@ -28,19 +35,94 @@ public class FinansHareketleriController : Controller
         if (!izinliPageSizeDegerleri.Contains(pageSize))
             pageSize = 10;
 
+        if (hareketTipi is not ("Tumu" or "Gelir" or "Gider"))
+            hareketTipi = "Tumu";
+
+        arama = string.IsNullOrWhiteSpace(arama)
+            ? null
+            : arama.Trim();
+
+        kategori = string.IsNullOrWhiteSpace(kategori)
+            ? "Tumu"
+            : kategori.Trim();
+
+        var bugun = DateTime.Today;
+        var yarin = bugun.AddDays(1);
+
+        var ozetler = await _context.FinansHareketleri
+            .AsNoTracking()
+            .GroupBy(x => 1)
+            .Select(g => new
+            {
+                ToplamGelir = g
+                    .Where(x => x.HareketTipi == "Gelir")
+                    .Sum(x => (decimal?)x.Tutar) ?? 0,
+                ToplamGider = g
+                    .Where(x => x.HareketTipi == "Gider")
+                    .Sum(x => (decimal?)x.Tutar) ?? 0,
+                SatisIadeleri = g
+                    .Where(x =>
+                        x.HareketTipi == "Gider" &&
+                        x.Kategori == "Satış İadesi")
+                    .Sum(x => (decimal?)x.Tutar) ?? 0,
+                BugunkuGelir = g
+                    .Where(x =>
+                        x.HareketTipi == "Gelir" &&
+                        x.Tarih >= bugun &&
+                        x.Tarih < yarin)
+                    .Sum(x => (decimal?)x.Tutar) ?? 0,
+                BugunkuGider = g
+                    .Where(x =>
+                        x.HareketTipi == "Gider" &&
+                        x.Tarih >= bugun &&
+                        x.Tarih < yarin)
+                    .Sum(x => (decimal?)x.Tutar) ?? 0
+            })
+            .FirstOrDefaultAsync();
+
+        var kategoriler = await _context.FinansHareketleri
+            .AsNoTracking()
+            .Where(x => x.Kategori != null && x.Kategori != "")
+            .Select(x => x.Kategori)
+            .Distinct()
+            .OrderBy(x => x)
+            .ToListAsync();
+
         var query = _context.FinansHareketleri
+            .AsNoTracking()
             .Include(x => x.Kullanici)
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(arama))
+        if (arama is not null)
         {
-            arama = arama.Trim();
-
             query = query.Where(x =>
                 x.HareketTipi.Contains(arama) ||
                 x.Kategori.Contains(arama) ||
-                x.Aciklama.Contains(arama) ||
-                x.Kullanici.KullaniciAdi.Contains(arama));
+                (x.Aciklama != null &&
+                 x.Aciklama.Contains(arama)) ||
+                (x.SatisId.HasValue &&
+                 x.SatisId.Value.ToString().Contains(arama)) ||
+                x.Kullanici.KullaniciAdi.Contains(arama) ||
+                (x.Kullanici.AdSoyad != null &&
+                 x.Kullanici.AdSoyad.Contains(arama)));
+        }
+
+        if (hareketTipi != "Tumu")
+            query = query.Where(x => x.HareketTipi == hareketTipi);
+
+        if (kategori != "Tumu")
+            query = query.Where(x => x.Kategori == kategori);
+
+        if (baslangicTarihi.HasValue)
+        {
+            var baslangic = baslangicTarihi.Value.Date;
+            query = query.Where(x => x.Tarih >= baslangic);
+        }
+
+        if (bitisTarihi.HasValue)
+        {
+            var bitisExclusive = bitisTarihi.Value.Date.AddDays(1);
+            query = query.Where(x => x.Tarih < bitisExclusive);
         }
 
         var totalCount = await query.CountAsync();
@@ -49,20 +131,38 @@ public class FinansHareketleriController : Controller
         if (totalPages > 0 && page > totalPages)
             page = totalPages;
 
-        var hareketler = await query
+        var hareketListesi = await query
             .OrderByDescending(x => x.Tarih)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
 
-        var model = new PagedResultViewModel<FinansHareketi>
+        var sayfaliHareketler =
+            new PagedResultViewModel<FinansHareketi>
         {
-            Items = hareketler,
+            Items = hareketListesi,
             Arama = arama,
             Page = page,
             PageSize = pageSize,
             TotalCount = totalCount,
             TotalPages = totalPages
+        };
+
+        var model = new FinansHareketleriIndexViewModel
+        {
+            Hareketler = sayfaliHareketler,
+            Arama = arama,
+            HareketTipi = hareketTipi,
+            Kategori = kategori,
+            BaslangicTarihi = baslangicTarihi,
+            BitisTarihi = bitisTarihi,
+            Kategoriler = kategoriler,
+            ToplamGelir = ozetler?.ToplamGelir ?? 0,
+            ToplamGider = ozetler?.ToplamGider ?? 0,
+            SatisIadeleriToplami = ozetler?.SatisIadeleri ?? 0,
+            BugunkuNet =
+                (ozetler?.BugunkuGelir ?? 0) -
+                (ozetler?.BugunkuGider ?? 0)
         };
 
         return View(model);
