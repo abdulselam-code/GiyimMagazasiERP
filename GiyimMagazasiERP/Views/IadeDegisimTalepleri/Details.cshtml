@@ -3,17 +3,41 @@
 @{
     ViewData["Title"] = "İade Talebi Detayı";
 
-    string DurumMetni(string d) => d switch
+    var admin = User.IsInRole("Admin");
+    var yonetici = User.IsInRole("Yonetici");
+    var muhasebe = User.IsInRole("Muhasebe");
+
+    var tumu = admin ||
+               yonetici ||
+               muhasebe ||
+               User.IsInRole("Depo");
+
+    var yoneticiAsamasinda =
+        Model.Durum ==
+        GiyimMagazasiERP.Models.IadeDegisimTalebi
+            .DurumYoneticiOnayiBekliyor;
+
+    var muhasebeAsamasinda =
+        Model.Durum ==
+        GiyimMagazasiERP.Models.IadeDegisimTalebi
+            .DurumMuhasebeOnayiBekliyor;
+
+    var tamamlandi =
+        Model.Durum ==
+        GiyimMagazasiERP.Models.IadeDegisimTalebi
+            .DurumTamamlandi;
+
+    string DurumMetni(string durum) => durum switch
     {
         "YoneticiOnayiBekliyor" => "Yönetici Onayı Bekliyor",
         "MuhasebeOnayiBekliyor" => "Muhasebe Onayı Bekliyor",
         "Reddedildi" => "Reddedildi",
         "IptalEdildi" => "İptal Edildi",
         "Tamamlandi" => "Tamamlandı",
-        _ => d
+        _ => durum
     };
 
-    string DurumRengi(string d) => d switch
+    string DurumRengi(string durum) => durum switch
     {
         "YoneticiOnayiBekliyor" => "warning",
         "MuhasebeOnayiBekliyor" => "info",
@@ -23,54 +47,155 @@
         _ => "secondary"
     };
 
-    string UrunDurumuMetni(string d) => d switch
+    string UrunDurumuMetni(string durum) => durum switch
     {
         "Satilabilir" => "Satılabilir",
         "Hasarli" => "Hasarlı",
         "IncelemeGerekli" => "İnceleme Gerekli",
-        _ => d
+        _ => durum
     };
 
-    var tumTalepleriGorebilir =
-        User.IsInRole("Admin") ||
-        User.IsInRole("Yonetici") ||
-        User.IsInRole("Muhasebe") ||
-        User.IsInRole("Depo");
+    string KullaniciAdi(
+        GiyimMagazasiERP.Models.Kullanici? kullanici)
+    {
+        return kullanici?.AdSoyad
+               ?? kullanici?.KullaniciAdi
+               ?? "-";
+    }
+
+    string UrunDurumuRengi(string durum) => durum switch
+    {
+        "Satilabilir" => "success",
+        "Hasarli" => "danger",
+        "IncelemeGerekli" => "warning",
+        _ => "secondary"
+    };
 }
 
+<style>
+    .return-detail-products {
+        overflow: hidden;
+    }
+
+    .return-detail-table {
+        min-width: 1080px;
+        margin-bottom: 0;
+    }
+
+    .return-detail-table th {
+        padding: 12px 10px;
+        white-space: nowrap;
+        font-size: .82rem;
+    }
+
+    .return-detail-table td {
+        padding: 14px 10px;
+    }
+
+    .return-detail-product {
+        min-width: 230px;
+        color: #172033;
+    }
+
+    .return-detail-product strong {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .return-detail-meta {
+        color: #6c757d;
+        font-size: .78rem;
+        line-height: 1.4;
+    }
+
+    .return-detail-money {
+        min-width: 110px;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .return-detail-total {
+        color: #15803d !important;
+        font-weight: 800;
+    }
+
+    .return-reason {
+        min-width: 190px;
+        padding: 7px 9px;
+        color: #526071;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        font-size: .82rem;
+        line-height: 1.35;
+    }
+</style>
+
 <div class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">İade Talebi Detayı</h1>
             <p class="text-muted mb-0">@Model.TalepNo</p>
         </div>
 
-        <a asp-action="@(tumTalepleriGorebilir ? "Index" : "BenimTaleplerim")"
-           class="btn btn-outline-secondary">
-            Listeye Dön
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            @if (tamamlandi &&
+                 !string.IsNullOrWhiteSpace(Model.IadeBelgeNo))
+            {
+                <a asp-action="Belge"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-success">
+                    İade Belgesini Görüntüle
+                </a>
+            }
+
+            <a asp-action="@(tumu ? "Index" : "BenimTaleplerim")"
+               class="btn btn-outline-secondary">
+                Listeye Dön
+            </a>
+        </div>
     </div>
 
     @if (TempData["Basari"] is not null)
     {
-        <div class="alert alert-success">@TempData["Basari"]</div>
+        <div class="alert alert-success alert-dismissible fade show"
+             role="alert">
+            @TempData["Basari"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Kapat">
+            </button>
+        </div>
     }
 
-    <div class="alert alert-info">
-        Bu aşamada stok, finans, satış ve fatura kayıtları değiştirilmemiştir.
-    </div>
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show"
+             role="alert">
+            @TempData["Hata"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Kapat">
+            </button>
+        </div>
+    }
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body d-flex flex-wrap justify-content-between gap-3">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
                 <strong class="fs-5">@Model.TalepNo</strong>
+
                 <div class="text-muted">
                     @Model.TalepTarihi.ToString("dd.MM.yyyy HH:mm")
                 </div>
             </div>
 
-            <div>
-                <span class="badge text-bg-primary me-2">
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge text-bg-primary">
                     @(Model.IslemTipi == "Degisim" ? "Değişim" : "İade")
                 </span>
 
@@ -80,6 +205,211 @@
             </div>
         </div>
     </div>
+
+    @if (tamamlandi)
+    {
+        <div class="card border-0 shadow-sm border-start border-success border-4 mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold text-success mb-1">
+                            Bu iade talebi tamamlandı
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Stok ve finans işlemleri tamamlanarak iade belgesi oluşturuldu.
+                        </p>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.IadeBelgeNo))
+                    {
+                        <a asp-action="Belge"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-success">
+                            İade Belgesini Görüntüle
+                        </a>
+                    }
+                </div>
+
+                <hr />
+
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="small text-muted">İade Belge No</div>
+                        <div class="fw-semibold">
+                            @(Model.IadeBelgeNo ?? "-")
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="small text-muted">Tamamlanma Tarihi</div>
+                        <div class="fw-semibold">
+                            @(Model.TamamlanmaTarihi?.ToString(
+                                "dd.MM.yyyy HH:mm") ?? "-")
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="small text-muted">Finans Hareketi No</div>
+                        <div class="fw-semibold">
+                            @(Model.FinansHareketiId?.ToString() ?? "-")
+                        </div>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="small text-muted">Toplam İade Tutarı</div>
+                        <div class="fw-bold text-success">
+                            @Model.ToplamIadeTutari.ToString("N2") TL
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (yoneticiAsamasinda && (admin || yonetici))
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h2 class="h5 fw-bold mb-1">Yönetici İşlemleri</h2>
+
+                <p class="text-muted mb-0">
+                    İade talebini muhasebe kontrolüne gönderebilir veya
+                    neden belirterek reddedebilirsiniz.
+                </p>
+            </div>
+
+            <div class="card-body px-4 pb-4">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <form asp-action="YoneticiOnayla"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              id="yoneticiOnayFormu">
+
+                            <div class="alert alert-info mb-3">
+                                Onaylanan talep muhasebe kontrolüne gönderilecektir.
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    data-confirm-form="yoneticiOnayFormu"
+                                    data-confirm-title="Yönetici Onayı"
+                                    data-confirm-type="primary"
+                                    data-confirm-message="Bu iade talebini yönetici onayından geçirip muhasebe kontrolüne göndermek istiyor musunuz?">
+                                Yönetici Onayla
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <form asp-action="Reddet"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              id="yoneticiReddetFormu">
+
+                            <label for="yoneticiRedNedeni"
+                                   class="form-label fw-semibold">
+                                Red Nedeni
+                            </label>
+
+                            <textarea name="redNedeni"
+                                      id="yoneticiRedNedeni"
+                                      maxlength="500"
+                                      rows="3"
+                                      required
+                                      class="form-control mb-2"
+                                      placeholder="Talebin reddedilme nedenini yazınız."></textarea>
+
+                            <div id="yoneticiRedNedeniUyari"
+                                 class="text-danger small mb-2 d-none">
+                                Red nedeni zorunludur.
+                            </div>
+
+                            <button type="button"
+                                    id="yoneticiReddetButonu"
+                                    class="btn btn-outline-danger">
+                                Talebi Reddet
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (muhasebeAsamasinda && muhasebe)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h2 class="h5 fw-bold mb-1">Muhasebe İşlemleri</h2>
+
+                <p class="text-muted mb-0">
+                    İade talebini tamamlayarak stok ve finans kayıtlarını
+                    oluşturabilir veya neden belirterek reddedebilirsiniz.
+                </p>
+            </div>
+
+            <div class="card-body px-4 pb-4">
+                <div class="alert alert-warning">
+                    <strong>Önemli:</strong>
+                    Bu işlem tamamlandığında uygun ürünler stoğa geri alınır,
+                    finans hareketi oluşturulur ve iade belgesi üretilir.
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <form asp-action="MuhasebeOnayla"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              id="muhasebeOnayFormu">
+
+                            <button type="button"
+                                    class="btn btn-success"
+                                    data-confirm-form="muhasebeOnayFormu"
+                                    data-confirm-title="Muhasebe Onayı"
+                                    data-confirm-type="success"
+                                    data-confirm-message="Bu iade talebini tamamlamak istiyor musunuz? Bu işlem stok ve finans kayıtları oluşturacaktır.">
+                                Muhasebe Onayıyla Tamamla
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <form asp-action="Reddet"
+                              asp-route-id="@Model.Id"
+                              method="post"
+                              id="muhasebeReddetFormu">
+
+                            <label for="muhasebeRedNedeni"
+                                   class="form-label fw-semibold">
+                                Red Nedeni
+                            </label>
+
+                            <textarea name="redNedeni"
+                                      id="muhasebeRedNedeni"
+                                      maxlength="500"
+                                      rows="3"
+                                      required
+                                      class="form-control mb-2"
+                                      placeholder="Talebin reddedilme nedenini yazınız."></textarea>
+
+                            <div id="muhasebeRedNedeniUyari"
+                                 class="text-danger small mb-2 d-none">
+                                Red nedeni zorunludur.
+                            </div>
+
+                            <button type="button"
+                                    id="muhasebeReddetButonu"
+                                    class="btn btn-outline-danger">
+                                Talebi Reddet
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <div class="row g-4">
         <div class="col-lg-6">
@@ -92,13 +422,59 @@
                         <dd class="col-7">#@Model.SatisId</dd>
 
                         <dt class="col-5">Fatura No</dt>
-                        <dd class="col-7">@(Model.Satis?.FaturaNo ?? "-")</dd>
+                        <dd class="col-7">
+                            @(Model.Satis?.FaturaNo ?? "-")
+                        </dd>
 
                         <dt class="col-5">Ödeme Tipi</dt>
-                        <dd class="col-7">@(Model.OdemeTipiSnapshot ?? "-")</dd>
+                        <dd class="col-7">
+                            @(Model.OdemeTipiSnapshot ?? "-")
+                        </dd>
 
                         <dt class="col-5">Açıklama</dt>
-                        <dd class="col-7">@(Model.Aciklama ?? "-")</dd>
+                        <dd class="col-7">
+                            @(Model.Aciklama ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Yönetici Onaylayan</dt>
+                        <dd class="col-7">
+                            @KullaniciAdi(
+                                Model.YoneticiOnaylayanKullanici)
+                        </dd>
+
+                        <dt class="col-5">Yönetici Onay Tarihi</dt>
+                        <dd class="col-7">
+                            @(Model.YoneticiOnayTarihi?.ToString(
+                                "dd.MM.yyyy HH:mm") ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Muhasebe Onaylayan</dt>
+                        <dd class="col-7">
+                            @KullaniciAdi(
+                                Model.MuhasebeOnaylayanKullanici)
+                        </dd>
+
+                        <dt class="col-5">Muhasebe Onay Tarihi</dt>
+                        <dd class="col-7">
+                            @(Model.MuhasebeOnayTarihi?.ToString(
+                                "dd.MM.yyyy HH:mm") ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Reddeden</dt>
+                        <dd class="col-7">
+                            @KullaniciAdi(Model.ReddedenKullanici)
+                        </dd>
+
+                        <dt class="col-5">Red Tarihi</dt>
+                        <dd class="col-7">
+                            @(Model.RedTarihi?.ToString(
+                                "dd.MM.yyyy HH:mm") ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Red Nedeni</dt>
+                        <dd class="col-7">
+                            @(Model.RedNedeni ?? "-")
+                        </dd>
                     </dl>
                 </div>
             </div>
@@ -114,11 +490,14 @@
                     <dl class="row mb-0">
                         <dt class="col-5">Müşteri</dt>
                         <dd class="col-7">
-                            @(Model.Musteri?.AdSoyad ?? "Nihai Tüketici")
+                            @(Model.Musteri?.AdSoyad ??
+                              "Nihai Tüketici")
                         </dd>
 
                         <dt class="col-5">Telefon</dt>
-                        <dd class="col-7">@(Model.Musteri?.Telefon ?? "-")</dd>
+                        <dd class="col-7">
+                            @(Model.Musteri?.Telefon ?? "-")
+                        </dd>
 
                         <dt class="col-5">Talep Eden Personel</dt>
                         <dd class="col-7">
@@ -127,9 +506,43 @@
 
                         <dt class="col-5">Talep Eden Kullanıcı</dt>
                         <dd class="col-7">
-                            @(Model.TalepEdenKullanici?.AdSoyad
-                              ?? Model.TalepEdenKullanici?.KullaniciAdi
-                              ?? "-")
+                            @KullaniciAdi(Model.TalepEdenKullanici)
+                        </dd>
+
+                        <dt class="col-5">Talep Tarihi</dt>
+                        <dd class="col-7">
+                            @Model.TalepTarihi.ToString(
+                                "dd.MM.yyyy HH:mm")
+                        </dd>
+
+                        <dt class="col-5">İşlem Tipi</dt>
+                        <dd class="col-7">
+                            @(Model.IslemTipi == "Degisim"
+                                ? "Değişim"
+                                : "İade")
+                        </dd>
+
+                        <dt class="col-5">Durum</dt>
+                        <dd class="col-7">
+                            <span class="badge text-bg-@DurumRengi(Model.Durum)">
+                                @DurumMetni(Model.Durum)
+                            </span>
+                        </dd>
+
+                        <dt class="col-5">İade Belge No</dt>
+                        <dd class="col-7">
+                            @(Model.IadeBelgeNo ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Finans Hareketi No</dt>
+                        <dd class="col-7">
+                            @(Model.FinansHareketiId?.ToString() ?? "-")
+                        </dd>
+
+                        <dt class="col-5">Tamamlanma Tarihi</dt>
+                        <dd class="col-7">
+                            @(Model.TamamlanmaTarihi?.ToString(
+                                "dd.MM.yyyy HH:mm") ?? "-")
                         </dd>
                     </dl>
                 </div>
@@ -137,70 +550,107 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mt-4">
-        <div class="card-body">
-            <h2 class="h5 fw-bold mb-3">İade Edilecek Ürünler</h2>
+    <div class="card border-0 shadow-sm mt-4 mb-4 return-detail-products">
+        <div class="card-body p-0">
+            <div class="px-4 pt-4 pb-3 border-bottom">
+                <h2 class="h5 fw-bold mb-1">İade Edilecek Ürünler</h2>
+                <p class="text-muted mb-0">
+                    İade kapsamında değerlendirilen ürün satırları
+                </p>
+            </div>
 
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle return-detail-table">
                     <thead class="table-dark">
                         <tr>
                             <th>Ürün</th>
-                            <th>Barkod</th>
                             <th>İade Adedi</th>
-                            <th>Birim Fiyat</th>
-                            <th>KDV</th>
-                            <th>İndirim</th>
-                            <th>İade Tutarı</th>
+                            <th class="text-end">Birim Fiyat</th>
+                            <th class="text-end">KDV</th>
+                            <th class="text-end">İndirim</th>
+                            <th class="text-end">İade Tutarı</th>
                             <th>Ürün Durumu</th>
                             <th>Stoğa Dönüş</th>
                             <th>İade Nedeni</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @if (Model.Detaylar.Any())
                         {
                             @foreach (var detay in Model.Detaylar)
                             {
                                 <tr>
-                                    <td>
-                                        <strong>@detay.UrunAdiSnapshot</strong>
-                                        <div class="small text-muted">
-                                            @detay.BedenSnapshot |
-                                            @detay.RenkSnapshot
+                                    <td class="return-detail-product">
+                                        <strong>
+                                            @detay.UrunAdiSnapshot
+                                        </strong>
+
+                                        <div class="return-detail-meta">
+                                            Barkod: @(detay.BarkodSnapshot ?? "-")
+                                            · Beden: @(detay.BedenSnapshot ?? "-")
+                                            · Renk: @(detay.RenkSnapshot ?? "-")
                                         </div>
                                     </td>
-                                    <td>@(detay.BarkodSnapshot ?? "-")</td>
+
                                     <td>@detay.IadeAdedi</td>
-                                    <td>@detay.BirimFiyat.ToString("N2") TL</td>
-                                    <td>
+
+                                    <td class="return-detail-money">
+                                        @detay.BirimFiyat.ToString("N2") TL
+                                    </td>
+
+                                    <td class="return-detail-money">
                                         %@detay.KdvOrani.ToString("N2")
+
                                         <div class="small text-muted">
                                             @detay.KdvTutari.ToString("N2") TL
                                         </div>
                                     </td>
-                                    <td>
+
+                                    <td class="return-detail-money">
                                         @detay.SatirIndirimTutari.ToString("N2") TL
                                     </td>
-                                    <td class="fw-semibold">
+
+                                    <td class="return-detail-money return-detail-total">
                                         @detay.VergiDahilTutar.ToString("N2") TL
                                     </td>
-                                    <td>@UrunDurumuMetni(detay.UrunDurumu)</td>
+
                                     <td>
-                                        <span class="badge text-bg-@(detay.StogaGeriAlinsinMi ? "success" : "secondary")">
-                                            @(detay.StogaGeriAlinsinMi ? "Evet" : "Hayır")
+                                        <span class="badge text-bg-@UrunDurumuRengi(detay.UrunDurumu)">
+                                            @UrunDurumuMetni(detay.UrunDurumu)
                                         </span>
                                     </td>
-                                    <td>@(detay.IadeNedeni ?? "-")</td>
+
+                                    <td>
+                                        <span class="badge text-bg-@(detay.StogaGeriAlinsinMi ? "success" : "secondary")">
+                                            @(detay.StogaGeriAlinsinMi
+                                                ? "Evet"
+                                                : "Hayır")
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @if (string.IsNullOrWhiteSpace(
+                                            detay.IadeNedeni))
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="return-reason">
+                                                @detay.IadeNedeni
+                                            </div>
+                                        }
+                                    </td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="10"
+                                <td colspan="9"
                                     class="text-center text-muted py-4">
-                                    Talebe bağlı ürün bulunamadı.
+                                    Bu talebe bağlı ürün bulunamadı.
                                 </td>
                             </tr>
                         }
@@ -210,45 +660,58 @@
         </div>
     </div>
 
-    <div class="row g-4 mt-1">
+    <div class="row g-4">
         <div class="col-lg-7">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <h2 class="h5 fw-bold mb-3">Hareket Geçmişi</h2>
 
                     <div class="table-responsive">
-                        <table class="table table-sm align-middle">
+                        <table class="table table-sm align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Tarih</th>
                                     <th>Kullanıcı</th>
-                                    <th>Önceki Durum</th>
-                                    <th>Yeni Durum</th>
+                                    <th>Önceki</th>
+                                    <th>Yeni</th>
                                     <th>Açıklama</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 @if (Model.Hareketler.Any())
                                 {
-                                    @foreach (var hareket in Model.Hareketler
-                                        .OrderByDescending(x => x.IslemTarihi))
+                                    @foreach (var hareket in
+                                        Model.Hareketler
+                                            .OrderByDescending(
+                                                x => x.IslemTarihi))
                                     {
                                         <tr>
                                             <td>
-                                                @hareket.IslemTarihi.ToString("dd.MM.yyyy HH:mm")
+                                                @hareket.IslemTarihi.ToString(
+                                                    "dd.MM.yyyy HH:mm")
                                             </td>
+
                                             <td>
-                                                @(hareket.Kullanici?.AdSoyad
-                                                  ?? hareket.Kullanici?.KullaniciAdi
-                                                  ?? "-")
+                                                @KullaniciAdi(
+                                                    hareket.Kullanici)
                                             </td>
+
                                             <td>
                                                 @(hareket.OncekiDurum is null
                                                     ? "-"
-                                                    : DurumMetni(hareket.OncekiDurum))
+                                                    : DurumMetni(
+                                                        hareket.OncekiDurum))
                                             </td>
-                                            <td>@DurumMetni(hareket.YeniDurum)</td>
-                                            <td>@(hareket.Aciklama ?? "-")</td>
+
+                                            <td>
+                                                @DurumMetni(
+                                                    hareket.YeniDurum)
+                                            </td>
+
+                                            <td>
+                                                @(hareket.Aciklama ?? "-")
+                                            </td>
                                         </tr>
                                     }
                                 }
@@ -256,8 +719,8 @@
                                 {
                                     <tr>
                                         <td colspan="5"
-                                            class="text-center text-muted py-3">
-                                            Hareket kaydı bulunamadı.
+                                            class="text-center text-muted py-4">
+                                            Henüz hareket kaydı bulunmuyor.
                                         </td>
                                     </tr>
                                 }
@@ -273,23 +736,33 @@
                 <div class="card-body">
                     <h2 class="h5 fw-bold mb-3">İade Toplamları</h2>
 
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>Vergi Hariç Toplam</span>
-                        <strong>@Model.VergiHaricToplam.ToString("N2") TL</strong>
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom">
+                        <span>Vergi Hariç</span>
+
+                        <strong>
+                            @Model.VergiHaricToplam.ToString("N2") TL
+                        </strong>
                     </div>
 
-                    <div class="d-flex justify-content-between py-2 border-bottom">
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom">
                         <span>Toplam KDV</span>
-                        <strong>@Model.ToplamKdvTutari.ToString("N2") TL</strong>
+
+                        <strong>
+                            @Model.ToplamKdvTutari.ToString("N2") TL
+                        </strong>
                     </div>
 
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                        <span>Vergi Dahil Toplam</span>
-                        <strong>@Model.VergiDahilToplam.ToString("N2") TL</strong>
+                    <div class="d-flex justify-content-between gap-3 py-2 border-bottom">
+                        <span>Vergi Dahil</span>
+
+                        <strong>
+                            @Model.VergiDahilToplam.ToString("N2") TL
+                        </strong>
                     </div>
 
-                    <div class="d-flex justify-content-between py-3 fs-5">
-                        <span class="fw-bold">Toplam İade Tutarı</span>
+                    <div class="d-flex justify-content-between align-items-center gap-3 py-3 fs-5">
+                        <span class="fw-bold">Toplam İade</span>
+
                         <strong class="text-success">
                             @Model.ToplamIadeTutari.ToString("N2") TL
                         </strong>
@@ -299,3 +772,215 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade"
+     id="islemOnayModal"
+     tabindex="-1"
+     aria-labelledby="islemOnayModalBaslik"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <div>
+                    <div class="small text-muted mb-1">
+                        Giyim Mağazası ERP
+                    </div>
+
+                    <h2 class="modal-title fs-5"
+                        id="islemOnayModalBaslik">
+                        İşlemi Onayla
+                    </h2>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Kapat">
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p id="islemOnayModalMetni" class="mb-3"></p>
+
+                <div class="alert alert-light border mb-0">
+                    Bu işlem kayıt altına alınacaktır.
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        id="modalOnayButonu">
+                    Onayla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const modalElement =
+                document.getElementById("islemOnayModal");
+
+            if (!modalElement || typeof bootstrap === "undefined") {
+                return;
+            }
+
+            const modal =
+                bootstrap.Modal.getOrCreateInstance(modalElement);
+
+            const modalBaslik =
+                document.getElementById("islemOnayModalBaslik");
+
+            const modalMetni =
+                document.getElementById("islemOnayModalMetni");
+
+            const modalOnayButonu =
+                document.getElementById("modalOnayButonu");
+
+            let onaylanacakForm = null;
+
+            function modalAc(
+                formId,
+                baslik,
+                mesaj,
+                tip) {
+
+                const form = document.getElementById(formId);
+
+                if (!form) {
+                    return;
+                }
+
+                onaylanacakForm = form;
+                modalBaslik.textContent = baslik;
+                modalMetni.textContent = mesaj;
+
+                modalOnayButonu.classList.remove(
+                    "btn-primary",
+                    "btn-success",
+                    "btn-danger");
+
+                const izinliTipler = [
+                    "primary",
+                    "success",
+                    "danger"
+                ];
+
+                const butonTipi =
+                    izinliTipler.includes(tip)
+                        ? tip
+                        : "primary";
+
+                modalOnayButonu.classList.add(
+                    `btn-${butonTipi}`);
+
+                modalOnayButonu.disabled = false;
+                modal.show();
+            }
+
+            document
+                .querySelectorAll("[data-confirm-form]")
+                .forEach(buton => {
+                    buton.addEventListener("click", () => {
+                        modalAc(
+                            buton.dataset.confirmForm,
+                            buton.dataset.confirmTitle
+                                ?? "İşlemi Onayla",
+                            buton.dataset.confirmMessage
+                                ?? "Bu işlemi gerçekleştirmek istiyor musunuz?",
+                            buton.dataset.confirmType
+                                ?? "primary");
+                    });
+                });
+
+            function reddetmeIsleminiHazirla(
+                butonId,
+                textareaId,
+                uyariId,
+                formId,
+                baslik,
+                mesaj) {
+
+                const buton =
+                    document.getElementById(butonId);
+
+                const textarea =
+                    document.getElementById(textareaId);
+
+                const uyari =
+                    document.getElementById(uyariId);
+
+                if (!buton || !textarea || !uyari) {
+                    return;
+                }
+
+                textarea.addEventListener("input", () => {
+                    if (textarea.value.trim()) {
+                        uyari.classList.add("d-none");
+                        textarea.classList.remove("is-invalid");
+                    }
+                });
+
+                buton.addEventListener("click", () => {
+                    if (!textarea.value.trim()) {
+                        uyari.classList.remove("d-none");
+                        textarea.classList.add("is-invalid");
+                        textarea.focus();
+                        return;
+                    }
+
+                    uyari.classList.add("d-none");
+                    textarea.classList.remove("is-invalid");
+
+                    modalAc(
+                        formId,
+                        baslik,
+                        mesaj,
+                        "danger");
+                });
+            }
+
+            reddetmeIsleminiHazirla(
+                "yoneticiReddetButonu",
+                "yoneticiRedNedeni",
+                "yoneticiRedNedeniUyari",
+                "yoneticiReddetFormu",
+                "Talep Reddetme",
+                "Bu iade talebini reddetmek istediğinizden emin misiniz?");
+
+            reddetmeIsleminiHazirla(
+                "muhasebeReddetButonu",
+                "muhasebeRedNedeni",
+                "muhasebeRedNedeniUyari",
+                "muhasebeReddetFormu",
+                "Talep Reddetme",
+                "Bu iade talebini reddetmek istediğinizden emin misiniz?");
+
+            modalOnayButonu.addEventListener("click", () => {
+                if (!onaylanacakForm) {
+                    return;
+                }
+
+                modalOnayButonu.disabled = true;
+                onaylanacakForm.submit();
+            });
+
+            modalElement.addEventListener(
+                "hidden.bs.modal",
+                () => {
+                    onaylanacakForm = null;
+                    modalOnayButonu.disabled = false;
+                });
+        })();
+    </script>
+}

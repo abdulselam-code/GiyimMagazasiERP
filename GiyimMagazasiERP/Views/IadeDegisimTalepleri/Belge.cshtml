@@ -1,0 +1,926 @@
+﻿@model GiyimMagazasiERP.Models.IadeDegisimTalebi
+
+@{
+    ViewData["Title"] = "İade Belgesi";
+
+    var siraNo = 1;
+
+    string KullaniciAdi(
+        GiyimMagazasiERP.Models.Kullanici? kullanici)
+    {
+        return kullanici?.AdSoyad
+               ?? kullanici?.KullaniciAdi
+               ?? "-";
+    }
+
+    string UrunDurumu(string durum) => durum switch
+    {
+        "Satilabilir" => "Satılabilir",
+        "Hasarli" => "Hasarlı",
+        "IncelemeGerekli" => "İnceleme Gerekli",
+        _ => durum
+    };
+
+    string UrunDurumuRengi(string durum) => durum switch
+    {
+        "Satilabilir" => "success",
+        "Hasarli" => "danger",
+        "IncelemeGerekli" => "warning",
+        _ => "secondary"
+    };
+
+    string IslemTipi(string tip) => tip switch
+    {
+        "Iade" => "İade",
+        "Degisim" => "Değişim",
+        _ => tip
+    };
+}
+
+<style>
+    .return-page {
+        min-height: 100vh;
+        padding: 28px 16px;
+        color: #273444;
+        background: #edf1f5;
+    }
+
+    .return-actions,
+    .return-document {
+        width: 100%;
+        max-width: 1180px;
+        margin-right: auto;
+        margin-left: auto;
+    }
+
+    .return-actions {
+        margin-bottom: 16px;
+    }
+
+    .return-document {
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #d9e0e7;
+        box-shadow: 0 14px 38px rgba(15, 23, 42, .10);
+    }
+
+    .return-header {
+        display: grid;
+        grid-template-columns: 1.25fr .9fr;
+        gap: 24px;
+        padding: 28px 32px;
+        border-top: 5px solid #9f1239;
+        border-bottom: 1px solid #d9e0e7;
+    }
+
+    .return-brand {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .return-brand h1 {
+        margin: 0 0 7px;
+        color: #172033;
+        font-size: 28px;
+        font-weight: 800;
+    }
+
+    .return-brand h2 {
+        margin: 0 0 7px;
+        color: #9f1239;
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    .return-brand p {
+        max-width: 670px;
+        margin: 0;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .return-meta {
+        padding: 17px;
+        background: #f8fafc;
+        border: 1px solid #dbe2e9;
+        border-radius: 6px;
+    }
+
+    .return-meta h3 {
+        margin: 0 0 11px;
+        padding-bottom: 8px;
+        color: #172033;
+        border-bottom: 1px solid #dbe2e9;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .return-meta-row {
+        display: grid;
+        grid-template-columns: 125px minmax(0, 1fr);
+        gap: 10px;
+        padding: 4px 0;
+        font-size: 13px;
+    }
+
+    .return-meta-label {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .return-meta-value {
+        color: #1f2937;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .return-status {
+        display: inline-flex;
+        width: fit-content;
+        padding: 3px 8px;
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .return-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 15px;
+        padding: 22px 32px;
+        background: #fbfcfd;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .return-info-box {
+        min-width: 0;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #dfe5eb;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .return-info-box h4,
+    .return-note h4,
+    .return-history h4,
+    .return-signature h4 {
+        margin: 0 0 10px;
+        padding-bottom: 7px;
+        color: #172033;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .return-info-box p {
+        margin: 0 0 6px;
+        color: #526071;
+    }
+
+    .return-info-box strong {
+        color: #273444;
+    }
+
+    .return-section {
+        padding: 24px 32px;
+    }
+
+    .return-section-title {
+        margin: 0 0 12px;
+        color: #172033;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .return-table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #d8dee6;
+        border-radius: 6px;
+    }
+
+    .return-table {
+        width: 100%;
+        min-width: 1100px;
+        margin: 0;
+        font-size: 12.5px;
+    }
+
+    .return-table th {
+        padding: 9px 7px;
+        color: #fff;
+        background: #27364a;
+        white-space: nowrap;
+        font-size: 11px;
+    }
+
+    .return-table td {
+        padding: 8px 7px;
+        color: #394657;
+        vertical-align: middle;
+    }
+
+    .return-product {
+        min-width: 150px;
+        color: #172033 !important;
+        font-weight: 700;
+    }
+
+    .return-money {
+        white-space: nowrap;
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .return-line-total {
+        color: #15803d !important;
+        font-weight: 800;
+    }
+
+    .return-state-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 7px;
+        border-radius: 4px;
+        font-size: 10.5px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .return-state-success {
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+    }
+
+    .return-state-danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+    }
+
+    .return-state-warning {
+        color: #92400e;
+        background: #fef3c7;
+        border: 1px solid #fde68a;
+    }
+
+    .return-state-secondary {
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+    }
+
+    .return-reason-text {
+        min-width: 150px;
+        color: #526071;
+        font-size: 11.5px;
+        line-height: 1.35;
+    }
+
+    .return-bottom-grid {
+        display: grid;
+        grid-template-columns: 1.15fr .85fr;
+        align-items: start;
+        gap: 18px;
+        padding: 0 32px 20px;
+    }
+
+    .return-left-bottom {
+        display: grid;
+        gap: 12px;
+    }
+
+    .return-note,
+    .return-history,
+    .return-summary,
+    .return-signature {
+        padding: 16px;
+        background: #fff;
+        border: 1px solid #dfe5eb;
+        border-radius: 6px;
+    }
+
+    .return-note p {
+        margin: 0;
+        color: #526071;
+        line-height: 1.45;
+    }
+
+    .return-history ul {
+        margin: 0;
+        padding-left: 19px;
+    }
+
+    .return-history li {
+        margin-bottom: 5px;
+        color: #526071;
+    }
+
+    .return-summary {
+        background: #f8fafc;
+    }
+
+    .return-summary::before {
+        display: block;
+        margin-bottom: 9px;
+        color: #172033;
+        content: "İade Toplamları";
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .return-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 8px 0;
+        color: #526071;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .return-summary-row strong {
+        color: #273444;
+        white-space: nowrap;
+    }
+
+    .return-total {
+        margin-top: 9px;
+        padding: 12px 9px;
+        color: #172033;
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        border-radius: 5px;
+        font-size: 15px;
+        font-weight: 800;
+    }
+
+    .return-total strong {
+        color: #15803d;
+        font-size: 17px;
+    }
+
+    .return-signature {
+        width: 300px;
+        min-height: 110px;
+        margin: 0 32px 26px auto;
+        text-align: center;
+    }
+
+    .return-signature-line {
+        width: 82%;
+        margin: 48px auto 0;
+        border-top: 1px solid #64748b;
+    }
+
+    @@media (max-width: 992px) {
+        .return-header,
+        .return-info-grid,
+        .return-bottom-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .return-signature {
+            width: auto;
+            margin-right: 32px;
+        }
+    }
+
+    @@media print {
+        @@page {
+            size: A4;
+            margin: 6mm;
+        }
+
+        .no-print,
+        .navbar,
+        nav,
+        header:not(.return-header),
+        footer {
+            display: none !important;
+        }
+
+        html,
+        body,
+        .return-page,
+        .return-document {
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        html,
+        body,
+        main,
+        .container {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body {
+            font-size: 9.5px !important;
+            line-height: 1.15 !important;
+        }
+
+        .return-page {
+            min-height: 0;
+            padding: 0;
+        }
+
+        .return-document {
+            max-width: none;
+            margin: 0;
+            overflow: visible;
+            border: 1px solid #111827;
+            box-shadow: none;
+        }
+
+        .return-header {
+            grid-template-columns: 1.2fr .9fr;
+            gap: 7px;
+            padding: 8px 10px;
+            border-top-width: 2px;
+        }
+
+        .return-brand h1 {
+            margin-bottom: 2px;
+            font-size: 17px;
+        }
+
+        .return-brand h2 {
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+
+        .return-brand p {
+            font-size: 8px;
+        }
+
+        .return-meta {
+            padding: 6px 8px;
+            border-radius: 0;
+        }
+
+        .return-meta h3 {
+            margin-bottom: 4px;
+            padding-bottom: 3px;
+            font-size: 10px;
+        }
+
+        .return-meta-row {
+            grid-template-columns: 78px minmax(0, 1fr);
+            gap: 4px;
+            padding: 1px 0;
+            font-size: 8px;
+        }
+
+        .return-status {
+            padding: 1px 4px;
+            font-size: 7px;
+        }
+
+        .return-info-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 5px;
+            padding: 7px 10px;
+        }
+
+        .return-info-box {
+            padding: 6px;
+            border-radius: 0;
+            font-size: 8px;
+            line-height: 1.15;
+        }
+
+        .return-info-box h4,
+        .return-note h4,
+        .return-history h4,
+        .return-signature h4 {
+            margin-bottom: 3px;
+            padding-bottom: 2px;
+            font-size: 9px;
+        }
+
+        .return-info-box p {
+            margin-bottom: 1px;
+        }
+
+        .return-section {
+            padding: 7px 10px;
+        }
+
+        .return-section-title {
+            margin-bottom: 4px;
+            font-size: 10px;
+        }
+
+        .return-table-wrapper {
+            overflow: visible;
+            border-radius: 0;
+        }
+
+        .return-table {
+            min-width: 0;
+            table-layout: auto;
+            font-size: 7.5px;
+            line-height: 1.1;
+        }
+
+        .return-table th,
+        .return-table td {
+            padding: 2px 3px !important;
+        }
+
+        .return-product {
+            min-width: 0;
+        }
+
+        .return-state-badge {
+            padding: 1px 3px;
+            font-size: 6.8px;
+        }
+
+        .return-reason-text {
+            min-width: 0;
+            font-size: 7px;
+            line-height: 1.1;
+        }
+
+        .return-bottom-grid {
+            grid-template-columns: 1.1fr .9fr;
+            gap: 5px;
+            padding: 0 10px 5px;
+        }
+
+        .return-left-bottom {
+            gap: 4px;
+        }
+
+        .return-note,
+        .return-history,
+        .return-summary {
+            padding: 5px 7px;
+            border-radius: 0;
+        }
+
+        .return-history li {
+            margin-bottom: 1px;
+        }
+
+        .return-summary::before {
+            margin-bottom: 3px;
+            font-size: 9px;
+        }
+
+        .return-summary-row {
+            padding: 2px 0;
+        }
+
+        .return-total {
+            margin-top: 3px;
+            padding: 4px;
+            border-radius: 0;
+            font-size: 9px;
+        }
+
+        .return-total strong {
+            font-size: 10px;
+        }
+
+        .return-signature {
+            width: 210px;
+            min-height: 55px;
+            margin: 0 10px 3px auto;
+            padding: 4px;
+            border-radius: 0;
+        }
+
+        .return-signature-line {
+            margin-top: 24px;
+        }
+
+        tr,
+        .return-info-box,
+        .return-note,
+        .return-history,
+        .return-summary,
+        .return-signature {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+
+<div class="return-page">
+    <div class="return-actions d-flex flex-wrap justify-content-between align-items-center gap-3 no-print">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İade Belgesi</h1>
+            <p class="text-muted mb-0">
+                Tamamlanan iade işleminin yazdırılabilir sistem belgesi
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()">
+                Yazdır
+            </button>
+
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="btn btn-outline-secondary">
+                Detaya Dön
+            </a>
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                İade Taleplerine Dön
+            </a>
+        </div>
+    </div>
+
+    <article class="return-document">
+        <header class="return-header">
+            <div class="return-brand">
+                <h1>Giyim Mağazası ERP</h1>
+                <h2>İADE BELGESİ</h2>
+
+                <p>
+                    Bu belge, Giyim Mağazası ERP sistemi içinde oluşturulmuş
+                    uygulama içi iade işlem belgesidir. Resmi e-Fatura/e-Arşiv
+                    yerine geçmez.
+                </p>
+            </div>
+
+            <div class="return-meta">
+                <h3>Belge Bilgileri</h3>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">İade Belge No</span>
+                    <span class="return-meta-value">
+                        @(Model.IadeBelgeNo ?? "-")
+                    </span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">Talep No</span>
+                    <span class="return-meta-value">@Model.TalepNo</span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">Satış No</span>
+                    <span class="return-meta-value">#@Model.SatisId</span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">Fatura No</span>
+                    <span class="return-meta-value">
+                        @(Model.Satis?.FaturaNo ?? "-")
+                    </span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">İade Tarihi</span>
+                    <span class="return-meta-value">
+                        @(Model.TamamlanmaTarihi?.ToString(
+                            "dd.MM.yyyy HH:mm") ?? "-")
+                    </span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">İşlem Tipi</span>
+                    <span class="return-meta-value">
+                        @IslemTipi(Model.IslemTipi)
+                    </span>
+                </div>
+
+                <div class="return-meta-row">
+                    <span class="return-meta-label">Durum</span>
+                    <span class="return-status">Tamamlandı</span>
+                </div>
+            </div>
+        </header>
+
+        <section class="return-info-grid">
+            <div class="return-info-box">
+                <h4>Sistem / Mağaza Bilgileri</h4>
+                <p><strong>Giyim Mağazası ERP</strong></p>
+                <p>Uygulama içi iade işlem belgesi</p>
+                <p>
+                    <strong>Talep Tarihi:</strong>
+                    @Model.TalepTarihi.ToString("dd.MM.yyyy HH:mm")
+                </p>
+            </div>
+
+            <div class="return-info-box">
+                <h4>Müşteri Bilgileri</h4>
+                <p>
+                    <strong>Müşteri:</strong>
+                    @(Model.Musteri?.AdSoyad ?? "Nihai Tüketici")
+                </p>
+                <p>
+                    <strong>Telefon:</strong>
+                    @(Model.Musteri?.Telefon ?? "-")
+                </p>
+                <p>
+                    <strong>E-posta:</strong>
+                    @(Model.Musteri?.Email ?? "-")
+                </p>
+                <p>
+                    <strong>Adres:</strong>
+                    @(Model.Musteri?.Adres ?? "-")
+                </p>
+            </div>
+
+            <div class="return-info-box">
+                <h4>Talep ve Personel Bilgileri</h4>
+                <p>
+                    <strong>Talep Eden Kullanıcı:</strong>
+                    @KullaniciAdi(Model.TalepEdenKullanici)
+                </p>
+                <p>
+                    <strong>Talep Eden Personel:</strong>
+                    @(Model.TalepEdenPersonel?.AdSoyad ?? "-")
+                </p>
+                <p>
+                    <strong>Yönetici Onaylayan:</strong>
+                    @KullaniciAdi(Model.YoneticiOnaylayanKullanici)
+                </p>
+                <p>
+                    <strong>Muhasebe Onaylayan:</strong>
+                    @KullaniciAdi(Model.MuhasebeOnaylayanKullanici)
+                </p>
+                <p>
+                    <strong>Ödeme Tipi:</strong>
+                    @(Model.OdemeTipiSnapshot ?? "-")
+                </p>
+            </div>
+        </section>
+
+        <section class="return-section">
+            <h3 class="return-section-title">İade Edilen Ürünler</h3>
+
+            <div class="return-table-wrapper">
+                <table class="table table-bordered return-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Ürün</th>
+                            <th>Barkod</th>
+                            <th>Beden</th>
+                            <th>Renk</th>
+                            <th class="text-end">Adet</th>
+                            <th class="text-end">Birim Fiyat</th>
+                            <th class="text-end">İndirim</th>
+                            <th class="text-end">KDV</th>
+                            <th class="text-end">İade Tutarı</th>
+                            <th>Ürün Durumu</th>
+                            <th>Stoğa Dönüş</th>
+                            <th>İade Nedeni</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @if (Model.Detaylar.Any())
+                        {
+                            @foreach (var detay in Model.Detaylar)
+                            {
+                                <tr>
+                                    <td>@(siraNo++)</td>
+                                    <td class="return-product">
+                                        @detay.UrunAdiSnapshot
+                                    </td>
+                                    <td>@(detay.BarkodSnapshot ?? "-")</td>
+                                    <td>@(detay.BedenSnapshot ?? "-")</td>
+                                    <td>@(detay.RenkSnapshot ?? "-")</td>
+                                    <td class="text-end">@detay.IadeAdedi</td>
+                                    <td class="return-money">
+                                        @detay.BirimFiyat.ToString("N2") TL
+                                    </td>
+                                    <td class="return-money">
+                                        @detay.SatirIndirimTutari.ToString("N2") TL
+                                    </td>
+                                    <td class="return-money">
+                                        %@detay.KdvOrani.ToString("N2")
+                                        <div>
+                                            @detay.KdvTutari.ToString("N2") TL
+                                        </div>
+                                    </td>
+                                    <td class="return-money return-line-total">
+                                        @detay.VergiDahilTutar.ToString("N2") TL
+                                    </td>
+                                    <td>
+                                        <span class="return-state-badge return-state-@UrunDurumuRengi(detay.UrunDurumu)">
+                                            @UrunDurumu(detay.UrunDurumu)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="return-state-badge return-state-@(detay.StogaGeriAlinsinMi ? "success" : "secondary")">
+                                            @(detay.StogaGeriAlinsinMi
+                                                ? "Evet"
+                                                : "Hayır")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="return-reason-text">
+                                            @(detay.IadeNedeni ?? "-")
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="13"
+                                    class="text-center text-muted">
+                                    İade ürün kaydı bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="return-bottom-grid">
+            <div class="return-left-bottom">
+                <div class="return-note">
+                    <h4>Açıklama</h4>
+                    <p>@(Model.Aciklama ?? "Açıklama bulunmuyor.")</p>
+                </div>
+
+                <div class="return-history">
+                    <h4>Hareket Özeti</h4>
+
+                    @if (Model.Hareketler.Any())
+                    {
+                        <ul>
+                            @foreach (var hareket in
+                                Model.Hareketler
+                                    .OrderBy(x => x.IslemTarihi))
+                            {
+                                <li>
+                                    @hareket.IslemTarihi.ToString(
+                                        "dd.MM.yyyy HH:mm")
+                                    -
+                                    @(hareket.Aciklama ?? hareket.YeniDurum)
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted">
+                            Hareket kaydı bulunmuyor.
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <div class="return-summary">
+                <div class="return-summary-row">
+                    <span>Vergi Hariç Toplam</span>
+                    <strong>
+                        @Model.VergiHaricToplam.ToString("N2") TL
+                    </strong>
+                </div>
+
+                <div class="return-summary-row">
+                    <span>Toplam KDV</span>
+                    <strong>
+                        @Model.ToplamKdvTutari.ToString("N2") TL
+                    </strong>
+                </div>
+
+                <div class="return-summary-row">
+                    <span>Vergi Dahil Toplam</span>
+                    <strong>
+                        @Model.VergiDahilToplam.ToString("N2") TL
+                    </strong>
+                </div>
+
+                <div class="return-summary-row return-total">
+                    <span>Toplam İade Tutarı</span>
+                    <strong>
+                        @Model.ToplamIadeTutari.ToString("N2") TL
+                    </strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="return-signature">
+            <h4>Yetkili İmza / Kaşe</h4>
+            <div class="return-signature-line"></div>
+        </section>
+    </article>
+</div>

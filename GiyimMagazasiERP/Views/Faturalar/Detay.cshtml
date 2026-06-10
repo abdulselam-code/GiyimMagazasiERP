@@ -763,6 +763,19 @@
         </div>
 
         <div class="d-flex flex-wrap gap-2">
+            @if (User.IsInRole("Admin") ||
+                 User.IsInRole("Yonetici") ||
+                 User.IsInRole("Kasiyer") ||
+                 User.IsInRole("Personel"))
+            {
+                <a asp-controller="IadeDegisimTalepleri"
+                   asp-action="Create"
+                   asp-route-satisId="@Model.SatisId"
+                   class="btn btn-outline-danger no-print">
+                    İade Talebi Oluştur
+                </a>
+            }
+
             <button type="button"
                     class="btn btn-primary"
                     onclick="window.print()">

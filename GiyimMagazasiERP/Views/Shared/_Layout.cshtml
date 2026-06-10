@@ -2,6 +2,7 @@
 
 @{
     var aktifController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var aktifAction = ViewContext.RouteData.Values["action"]?.ToString();
 
     var girisVarMi = User.Identity?.IsAuthenticated == true;
 
@@ -241,10 +242,26 @@
                                         @if (admin || yonetici || muhasebe || depo)
                                         {
                                             <li>
-                                                <a class="dropdown-item @(aktifController == "IadeDegisimTalepleri" ? "active" : "")"
+                                                <a class="dropdown-item @(
+                                                    aktifController == "IadeDegisimTalepleri" &&
+                                                    aktifAction == "Index"
+                                                        ? "active"
+                                                        : "")"
                                                    asp-controller="IadeDegisimTalepleri"
                                                    asp-action="Index">
                                                     İade / Değişim Talepleri
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(
+                                                    aktifController == "IadeDegisimTalepleri" &&
+                                                    aktifAction == "IadeBelgeleri"
+                                                        ? "active"
+                                                        : "")"
+                                                   asp-controller="IadeDegisimTalepleri"
+                                                   asp-action="IadeBelgeleri">
+                                                    İade Belgeleri
                                                 </a>
                                             </li>
                                         }
@@ -252,7 +269,11 @@
                                         @if (admin || yonetici || kasiyer || personel)
                                         {
                                             <li>
-                                                <a class="dropdown-item @(aktifController == "IadeDegisimTalepleri" ? "active" : "")"
+                                                <a class="dropdown-item @(
+                                                    aktifController == "IadeDegisimTalepleri" &&
+                                                    aktifAction == "BenimTaleplerim"
+                                                        ? "active"
+                                                        : "")"
                                                    asp-controller="IadeDegisimTalepleri"
                                                    asp-action="BenimTaleplerim">
                                                     Benim İade Taleplerim

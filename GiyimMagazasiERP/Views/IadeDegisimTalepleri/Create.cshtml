@@ -1,4 +1,4 @@
-﻿@model GiyimMagazasiERP.ViewModels.IadeDegisimTalepOlusturViewModel
+@model GiyimMagazasiERP.ViewModels.IadeDegisimTalepOlusturViewModel
 
 @{
     ViewData["Title"] = "İade Talebi Oluştur";
@@ -6,12 +6,384 @@
     var satisToplami = ViewData["SatisToplami"] as decimal? ?? 0;
 }
 
-<div class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
-        <div>
+<style>
+    .return-create-page {
+        --return-border: #dce3ea;
+        --return-text: #1f2937;
+        --return-muted: #64748b;
+        --return-soft: #f8fafc;
+        --return-primary: #2563eb;
+        --return-success: #15803d;
+    }
+
+    .return-page-heading {
+        max-width: 720px;
+    }
+
+    .return-info-alert {
+        border: 1px solid #bfdbfe;
+        border-left: 4px solid var(--return-primary);
+        background: #eff6ff;
+        color: #1e3a5f;
+    }
+
+    .return-sale-card,
+    .return-products-card,
+    .return-submit-card {
+        border: 1px solid var(--return-border) !important;
+    }
+
+    .return-sale-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .return-sale-stat {
+        min-width: 0;
+        padding: 14px;
+        background: var(--return-soft);
+        border: 1px solid #e7ecf1;
+        border-radius: 6px;
+    }
+
+    .return-sale-stat span {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--return-muted);
+        font-size: .75rem;
+        font-weight: 600;
+    }
+
+    .return-sale-stat strong {
+        display: block;
+        color: var(--return-text);
+        font-size: .92rem;
+        overflow-wrap: anywhere;
+    }
+
+    .return-sale-stat.is-total {
+        background: #ecfdf5;
+        border-color: #bbf7d0;
+    }
+
+    .return-sale-stat.is-total strong {
+        color: var(--return-success);
+        font-size: 1.05rem;
+    }
+
+    .return-products-card {
+        overflow: hidden;
+    }
+
+    .return-products-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 20px 22px;
+        background: #fff;
+        border-bottom: 1px solid var(--return-border);
+    }
+
+    .return-selection-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .return-summary-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 5px 10px;
+        color: #334155;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 5px;
+        font-size: .8rem;
+        font-weight: 700;
+    }
+
+    .return-summary-badge strong {
+        margin-left: 5px;
+        color: var(--return-primary);
+    }
+
+    .return-product-list {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+        background: #f4f7fa;
+    }
+
+    .return-product-card {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(260px, 1.15fr) minmax(300px, .9fr) minmax(360px, 1.25fr);
+        gap: 18px;
+        align-items: stretch;
+        padding: 18px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid var(--return-border);
+        border-left: 4px solid transparent;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+
+    .return-product-card:not(.is-disabled):hover {
+        border-color: #93c5fd;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, .07);
+    }
+
+    .return-product-card.is-selected {
+        background: #f0fdf4;
+        border-color: #86efac;
+        border-left-color: #16a34a;
+        box-shadow: 0 8px 22px rgba(22, 163, 74, .09);
+    }
+
+    .return-product-card.is-disabled {
+        background: #f8fafc;
+        cursor: default;
+        opacity: .72;
+    }
+
+    .return-selected-label {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: none;
+        padding: 3px 8px;
+        color: #166534;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        border-radius: 4px;
+        font-size: .7rem;
+        font-weight: 800;
+    }
+
+    .return-product-card.is-selected .return-selected-label {
+        display: inline-flex;
+    }
+
+    .return-product-main {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 12px;
+        align-content: start;
+        min-width: 0;
+    }
+
+    .return-product-check {
+        width: 1.3rem;
+        height: 1.3rem;
+        margin-top: 2px;
+        cursor: pointer;
+    }
+
+    .return-product-name {
+        padding-right: 54px;
+        color: #172033;
+        font-size: 1rem;
+        font-weight: 800;
+        line-height: 1.35;
+    }
+
+    .return-meta-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .product-meta-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 3px 7px;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        font-size: .72rem;
+        font-weight: 600;
+    }
+
+    .return-product-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        align-content: start;
+        padding: 12px;
+        background: #f8fafc;
+        border: 1px solid #e7ecf1;
+        border-radius: 6px;
+    }
+
+    .return-stat {
+        padding: 9px;
+        background: #fff;
+        border: 1px solid #e5eaf0;
+        border-radius: 5px;
+    }
+
+    .return-stat span {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--return-muted);
+        font-size: .68rem;
+        font-weight: 600;
+    }
+
+    .return-stat strong {
+        color: var(--return-text);
+        font-size: .95rem;
+    }
+
+    .return-stat.is-available {
+        background: #ecfdf5;
+        border-color: #bbf7d0;
+    }
+
+    .return-stat.is-available strong {
+        color: var(--return-success);
+    }
+
+    .return-stat.is-unavailable {
+        background: #f1f5f9;
+    }
+
+    .return-product-actions {
+        display: grid;
+        grid-template-columns: minmax(90px, .55fr) minmax(155px, 1fr);
+        gap: 12px;
+        align-content: start;
+        min-width: 0;
+    }
+
+    .return-field {
+        min-width: 0;
+    }
+
+    .return-field.is-wide {
+        grid-column: 1 / -1;
+    }
+
+    .return-field label,
+    .return-field-title {
+        display: block;
+        margin-bottom: 5px;
+        color: #475569;
+        font-size: .72rem;
+        font-weight: 700;
+    }
+
+    .return-product-actions .form-control,
+    .return-product-actions .form-select {
+        min-height: 38px;
+        font-size: .82rem;
+    }
+
+    .return-stock-control {
+        display: flex;
+        align-items: center;
+        min-height: 38px;
+        padding: 7px 10px;
+        background: #f8fafc;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        white-space: nowrap;
+    }
+
+    .return-stock-control .form-check-input {
+        flex: 0 0 auto;
+        margin-right: 8px;
+    }
+
+    .return-stock-control label {
+        margin: 0;
+        color: #334155;
+        font-size: .78rem;
+        font-weight: 600;
+    }
+
+    .return-product-card:not(.is-selected) .satir-alani {
+        opacity: .7;
+    }
+
+    .return-product-card.is-selected .satir-alani {
+        opacity: 1;
+    }
+
+    .return-inline-warning {
+        border-left: 4px solid #dc3545;
+    }
+
+    .return-submit-card {
+        border-left: 4px solid #198754 !important;
+    }
+
+    .return-submit-button {
+        min-height: 52px;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 1200px) {
+        .return-sale-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .return-product-card {
+            grid-template-columns: minmax(260px, 1fr) minmax(290px, 1fr);
+        }
+
+        .return-product-actions {
+            grid-column: 1 / -1;
+            grid-template-columns: 110px minmax(180px, .8fr) minmax(180px, .8fr) minmax(260px, 1.4fr);
+        }
+
+        .return-field.is-wide {
+            grid-column: auto;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .return-sale-grid,
+        .return-product-card,
+        .return-product-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .return-field.is-wide,
+        .return-product-actions {
+            grid-column: auto;
+        }
+
+        .return-products-header {
+            align-items: flex-start;
+        }
+
+        .return-product-list {
+            padding: 12px;
+        }
+
+        .return-product-card {
+            padding: 15px;
+        }
+    }
+</style>
+
+<div class="container py-4 return-create-page">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div class="return-page-heading">
             <h1 class="h3 fw-bold mb-1">İade Talebi Oluştur</h1>
             <p class="text-muted mb-0">
-                İade edilecek ürünleri ve adetleri seçin.
+                Satıştaki ürünleri inceleyin, iade edilecek kalemleri seçin
+                ve ürün durumlarını belirleyin.
             </p>
         </div>
 
@@ -21,40 +393,46 @@
         </a>
     </div>
 
-    <div class="alert alert-info">
+    <div class="alert return-info-alert mb-4">
+        <strong>Bilgilendirme:</strong>
         Bu işlem yalnızca iade talebi oluşturur. Stok, finans, satış ve
         fatura kayıtları değiştirilmez.
     </div>
 
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card border-0 shadow-sm mb-4 return-sale-card">
         <div class="card-body">
             <h2 class="h5 fw-bold mb-3">Satış Bilgileri</h2>
 
-            <div class="row g-3">
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Satış No</small>
+            <div class="return-sale-grid">
+                <div class="return-sale-stat">
+                    <span>Satış No</span>
                     <strong>#@Model.SatisId</strong>
                 </div>
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Fatura No</small>
+
+                <div class="return-sale-stat">
+                    <span>Fatura No</span>
                     <strong>@(ViewData["FaturaNo"] ?? "-")</strong>
                 </div>
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Satış Tarihi</small>
+
+                <div class="return-sale-stat">
+                    <span>Satış Tarihi</span>
                     <strong>
                         @(satisTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "-")
                     </strong>
                 </div>
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Müşteri</small>
+
+                <div class="return-sale-stat">
+                    <span>Müşteri</span>
                     <strong>@(ViewData["MusteriAdi"] ?? "-")</strong>
                 </div>
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Personel</small>
+
+                <div class="return-sale-stat">
+                    <span>Personel</span>
                     <strong>@(ViewData["PersonelAdi"] ?? "-")</strong>
                 </div>
-                <div class="col-md-4 col-xl-2">
-                    <small class="text-muted d-block">Satış Toplamı</small>
+
+                <div class="return-sale-stat is-total">
+                    <span>Satış Toplamı</span>
                     <strong>@satisToplami.ToString("N2") TL</strong>
                 </div>
             </div>
@@ -68,157 +446,254 @@
         <div asp-validation-summary="All"
              class="alert alert-danger"></div>
 
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <h2 class="h5 fw-bold mb-3">Satış Ürünleri</h2>
+        <div id="urunSecimUyarisi"
+             class="alert alert-danger return-inline-warning d-none"
+             role="alert">
+            İade talebi için en az bir ürün seçiniz.
+        </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Seç</th>
-                                <th>Ürün</th>
-                                <th>Satılan</th>
-                                <th>Önceki İade</th>
-                                <th>Bekleyen</th>
-                                <th>İade Edilebilir</th>
-                                <th>İade Adedi</th>
-                                <th>Ürün Durumu</th>
-                                <th>Stoğa Dönsün</th>
-                                <th>İade Nedeni</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var urun in Model.Urunler)
-                            {
-                                var secilebilir = urun.IadeEdilebilirAdet > 0;
-                                var secili = Model.SecilenSatisDetayiIdleri
-                                    .Contains(urun.SatisDetayiId);
+        <div class="card border-0 shadow-sm mb-4 return-products-card">
+            <div class="return-products-header">
+                <div>
+                    <h2 class="h5 fw-bold mb-1">Satış Ürünleri</h2>
+                    <p class="text-muted mb-0">
+                        İade etmek istediğiniz ürün kartına tıklayın; ardından
+                        adet, durum ve iade nedenini düzenleyin.
+                    </p>
+                </div>
 
-                                var urunDurumu = Model.UrunDurumlari
-                                    .GetValueOrDefault(
-                                        urun.SatisDetayiId,
-                                        IadeDegisimTalepDetayi
-                                            .UrunDurumuSatilabilir);
+                <div class="return-selection-summary">
+                    <span class="return-summary-badge">
+                        Seçilen ürün:
+                        <strong id="secilenUrunSayisi">0</strong>
+                    </span>
 
-                                var stogaDoner =
-                                    urunDurumu == "Satilabilir" &&
-                                    Model.StogaGeriAlinsinMi.GetValueOrDefault(
-                                        urun.SatisDetayiId,
-                                        true);
+                    <span class="return-summary-badge">
+                        Toplam iade adedi:
+                        <strong id="toplamIadeAdedi">0</strong>
+                    </span>
+                </div>
+            </div>
 
-                                <tr class="@(!secilebilir ? "table-secondary" : "")">
-                                    <td>
-                                        <input type="checkbox"
-                                               name="SecilenSatisDetayiIdleri"
-                                               value="@urun.SatisDetayiId"
-                                               class="form-check-input urun-secimi"
-                                               data-id="@urun.SatisDetayiId"
-                                               checked="@(secili ? "checked" : null)"
-                                               disabled="@(!secilebilir)" />
-                                    </td>
+            <div class="return-product-list">
+                @if (Model.Urunler.Any())
+                {
+                    @foreach (var urun in Model.Urunler)
+                    {
+                        var secilebilir = urun.IadeEdilebilirAdet > 0;
+                        var secili = Model.SecilenSatisDetayiIdleri
+                            .Contains(urun.SatisDetayiId);
 
-                                    <td>
-                                        <strong>@urun.UrunAdi</strong>
-                                        <div class="small text-muted">
-                                            @urun.Barkod | @urun.Beden | @urun.Renk
-                                        </div>
-                                        <div class="small text-muted">
-                                            @urun.BirimFiyat.ToString("N2") TL |
-                                            KDV %@urun.KdvOrani.ToString("N2")
-                                        </div>
-                                    </td>
+                        var urunDurumu = Model.UrunDurumlari
+                            .GetValueOrDefault(
+                                urun.SatisDetayiId,
+                                IadeDegisimTalepDetayi
+                                    .UrunDurumuSatilabilir);
 
-                                    <td>@urun.SatilanAdet</td>
-                                    <td>@urun.DahaOnceIadeEdilenAdet</td>
-                                    <td>@urun.AktifBekleyenIadeAdedi</td>
-                                    <td>
-                                        <span class="badge text-bg-@(secilebilir ? "success" : "secondary")">
-                                            @urun.IadeEdilebilirAdet
+                        var stogaDoner =
+                            urunDurumu == "Satilabilir" &&
+                            Model.StogaGeriAlinsinMi.GetValueOrDefault(
+                                urun.SatisDetayiId,
+                                true);
+
+                        <article class="return-product-card @(secili ? "is-selected" : "") @(!secilebilir ? "is-disabled" : "")"
+                                 data-row-id="@urun.SatisDetayiId"
+                                 data-selectable="@(secilebilir ? "true" : "false")">
+
+                            <span class="return-selected-label">Seçildi</span>
+
+                            <div class="return-product-main">
+                                <input type="checkbox"
+                                       name="SecilenSatisDetayiIdleri"
+                                       value="@urun.SatisDetayiId"
+                                       class="form-check-input return-product-check urun-secimi"
+                                       data-id="@urun.SatisDetayiId"
+                                       checked="@(secili ? "checked" : null)"
+                                       disabled="@(!secilebilir)"
+                                       aria-label="@urun.UrunAdi ürününü iade listesine ekle" />
+
+                                <div>
+                                    <div class="return-product-name">
+                                        @urun.UrunAdi
+                                    </div>
+
+                                    <div class="return-meta-chips">
+                                        <span class="product-meta-chip">
+                                            Barkod:
+                                            @(string.IsNullOrWhiteSpace(urun.Barkod)
+                                                ? "-"
+                                                : urun.Barkod)
                                         </span>
-                                    </td>
 
-                                    <td>
-                                        <input type="number"
-                                               name="IadeAdetleri[@urun.SatisDetayiId]"
-                                               value="@Model.IadeAdetleri.GetValueOrDefault(urun.SatisDetayiId, 1)"
-                                               min="1"
-                                               max="@urun.IadeEdilebilirAdet"
-                                               class="form-control form-control-sm satir-alani"
-                                               data-id="@urun.SatisDetayiId"
-                                               disabled="@(!secilebilir)" />
-                                    </td>
+                                        <span class="product-meta-chip">
+                                            Beden:
+                                            @(string.IsNullOrWhiteSpace(urun.Beden)
+                                                ? "-"
+                                                : urun.Beden)
+                                        </span>
 
-                                    <td>
-                                        <select name="UrunDurumlari[@urun.SatisDetayiId]"
-                                                class="form-select form-select-sm urun-durumu satir-alani"
-                                                data-id="@urun.SatisDetayiId"
-                                                disabled="@(!secilebilir)">
-                                            <option value="Satilabilir"
-                                                    selected="@(urunDurumu == "Satilabilir")">
-                                                Satılabilir
-                                            </option>
-                                            <option value="Hasarli"
-                                                    selected="@(urunDurumu == "Hasarli")">
-                                                Hasarlı
-                                            </option>
-                                            <option value="IncelemeGerekli"
-                                                    selected="@(urunDurumu == "IncelemeGerekli")">
-                                                İnceleme Gerekli
-                                            </option>
-                                        </select>
-                                    </td>
+                                        <span class="product-meta-chip">
+                                            Renk:
+                                            @(string.IsNullOrWhiteSpace(urun.Renk)
+                                                ? "-"
+                                                : urun.Renk)
+                                        </span>
 
-                                    <td class="text-center">
+                                        <span class="product-meta-chip">
+                                            Birim Fiyat:
+                                            @urun.BirimFiyat.ToString("N2") TL
+                                        </span>
+
+                                        <span class="product-meta-chip">
+                                            KDV: %@urun.KdvOrani.ToString("N2")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="return-product-stats">
+                                <div class="return-stat">
+                                    <span>Satılan</span>
+                                    <strong>@urun.SatilanAdet</strong>
+                                </div>
+
+                                <div class="return-stat">
+                                    <span>Önceki İade</span>
+                                    <strong>@urun.DahaOnceIadeEdilenAdet</strong>
+                                </div>
+
+                                <div class="return-stat">
+                                    <span>Bekleyen</span>
+                                    <strong>@urun.AktifBekleyenIadeAdedi</strong>
+                                </div>
+
+                                <div class="return-stat @(secilebilir ? "is-available" : "is-unavailable")">
+                                    <span>İade Edilebilir</span>
+                                    <strong>@urun.IadeEdilebilirAdet</strong>
+                                </div>
+                            </div>
+
+                            <div class="return-product-actions">
+                                <div class="return-field">
+                                    <label for="iadeAdedi_@urun.SatisDetayiId">
+                                        İade Adedi
+                                    </label>
+
+                                    <input type="number"
+                                           id="iadeAdedi_@urun.SatisDetayiId"
+                                           name="IadeAdetleri[@urun.SatisDetayiId]"
+                                           value="@Model.IadeAdetleri.GetValueOrDefault(urun.SatisDetayiId, 1)"
+                                           min="1"
+                                           max="@urun.IadeEdilebilirAdet"
+                                           class="form-control satir-alani return-quantity-input"
+                                           data-id="@urun.SatisDetayiId"
+                                           disabled="@(!secilebilir)" />
+                                </div>
+
+                                <div class="return-field">
+                                    <label for="urunDurumu_@urun.SatisDetayiId">
+                                        Ürün Durumu
+                                    </label>
+
+                                    <select id="urunDurumu_@urun.SatisDetayiId"
+                                            name="UrunDurumlari[@urun.SatisDetayiId]"
+                                            class="form-select urun-durumu satir-alani"
+                                            data-id="@urun.SatisDetayiId"
+                                            disabled="@(!secilebilir)">
+                                        <option value="Satilabilir"
+                                                selected="@(urunDurumu == "Satilabilir")">
+                                            Satılabilir
+                                        </option>
+                                        <option value="Hasarli"
+                                                selected="@(urunDurumu == "Hasarli")">
+                                            Hasarlı
+                                        </option>
+                                        <option value="IncelemeGerekli"
+                                                selected="@(urunDurumu == "IncelemeGerekli")">
+                                            İnceleme Gerekli
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="return-field">
+                                    <span class="return-field-title">
+                                        Stoğa Dönüş
+                                    </span>
+
+                                    <div class="return-stock-control">
                                         <input type="checkbox"
                                                name="StogaGeriAlinsinMi[@urun.SatisDetayiId]"
                                                value="true"
+                                               id="stogaDonus_@urun.SatisDetayiId"
                                                class="form-check-input stoga-donus satir-alani"
                                                data-id="@urun.SatisDetayiId"
                                                checked="@(stogaDoner ? "checked" : null)"
                                                disabled="@(!secilebilir || urunDurumu != "Satilabilir")" />
 
-                                        <input type="hidden"
-                                               name="StogaGeriAlinsinMi[@urun.SatisDetayiId]"
-                                               value="false" />
-                                    </td>
+                                        <label for="stogaDonus_@urun.SatisDetayiId">
+                                            Stoğa alınacak
+                                        </label>
+                                    </div>
 
-                                    <td>
-                                        <input name="IadeNedenleri[@urun.SatisDetayiId]"
-                                               value="@Model.IadeNedenleri.GetValueOrDefault(urun.SatisDetayiId)"
-                                               maxlength="300"
-                                               class="form-control form-control-sm satir-alani"
-                                               data-id="@urun.SatisDetayiId"
-                                               placeholder="İade nedeni"
-                                               disabled="@(!secilebilir)" />
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
+                                    <input type="hidden"
+                                           name="StogaGeriAlinsinMi[@urun.SatisDetayiId]"
+                                           value="false" />
+                                </div>
+
+                                <div class="return-field is-wide">
+                                    <label for="iadeNedeni_@urun.SatisDetayiId">
+                                        İade Nedeni
+                                    </label>
+
+                                    <input id="iadeNedeni_@urun.SatisDetayiId"
+                                           name="IadeNedenleri[@urun.SatisDetayiId]"
+                                           value="@Model.IadeNedenleri.GetValueOrDefault(urun.SatisDetayiId)"
+                                           maxlength="300"
+                                           class="form-control satir-alani return-reason-input"
+                                           data-id="@urun.SatisDetayiId"
+                                           placeholder="Örn: beden uymadı, ürün kusurlu, müşteri vazgeçti"
+                                           disabled="@(!secilebilir)" />
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-5">
+                        Bu satışa bağlı ürün bulunamadı.
+                    </div>
+                }
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm return-submit-card">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
-                    <div class="col-lg-9">
-                        <label asp-for="Aciklama" class="form-label">
+                    <div class="col-lg-8">
+                        <label asp-for="Aciklama"
+                               class="form-label fw-semibold">
                             Genel Açıklama
                         </label>
+
                         <textarea asp-for="Aciklama"
                                   rows="3"
                                   maxlength="500"
-                                  class="form-control"></textarea>
+                                  class="form-control"
+                                  placeholder="Talebin tamamı için eklemek istediğiniz genel açıklamayı yazabilirsiniz."></textarea>
                     </div>
 
-                    <div class="col-lg-3">
+                    <div class="col-lg-4">
                         <button type="submit"
-                                class="btn btn-success btn-lg w-100"
-                                disabled="@(!Model.Urunler.Any(x => x.IadeEdilebilirAdet > 0))">
+                                id="iadeTalepSubmit"
+                                class="btn btn-success btn-lg w-100 return-submit-button"
+                                disabled>
                             İade Talebi Oluştur
                         </button>
+
+                        <div class="small text-muted text-center mt-2">
+                            Devam etmek için en az bir ürün seçin.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,62 +709,164 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById("iadeTalepFormu");
-            const secimler = document.querySelectorAll(".urun-secimi");
+            const secimler = Array.from(
+                document.querySelectorAll(".urun-secimi"));
+            const urunSayisi = document.getElementById(
+                "secilenUrunSayisi");
+            const toplamAdet = document.getElementById(
+                "toplamIadeAdedi");
+            const secimUyarisi = document.getElementById(
+                "urunSecimUyarisi");
+            const submitButonu = document.getElementById(
+                "iadeTalepSubmit");
 
-            function satiriGuncelle(id) {
+            function adetSinirla(input) {
+                const min = Number(input.min || 1);
+                const max = Number(input.max || min);
+                let deger = Number(input.value);
+
+                if (Number.isNaN(deger)) {
+                    input.value = min;
+                    return min;
+                }
+
+                deger = Math.max(min, Math.min(max, deger));
+                input.value = deger;
+                return deger;
+            }
+
+            function ozetiGuncelle() {
+                const seciliSecimler = secimler.filter(function (secim) {
+                    return secim.checked && !secim.disabled;
+                });
+
+                const adetToplami = seciliSecimler.reduce(
+                    function (toplam, secim) {
+                        const adetInput = document.querySelector(
+                            '.return-quantity-input[data-id="' +
+                            secim.dataset.id + '"]');
+
+                        return toplam +
+                            (adetInput ? adetSinirla(adetInput) : 0);
+                    },
+                    0);
+
+                urunSayisi.textContent = seciliSecimler.length;
+                toplamAdet.textContent = adetToplami;
+                submitButonu.disabled = seciliSecimler.length === 0;
+
+                if (seciliSecimler.length > 0) {
+                    secimUyarisi.classList.add("d-none");
+                }
+            }
+
+            function kartiGuncelle(id) {
                 const secim = document.querySelector(
                     '.urun-secimi[data-id="' + id + '"]');
-
+                const kart = document.querySelector(
+                    '.return-product-card[data-row-id="' + id + '"]');
                 const durum = document.querySelector(
                     '.urun-durumu[data-id="' + id + '"]');
-
                 const stok = document.querySelector(
                     '.stoga-donus[data-id="' + id + '"]');
 
-                if (!secim || !durum || !stok) {
+                if (!secim || !kart || !durum || !stok) {
                     return;
                 }
+
+                kart.classList.toggle(
+                    "is-selected",
+                    secim.checked && !secim.disabled);
 
                 document.querySelectorAll(
                     '.satir-alani[data-id="' + id + '"]')
                     .forEach(function (alan) {
-                        alan.disabled = !secim.checked;
+                        alan.disabled = !secim.checked || secim.disabled;
                     });
 
                 stok.disabled =
-                    !secim.checked || durum.value !== "Satilabilir";
+                    !secim.checked ||
+                    secim.disabled ||
+                    durum.value !== "Satilabilir";
 
                 if (stok.disabled) {
                     stok.checked = false;
                 }
+
+                ozetiGuncelle();
             }
+
+            document.querySelectorAll(".return-product-card")
+                .forEach(function (kart) {
+                    kart.addEventListener("click", function (event) {
+                        if (kart.dataset.selectable !== "true") {
+                            return;
+                        }
+
+                        if (event.target.closest(
+                            "input, select, textarea, button, a, label")) {
+                            return;
+                        }
+
+                        const secim = kart.querySelector(".urun-secimi");
+
+                        if (!secim || secim.disabled) {
+                            return;
+                        }
+
+                        secim.checked = !secim.checked;
+                        kartiGuncelle(secim.dataset.id);
+                    });
+                });
 
             secimler.forEach(function (secim) {
                 secim.addEventListener("change", function () {
-                    satiriGuncelle(secim.dataset.id);
+                    kartiGuncelle(secim.dataset.id);
                 });
 
-                satiriGuncelle(secim.dataset.id);
+                kartiGuncelle(secim.dataset.id);
             });
 
             document.querySelectorAll(".urun-durumu")
                 .forEach(function (durum) {
                     durum.addEventListener("change", function () {
-                        satiriGuncelle(durum.dataset.id);
+                        kartiGuncelle(durum.dataset.id);
+                    });
+                });
+
+            document.querySelectorAll(".return-quantity-input")
+                .forEach(function (adetInput) {
+                    adetInput.addEventListener("input", function () {
+                        adetSinirla(adetInput);
+                        ozetiGuncelle();
+                    });
+
+                    adetInput.addEventListener("blur", function () {
+                        adetSinirla(adetInput);
+                        ozetiGuncelle();
                     });
                 });
 
             form.addEventListener("submit", function (event) {
-                const seciliUrunVarMi = Array.from(secimler)
-                    .some(function (secim) {
-                        return secim.checked;
-                    });
+                const seciliUrunVarMi = secimler.some(function (secim) {
+                    return secim.checked && !secim.disabled;
+                });
 
                 if (!seciliUrunVarMi) {
                     event.preventDefault();
-                    alert("İade talebi için en az bir ürün seçiniz.");
+                    secimUyarisi.classList.remove("d-none");
+                    secimUyarisi.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+                    return;
                 }
+
+                document.querySelectorAll(".return-quantity-input")
+                    .forEach(adetSinirla);
             });
+
+            ozetiGuncelle();
         });
     </script>
 }
