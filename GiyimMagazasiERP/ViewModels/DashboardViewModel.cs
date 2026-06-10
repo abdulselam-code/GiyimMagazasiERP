@@ -39,7 +39,23 @@ public class DashboardViewModel
     public int AylikSatisSayisi { get; set; }
     public decimal AylikSatisGeliri { get; set; }
     public decimal BugunkuGider { get; set; }
+    public decimal BugunkuNet { get; set; }
+    public decimal BugunkuIadeTutari { get; set; }
+    public decimal SatisIadeleriToplami { get; set; }
     public decimal NetKarZarar { get; set; }
+
+    public int BekleyenToptanTalepSayisi { get; set; }
+    public int BekleyenIadeTalepSayisi { get; set; }
+    public int MuhasebeOnayiBekleyenToptanSayisi { get; set; }
+    public int MuhasebeOnayiBekleyenIadeSayisi { get; set; }
+    public int TamamlananIadeBelgesiSayisi { get; set; }
+    public int BenimBekleyenToptanTalepSayisi { get; set; }
+    public int BenimBekleyenIadeTalepSayisi { get; set; }
+
+    public int BugunkuStokGirisAdedi { get; set; }
+    public int BugunkuStokCikisAdedi { get; set; }
+    public int BugunkuIadeGirisAdedi { get; set; }
+    public int HasarliIncelemeIadeUrunSayisi { get; set; }
 
     public decimal EnYuksekMaas { get; set; }
     public decimal EnDusukMaas { get; set; }
@@ -59,6 +75,11 @@ public class DashboardViewModel
     public List<DashboardGiderViewModel> EnYuksekGiderler { get; set; } = new();
     public List<DashboardFinansHareketiViewModel> SonFinansHareketleri { get; set; } = new();
     public List<DashboardPersonelOzetViewModel> PersonelOzeti { get; set; } = new();
+    public List<DashboardIadeBelgesiViewModel> SonIadeBelgeleri { get; set; } = new();
+    public List<DashboardTalepOzetViewModel> BekleyenOnaylar { get; set; } = new();
+    public List<DashboardTalepOzetViewModel> SonIadeTalepleri { get; set; } = new();
+    public List<DashboardTalepOzetViewModel> SonToptanTalepleri { get; set; } = new();
+    public List<DashboardIadeUrunViewModel> SorunluIadeUrunleri { get; set; } = new();
 
     public List<string> GunlukSatisLabels { get; set; } = new();
     public List<decimal> GunlukSatisValues { get; set; } = new();
@@ -78,6 +99,14 @@ public class DashboardViewModel
     public List<string> AylikGelirGiderLabels { get; set; } = new();
     public List<decimal> AylikGelirValues { get; set; } = new();
     public List<decimal> AylikGiderValues { get; set; } = new();
+
+    public List<string> StokHareketLabels { get; set; } = new();
+    public List<int> StokGirisValues { get; set; } = new();
+    public List<int> StokCikisValues { get; set; } = new();
+    public List<int> IadeGirisValues { get; set; } = new();
+
+    public List<string> IadeTrendLabels { get; set; } = new();
+    public List<decimal> IadeTrendValues { get; set; } = new();
 }
 
 public class DashboardQuickActionViewModel
@@ -140,4 +169,33 @@ public class DashboardOdemeTipiGelirViewModel
     public string OdemeTipi { get; set; } = "-";
     public int SatisSayisi { get; set; }
     public decimal ToplamGelir { get; set; }
+}
+
+public class DashboardIadeBelgesiViewModel
+{
+    public int Id { get; set; }
+    public string BelgeNo { get; set; } = "-";
+    public string TalepNo { get; set; } = "-";
+    public DateTime Tarih { get; set; }
+    public string MusteriAdi { get; set; } = "Nihai Tüketici";
+    public decimal Tutar { get; set; }
+}
+
+public class DashboardTalepOzetViewModel
+{
+    public int Id { get; set; }
+    public string Modul { get; set; } = "";
+    public string TalepNo { get; set; } = "-";
+    public string Durum { get; set; } = "-";
+    public DateTime Tarih { get; set; }
+    public decimal Tutar { get; set; }
+}
+
+public class DashboardIadeUrunViewModel
+{
+    public int TalepId { get; set; }
+    public string TalepNo { get; set; } = "-";
+    public string UrunAdi { get; set; } = "-";
+    public string UrunDurumu { get; set; } = "-";
+    public int Adet { get; set; }
 }

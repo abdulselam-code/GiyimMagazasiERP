@@ -1,4 +1,4 @@
-﻿@model GiyimMagazasiERP.ViewModels.DashboardViewModel
+@model GiyimMagazasiERP.ViewModels.DashboardViewModel
 @using System.Text.Json
 
 @{
@@ -7,72 +7,331 @@
     var admin = User.IsInRole("Admin");
     var yonetici = User.IsInRole("Yonetici");
     var kasiyer = User.IsInRole("Kasiyer");
+    var personel = User.IsInRole("Personel");
     var depo = User.IsInRole("Depo");
     var muhasebe = User.IsInRole("Muhasebe");
     var insanKaynaklari = User.IsInRole("InsanKaynaklari");
-
-    var adminGrafikGorsun = admin;
-    var yoneticiGrafikGorsun = yonetici;
-    var kasiyerGrafikGorsun = kasiyer;
-    var depoGrafikGorsun = depo;
-    var muhasebeGrafikGorsun = muhasebe;
+    var yonetim = admin || yonetici;
+    var satisPersoneli = kasiyer || personel;
 
     string Tl(decimal tutar) => tutar.ToString("N2") + " TL";
-    string Tarih(DateTime? tarih) => tarih?.ToString("dd.MM.yyyy") ?? "Henüz kayıt yok";
-    string TarihSaat(DateTime? tarih) => tarih?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz kayıt yok";
+    string TarihSaat(DateTime? tarih) =>
+        tarih?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz kayıt yok";
 
-    var netClass = Model.NetKarZarar < 0 ? "text-danger" : "text-success";
+    string DurumMetni(string durum) => durum switch
+    {
+        "YoneticiOnayiBekliyor" => "Yönetici Onayı",
+        "MuhasebeOnayiBekliyor" => "Muhasebe Onayı",
+        "Tamamlandi" => "Tamamlandı",
+        "SatisaDonusturuldu" => "Satışa Dönüştürüldü",
+        "Reddedildi" => "Reddedildi",
+        _ => durum
+    };
 
-    var gunlukSatisLabelsJson = JsonSerializer.Serialize(Model.GunlukSatisLabels);
-    var gunlukSatisValuesJson = JsonSerializer.Serialize(Model.GunlukSatisValues);
-
-    var gelirGiderLabelsJson = JsonSerializer.Serialize(Model.GelirGiderLabels);
-    var gelirGiderValuesJson = JsonSerializer.Serialize(Model.GelirGiderValues);
-
-    var kategoriSatisLabelsJson = JsonSerializer.Serialize(Model.KategoriSatisLabels);
-    var kategoriSatisValuesJson = JsonSerializer.Serialize(Model.KategoriSatisValues);
-
-    var enCokSatilanLabelsJson = JsonSerializer.Serialize(Model.EnCokSatilanUrunLabels);
-    var enCokSatilanValuesJson = JsonSerializer.Serialize(Model.EnCokSatilanUrunValues);
-
-    var kritikStokLabelsJson = JsonSerializer.Serialize(Model.KritikStokLabels);
-    var kritikStokValuesJson = JsonSerializer.Serialize(Model.KritikStokValues);
-
-    var aylikGelirGiderLabelsJson = JsonSerializer.Serialize(Model.AylikGelirGiderLabels);
-    var aylikGelirValuesJson = JsonSerializer.Serialize(Model.AylikGelirValues);
-    var aylikGiderValuesJson = JsonSerializer.Serialize(Model.AylikGiderValues);
+    var gunlukSatisLabelsJson =
+        JsonSerializer.Serialize(Model.GunlukSatisLabels);
+    var gunlukSatisValuesJson =
+        JsonSerializer.Serialize(Model.GunlukSatisValues);
+    var gelirGiderLabelsJson =
+        JsonSerializer.Serialize(Model.GelirGiderLabels);
+    var gelirGiderValuesJson =
+        JsonSerializer.Serialize(Model.GelirGiderValues);
+    var enCokSatilanLabelsJson =
+        JsonSerializer.Serialize(Model.EnCokSatilanUrunLabels);
+    var enCokSatilanValuesJson =
+        JsonSerializer.Serialize(Model.EnCokSatilanUrunValues);
+    var kritikStokLabelsJson =
+        JsonSerializer.Serialize(Model.KritikStokLabels);
+    var kritikStokValuesJson =
+        JsonSerializer.Serialize(Model.KritikStokValues);
+    var aylikGelirGiderLabelsJson =
+        JsonSerializer.Serialize(Model.AylikGelirGiderLabels);
+    var aylikGelirValuesJson =
+        JsonSerializer.Serialize(Model.AylikGelirValues);
+    var aylikGiderValuesJson =
+        JsonSerializer.Serialize(Model.AylikGiderValues);
+    var stokHareketLabelsJson =
+        JsonSerializer.Serialize(Model.StokHareketLabels);
+    var stokGirisValuesJson =
+        JsonSerializer.Serialize(Model.StokGirisValues);
+    var stokCikisValuesJson =
+        JsonSerializer.Serialize(Model.StokCikisValues);
+    var iadeGirisValuesJson =
+        JsonSerializer.Serialize(Model.IadeGirisValues);
+    var iadeTrendLabelsJson =
+        JsonSerializer.Serialize(Model.IadeTrendLabels);
+    var iadeTrendValuesJson =
+        JsonSerializer.Serialize(Model.IadeTrendValues);
 }
 
-<div class="container py-4 dashboard-page">
+<style>
+    .erp-dashboard {
+        --dash-border: #dfe5ec;
+        --dash-muted: #64748b;
+        --dash-text: #172033;
+        width: 100%;
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 24px 20px 40px;
+        overflow-x: hidden;
+    }
+
+    .dashboard-hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        padding: clamp(22px, 3vw, 34px);
+        color: #fff;
+        background: #172033;
+        border-radius: 8px;
+    }
+
+    .dashboard-role {
+        display: inline-flex;
+        padding: 4px 9px;
+        margin-bottom: 10px;
+        color: #dbeafe;
+        border: 1px solid #475569;
+        border-radius: 4px;
+        font-size: .76rem;
+        font-weight: 700;
+    }
+
+    .dashboard-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+        gap: 10px;
+        min-width: 330px;
+    }
+
+    .dashboard-meta div {
+        padding: 10px 12px;
+        background: #263449;
+        border-radius: 6px;
+    }
+
+    .dashboard-meta span,
+    .dashboard-meta strong {
+        display: block;
+    }
+
+    .dashboard-meta span {
+        color: #cbd5e1;
+        font-size: .7rem;
+    }
+
+    .dashboard-meta strong {
+        margin-top: 3px;
+        font-size: .85rem;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .dashboard-actions .btn {
+        white-space: normal;
+    }
+
+    .dashboard-metric-link {
+        display: block;
+        height: 100%;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .dashboard-metric {
+        height: 100%;
+        padding: 16px;
+        background: #fff;
+        border: 1px solid var(--dash-border);
+        border-left: 4px solid #2563eb;
+        border-radius: 6px;
+        transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .dashboard-metric-link:hover .dashboard-metric {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+    }
+
+    .dashboard-metric.income { border-left-color: #15803d; }
+    .dashboard-metric.expense { border-left-color: #dc2626; }
+    .dashboard-metric.warning { border-left-color: #d97706; }
+    .dashboard-metric.return { border-left-color: #ea580c; }
+    .dashboard-metric.neutral { border-left-color: #64748b; }
+
+    .dashboard-metric span {
+        display: block;
+        color: var(--dash-muted);
+        font-size: .76rem;
+        font-weight: 700;
+    }
+
+    .dashboard-metric strong {
+        display: block;
+        margin-top: 5px;
+        color: var(--dash-text);
+        font-size: 1.28rem;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-metric small {
+        display: block;
+        margin-top: 8px;
+        color: #2563eb;
+        font-weight: 600;
+    }
+
+    .dashboard-section-card {
+        min-width: 0;
+        height: 100%;
+        border: 1px solid var(--dash-border) !important;
+    }
+
+    .dashboard-section-card .card-body {
+        min-width: 0;
+    }
+
+    .dashboard-section-card .table-responsive {
+        width: 100%;
+    }
+
+    .dashboard-chart-card {
+        min-height: 350px;
+    }
+
+    .dashboard-chart-body {
+        display: flex;
+        min-width: 0;
+        height: 100%;
+        flex-direction: column;
+    }
+
+    .dashboard-chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 280px;
+        max-height: 300px;
+        margin-top: auto;
+    }
+
+    .dashboard-chart-wrapper canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .dashboard-chart-empty {
+        display: flex;
+        min-height: 220px;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        color: var(--dash-muted);
+        text-align: center;
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 6px;
+    }
+
+    .dashboard-list-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 11px 0;
+        border-bottom: 1px solid #edf1f5;
+    }
+
+    .dashboard-list-row:last-child {
+        border-bottom: 0;
+    }
+
+    .dashboard-list-row small {
+        color: var(--dash-muted);
+    }
+
+    @@media (min-width: 768px) and (max-width: 1199.98px) {
+        .erp-dashboard .row > .col-xl {
+            flex: 0 0 auto;
+            width: 50%;
+        }
+    }
+
+    @@media (min-width: 1200px) {
+        .erp-dashboard .row > .col-xl {
+            flex: 0 0 auto;
+            width: 25%;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .erp-dashboard {
+            padding: 16px 12px 28px;
+        }
+
+        .dashboard-hero {
+            display: block;
+        }
+
+        .dashboard-meta {
+            grid-template-columns: 1fr;
+            min-width: 0;
+            margin-top: 18px;
+        }
+
+        .dashboard-chart-card {
+            min-height: 292px;
+        }
+
+        .dashboard-chart-wrapper {
+            height: 220px;
+        }
+
+        .dashboard-chart-empty {
+            min-height: 170px;
+        }
+    }
+
+    @@media (max-width: 575.98px) {
+        .dashboard-actions .btn {
+            flex: 1 1 100%;
+        }
+
+        .dashboard-list-row {
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="erp-dashboard">
     <section class="dashboard-hero mb-4">
         <div>
-            <span class="dashboard-role-badge">@Model.Rol</span>
-            <h1 class="h3 fw-bold mb-1">Hoş geldiniz, @Model.KullaniciAdi</h1>
-
-            <p class="mb-0">
-                @if (admin || yonetici)
+            <span class="dashboard-role">@Model.Rol</span>
+            <h1 class="h3 fw-bold mb-2">Hoş geldiniz, @Model.KullaniciAdi</h1>
+            <p class="mb-0 text-white-50">
+                @if (yonetim)
                 {
-                    <text>İşletmenin anlık satış, stok ve finans durumunu buradan takip edebilirsiniz.</text>
-                }
-                else if (kasiyer)
-                {
-                    <text>Satış ve fatura işlemleriniz için hızlı çalışma alanı.</text>
-                }
-                else if (depo)
-                {
-                    <text>Stok, ürün ve kritik stok durumunu takip edebilirsiniz.</text>
+                    <text>İşletmenin satış, finans, stok ve bekleyen onaylarını tek ekrandan yönetin.</text>
                 }
                 else if (muhasebe)
                 {
-                    <text>Gelir, gider ve finans hareketlerinin özeti.</text>
+                    <text>Finans hareketlerini ve muhasebe onayı bekleyen işlemleri takip edin.</text>
                 }
-                else if (insanKaynaklari)
+                else if (satisPersoneli)
                 {
-                    <text>Personel durumunu ve maaş özetlerini takip edebilirsiniz.</text>
+                    <text>Kendi satışlarınıza, taleplerinize ve günlük işlemlerinize hızlıca ulaşın.</text>
+                }
+                else if (depo)
+                {
+                    <text>Stok seviyelerini, hareketleri ve iadeden dönen ürünleri izleyin.</text>
                 }
                 else
                 {
-                    <text>ERP sisteminde size tanımlanan alanları görüntüleyebilirsiniz.</text>
+                    <text>Rolünüze ait güncel bilgileri ve işlemleri görüntüleyin.</text>
                 }
             </p>
         </div>
@@ -82,823 +341,783 @@
                 <span>Bugün</span>
                 <strong>@Model.BugununTarihi.ToString("dd.MM.yyyy")</strong>
             </div>
-
-            @if (admin || yonetici || kasiyer || muhasebe)
-            {
-                <div>
-                    <span>Bu Ay</span>
-                    <strong>
-                        @Model.BuAyBaslangicTarihi.ToString("dd.MM.yyyy")
-                        -
-                        @Model.BuAyBitisTarihi.ToString("dd.MM.yyyy")
-                    </strong>
-                </div>
-            }
-
-            @if (depo)
-            {
-                <div>
-                    <span>Son Stok Hareketi</span>
-                    <strong>@TarihSaat(Model.SonStokHareketiTarihi)</strong>
-                </div>
-            }
-
-            @if (muhasebe)
-            {
-                <div>
-                    <span>Son Finans Hareketi</span>
-                    <strong>@TarihSaat(Model.SonFinansHareketiTarihi)</strong>
-                </div>
-            }
-
-            @if (insanKaynaklari)
-            {
-                <div>
-                    <span>Personel Durum Tarihi</span>
-                    <strong>@Model.BugununTarihi.ToString("dd.MM.yyyy")</strong>
-                </div>
-            }
+            <div>
+                <span>Son İşlem</span>
+                <strong>
+                    @(depo
+                        ? TarihSaat(Model.SonStokHareketiTarihi)
+                        : TarihSaat(Model.SonFinansHareketiTarihi
+                            ?? Model.SonSatisTarihi))
+                </strong>
+            </div>
         </div>
     </section>
 
     @if (!string.IsNullOrWhiteSpace(Model.UyariMesaji))
     {
-        <div class="alert alert-warning">
-            @Model.UyariMesaji
-        </div>
+        <div class="alert alert-warning">@Model.UyariMesaji</div>
     }
 
     @if (Model.HizliIslemler.Any())
     {
-        <section class="dashboard-quick-actions mb-4">
-            @foreach (var link in Model.HizliIslemler)
-            {
-                <a asp-controller="@link.Controller"
-                   asp-action="@link.Action"
-                   class="btn btn-@link.Stil">
-                    @link.Baslik
+        <section class="mb-4">
+            <h2 class="h6 fw-bold mb-2">Hızlı İşlemler</h2>
+            <div class="dashboard-actions">
+                @foreach (var link in Model.HizliIslemler)
+                {
+                    <a asp-controller="@link.Controller"
+                       asp-action="@link.Action"
+                       class="btn btn-sm btn-@link.Stil">
+                        @link.Baslik
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    @if (yonetim)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="Satislar" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric">
+                        <span>Bugünkü Satış</span>
+                        <strong>@Model.BugunkuSatisSayisi</strong>
+                        <small>@Tl(Model.BugunkuSatisGeliri)</small>
+                    </div>
                 </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="FinansHareketleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Bugünkü Gelir</span>
+                        <strong class="text-success">@Tl(Model.BugunkuGelir)</strong>
+                        <small>Finans detayına git</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="FinansHareketleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric expense">
+                        <span>Bugünkü Gider</span>
+                        <strong class="text-danger">@Tl(Model.BugunkuGider)</strong>
+                        <small>Bugünkü net: @Tl(Model.BugunkuNet)</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="IadeDegisimTalepleri"
+                   asp-action="IadeBelgeleri"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric return">
+                        <span>Bugünkü İade</span>
+                        <strong class="text-danger">@Tl(Model.BugunkuIadeTutari)</strong>
+                        <small>İade belgelerini aç</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="FinansHareketleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Toplam Gelir</span>
+                        <strong class="text-success">@Tl(Model.ToplamGelir)</strong>
+                        <small>Net: @Tl(Model.NetKarZarar)</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="FinansHareketleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric expense">
+                        <span>Toplam Gider</span>
+                        <strong class="text-danger">@Tl(Model.ToplamGider)</strong>
+                        <small>Finans hareketleri</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="ToptanSatisTalepleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen Toptan Talepler</span>
+                        <strong>@Model.BekleyenToptanTalepSayisi</strong>
+                        <small>Onay ekranına git</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="IadeDegisimTalepleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen İade Talepleri</span>
+                        <strong>@Model.BekleyenIadeTalepSayisi</strong>
+                        <small>@Model.TamamlananIadeBelgesiSayisi belge tamamlandı</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="Urunler" asp-action="Index"
+                   asp-route-kritikStok="true"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Kritik Stok</span>
+                        <strong>@Model.KritikStokSayisi</strong>
+                        <small>Kritik ürünleri göster</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section class="row g-4 mb-4">
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between gap-2 mb-3">
+                            <h2 class="h5 fw-bold mb-0">Son Satışlar</h2>
+                            <a asp-controller="Satislar" asp-action="Index"
+                               class="btn btn-sm btn-outline-primary">Tümü</a>
+                        </div>
+                        @if (Model.SonSatislar.Any())
+                        {
+                            @await Html.PartialAsync("_DashboardSonSatislar", Model)
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Henüz satış yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between gap-2 mb-3">
+                            <h2 class="h5 fw-bold mb-0">Bekleyen Onaylar</h2>
+                        </div>
+                        @if (Model.BekleyenOnaylar.Any())
+                        {
+                            @foreach (var talep in Model.BekleyenOnaylar)
+                            {
+                                <div class="dashboard-list-row">
+                                    <div>
+                                        <strong>@talep.Modul · @talep.TalepNo</strong>
+                                        <small class="d-block">
+                                            @DurumMetni(talep.Durum) ·
+                                            @talep.Tarih.ToString("dd.MM.yyyy HH:mm")
+                                        </small>
+                                    </div>
+                                    <a asp-controller="@(talep.Modul == "İade"
+                                           ? "IadeDegisimTalepleri"
+                                           : "ToptanSatisTalepleri")"
+                                       asp-action="Details"
+                                       asp-route-id="@talep.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        Aç
+                                    </a>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Bekleyen onay yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between gap-2 mb-3">
+                            <h2 class="h5 fw-bold mb-0">Son İade Belgeleri</h2>
+                            <a asp-controller="IadeDegisimTalepleri"
+                               asp-action="IadeBelgeleri"
+                               class="btn btn-sm btn-outline-secondary">Tümü</a>
+                        </div>
+                        @if (Model.SonIadeBelgeleri.Any())
+                        {
+                            @foreach (var belge in Model.SonIadeBelgeleri)
+                            {
+                                <div class="dashboard-list-row">
+                                    <div>
+                                        <strong>@belge.BelgeNo</strong>
+                                        <small class="d-block">
+                                            @belge.MusteriAdi · @Tl(belge.Tutar)
+                                        </small>
+                                    </div>
+                                    <a asp-controller="IadeDegisimTalepleri"
+                                       asp-action="Belge"
+                                       asp-route-id="@belge.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Belge
+                                    </a>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Henüz iade belgesi yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between gap-2 mb-3">
+                            <h2 class="h5 fw-bold mb-0">Kritik Stoktaki Ürünler</h2>
+                            <a asp-controller="Urunler" asp-action="Index"
+                               asp-route-kritikStok="true"
+                               class="btn btn-sm btn-outline-warning">Tümü</a>
+                        </div>
+                        @if (Model.KritikStokUrunleri.Any())
+                        {
+                            @await Html.PartialAsync("_DashboardKritikStok", Model)
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Kritik stokta ürün yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
+    else if (muhasebe)
+    {
+        <section class="row g-3 mb-4">
+            @foreach (var kart in new[]
+            {
+                ("Toplam Gelir", Tl(Model.ToplamGelir), "income"),
+                ("Toplam Gider", Tl(Model.ToplamGider), "expense"),
+                ("Net Tutar", Tl(Model.NetKarZarar), "neutral"),
+                ("Satış İadeleri", Tl(Model.SatisIadeleriToplami), "return"),
+                ("Bugünkü Net", Tl(Model.BugunkuNet), "neutral")
+            })
+            {
+                <div class="col-sm-6 col-xl">
+                    <a asp-controller="FinansHareketleri" asp-action="Index"
+                       class="dashboard-metric-link">
+                        <div class="dashboard-metric @kart.Item3">
+                            <span>@kart.Item1</span>
+                            <strong>@kart.Item2</strong>
+                            <small>Finans detayına git</small>
+                        </div>
+                    </a>
+                </div>
             }
+            <div class="col-sm-6 col-xl">
+                <a asp-controller="ToptanSatisTalepleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Toptan Muhasebe Onayı</span>
+                        <strong>@Model.MuhasebeOnayiBekleyenToptanSayisi</strong>
+                        <small>Bekleyen talepleri aç</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-sm-6 col-xl">
+                <a asp-controller="IadeDegisimTalepleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>İade Muhasebe Onayı</span>
+                        <strong>@Model.MuhasebeOnayiBekleyenIadeSayisi</strong>
+                        <small>Bekleyen iadeleri aç</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section class="row g-4 mb-4">
+            <div class="col-xl-7">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Son Finans Hareketleri</h2>
+                        @if (Model.SonFinansHareketleri.Any())
+                        {
+                            @foreach (var hareket in Model.SonFinansHareketleri)
+                            {
+                                <div class="dashboard-list-row">
+                                    <div>
+                                        <strong>@hareket.Kategori</strong>
+                                        <small class="d-block">
+                                            @hareket.Tarih.ToString("dd.MM.yyyy HH:mm")
+                                        </small>
+                                    </div>
+                                    <strong class="@(hareket.HareketTipi == "Gelir"
+                                        ? "text-success"
+                                        : "text-danger")">
+                                        @Tl(hareket.Tutar)
+                                    </strong>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-5">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Son İade Belgeleri</h2>
+                        @foreach (var belge in Model.SonIadeBelgeleri)
+                        {
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong>@belge.BelgeNo</strong>
+                                    <small class="d-block">@Tl(belge.Tutar)</small>
+                                </div>
+                                <a asp-controller="IadeDegisimTalepleri"
+                                   asp-action="Belge"
+                                   asp-route-id="@belge.Id"
+                                   class="btn btn-sm btn-outline-primary">Aç</a>
+                            </div>
+                        }
+                        @if (!Model.SonIadeBelgeleri.Any())
+                        {
+                            <p class="text-muted mb-0">Henüz iade belgesi yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
         </section>
     }
-
-    @if (admin || yonetici)
+    else if (satisPersoneli)
     {
         <section class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="dashboard-info-card">
-                    <span>İşletme Kuruluş Tarihi</span>
-                    <strong>@Tarih(Model.IsletmeKurulusTarihi)</strong>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="dashboard-info-card">
-                    <span>İlk Satış Tarihi</span>
-                    <strong>@(Model.IlkSatisTarihi?.ToString("dd.MM.yyyy") ?? "Henüz satış yok")</strong>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="dashboard-info-card">
-                    <span>Son Satış Zamanı</span>
-                    <strong>@(Model.SonSatisTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz satış yok")</strong>
-                </div>
-            </div>
-        </section>
-    }
-
-    @if (admin)
-    {
-        <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Satış</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.BugunkuSatisSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Satış Geliri</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.BugunkuSatisGeliri)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Satış</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.AylikSatisSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Satış Geliri</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.AylikSatisGeliri)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.ToplamGelir)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gider</p>
-                        <h3 class="h4 fw-bold text-danger mb-0">@Tl(Model.ToplamGider)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-dark">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Net Kâr / Zarar</p>
-                        <h3 class="h4 fw-bold @netClass mb-0">@Tl(Model.NetKarZarar)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Kritik Stok</p>
-                        <h3 class="h4 fw-bold text-warning mb-0">@Model.KritikStokSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Stok Adedi</p>
-                        <h3 class="h4 fw-bold text-info mb-0">@Model.ToplamStokAdedi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Ürün Çeşidi</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.ToplamUrunCesidi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Müşteri</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Model.ToplamMusteri</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Personel</p>
-                        <h3 class="h4 fw-bold text-secondary mb-0">@Model.ToplamPersonel</h3>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="dashboard-info-card">
-                    <span>En Çok Satan Ürün</span>
-                    <strong>@Model.EnCokSatanUrunAdi</strong>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="dashboard-info-card">
-                    <span>En Çok Harcama Yapan Müşteri</span>
-                    <strong>@Model.EnCokHarcamaYapanMusteriAdi</strong>
-                </div>
-            </div>
-        </section>
-
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h2 class="h5 fw-bold mb-3">Son Satışlar</h2>
-                        @await Html.PartialAsync("_DashboardSonSatislar", Model)
-                    </div>
-                </section>
-            </div>
-
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <h2 class="h5 fw-bold mb-0">Kritik Stoktaki Ürünler</h2>
-
-                            <a asp-controller="Urunler"
-                               asp-action="Index"
-                               asp-route-kritikStok="true"
-                               class="btn btn-sm btn-outline-warning">
-                                Kritik Stok Ürünlerini Gör
-                            </a>
+            <div class="col-sm-6 col-xl-3">
+                @if (kasiyer)
+                {
+                    <a asp-controller="Satislar" asp-action="Index"
+                       asp-route-scope="benim" asp-route-tarih="bugun"
+                       class="dashboard-metric-link">
+                        <div class="dashboard-metric">
+                            <span>Bugünkü Satışlarım</span>
+                            <strong>@Model.BugunkuSatisSayisi</strong>
+                            <small>@Tl(Model.BugunkuSatisGeliri)</small>
                         </div>
-                        @await Html.PartialAsync("_DashboardKritikStok", Model)
+                    </a>
+                }
+                else
+                {
+                    <div class="dashboard-metric">
+                        <span>Bugünkü Satışlarım</span>
+                        <strong>@Model.BugunkuSatisSayisi</strong>
+                        <small>@Tl(Model.BugunkuSatisGeliri)</small>
                     </div>
-                </section>
+                }
             </div>
-
-            <div class="col-12">
-                <section class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <h2 class="h5 fw-bold mb-3">En Yüksek Giderler</h2>
-                        @await Html.PartialAsync("_DashboardGiderler", Model)
-                    </div>
-                </section>
-            </div>
-        </div>
-    }
-    else if (yonetici)
-    {
-        <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Satış</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.BugunkuSatisSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.BugunkuSatisGeliri)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Satış</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.AylikSatisSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.AylikSatisGeliri)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-dark">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Net Kâr / Zarar</p>
-                        <h3 class="h4 fw-bold @netClass mb-0">@Tl(Model.NetKarZarar)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Kritik Stok</p>
-                        <h3 class="h4 fw-bold text-warning mb-0">@Model.KritikStokSayisi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Stok</p>
-                        <h3 class="h4 fw-bold text-info mb-0">@Model.ToplamStokAdedi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Müşteri</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Model.ToplamMusteri</h3>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="row g-3 mb-4">
-            <div class="col-md-6">
-                <div class="dashboard-info-card">
-                    <span>En Çok Satan Ürün</span>
-                    <strong>@Model.EnCokSatanUrunAdi</strong>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="dashboard-info-card">
-                    <span>En Çok Harcama Yapan Müşteri</span>
-                    <strong>@Model.EnCokHarcamaYapanMusteriAdi</strong>
-                </div>
-            </div>
-        </section>
-
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h2 class="h5 fw-bold mb-3">Son Satışlar</h2>
-                        @await Html.PartialAsync("_DashboardSonSatislar", Model)
-                    </div>
-                </section>
-            </div>
-
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <h2 class="h5 fw-bold mb-0">Kritik Stoktaki Ürünler</h2>
-
-                            <a asp-controller="Urunler"
-                               asp-action="Index"
-                               asp-route-kritikStok="true"
-                               class="btn btn-sm btn-outline-warning">
-                                Kritik Stok Ürünlerini Gör
-                            </a>
+            <div class="col-sm-6 col-xl-3">
+                @if (kasiyer)
+                {
+                    <a asp-controller="Satislar" asp-action="Index"
+                       asp-route-scope="benim" asp-route-donem="buAy"
+                       class="dashboard-metric-link">
+                        <div class="dashboard-metric income">
+                            <span>Bu Ay Satışlarım</span>
+                            <strong>@Model.AylikSatisSayisi</strong>
+                            <small>@Tl(Model.AylikSatisGeliri)</small>
                         </div>
-                        @await Html.PartialAsync("_DashboardKritikStok", Model)
+                    </a>
+                }
+                else
+                {
+                    <div class="dashboard-metric income">
+                        <span>Bu Ay Satışlarım</span>
+                        <strong>@Model.AylikSatisSayisi</strong>
+                        <small>@Tl(Model.AylikSatisGeliri)</small>
                     </div>
-                </section>
+                }
             </div>
-        </div>
-    }
-    else if (kasiyer)
-    {
-        <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Kendi Satış Sayım</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.BugunkuSatisSayisi</h3>
-                        <a asp-controller="Satislar"
-                           asp-action="Index"
-                           asp-route-scope="benim"
-                           asp-route-tarih="bugun"
-                           class="btn btn-sm btn-outline-primary mt-3">
-                            Bugünkü Satışlarım
-                        </a>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="IadeDegisimTalepleri"
+                   asp-action="BenimTaleplerim"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen İade Taleplerim</span>
+                        <strong>@Model.BenimBekleyenIadeTalepSayisi</strong>
+                        <small>Taleplerimi aç</small>
                     </div>
-                </div>
+                </a>
             </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Kendi Satış Gelirim</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.BugunkuSatisGeliri)</h3>
-                        <a asp-controller="Satislar"
-                           asp-action="Index"
-                           asp-route-scope="benim"
-                           asp-route-tarih="bugun"
-                           class="btn btn-sm btn-outline-primary mt-3">
-                            Bugünkü Satışlarım
-                        </a>
+            <div class="col-sm-6 col-xl-3">
+                <a asp-controller="ToptanSatisTalepleri"
+                   asp-action="BenimTaleplerim"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen Toptan Taleplerim</span>
+                        <strong>@Model.BenimBekleyenToptanTalepSayisi</strong>
+                        <small>Taleplerimi aç</small>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Kendi Satış Sayım</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.AylikSatisSayisi</h3>
-                        <a asp-controller="Satislar"
-                           asp-action="Index"
-                           asp-route-scope="benim"
-                           asp-route-donem="buAy"
-                           class="btn btn-sm btn-outline-primary mt-3">
-                            Bu Ayki Satışlarım
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bu Ay Kendi Satış Gelirim</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.AylikSatisGeliri)</h3>
-                        <a asp-controller="Satislar"
-                           asp-action="Index"
-                           asp-route-scope="benim"
-                           asp-route-donem="buAy"
-                           class="btn btn-sm btn-outline-primary mt-3">
-                            Bu Ayki Satışlarım
-                        </a>
-                    </div>
-                </div>
+                </a>
             </div>
         </section>
 
-        <section class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h2 class="h5 fw-bold mb-3">Kendi Son Satışların ve Faturalar</h2>
-                @await Html.PartialAsync("_DashboardSonSatislar", Model)
+        <section class="row g-4 mb-4">
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <h2 class="h5 fw-bold mb-3">Kendi Son Satışlarım</h2>
+                        @if (Model.SonSatislar.Any())
+                        {
+                            @await Html.PartialAsync("_DashboardSonSatislar", Model)
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">Henüz satış yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <h2 class="h6 fw-bold mb-3">Son İade Taleplerim</h2>
+                        @foreach (var talep in Model.SonIadeTalepleri)
+                        {
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong>@talep.TalepNo</strong>
+                                    <small class="d-block">@DurumMetni(talep.Durum)</small>
+                                </div>
+                                <a asp-controller="IadeDegisimTalepleri"
+                                   asp-action="Details" asp-route-id="@talep.Id"
+                                   class="btn btn-sm btn-outline-secondary">Aç</a>
+                            </div>
+                        }
+                        @if (!Model.SonIadeTalepleri.Any())
+                        {
+                            <p class="text-muted mb-0">Henüz talep yok.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3">
+                <div class="card border-0 shadow-sm dashboard-section-card">
+                    <div class="card-body">
+                        <h2 class="h6 fw-bold mb-3">Son Toptan Taleplerim</h2>
+                        @foreach (var talep in Model.SonToptanTalepleri)
+                        {
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong>@talep.TalepNo</strong>
+                                    <small class="d-block">@DurumMetni(talep.Durum)</small>
+                                </div>
+                                <a asp-controller="ToptanSatisTalepleri"
+                                   asp-action="Details" asp-route-id="@talep.Id"
+                                   class="btn btn-sm btn-outline-secondary">Aç</a>
+                            </div>
+                        }
+                        @if (!Model.SonToptanTalepleri.Any())
+                        {
+                            <p class="text-muted mb-0">Henüz talep yok.</p>
+                        }
+                    </div>
+                </div>
             </div>
         </section>
     }
     else if (depo)
     {
         <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Ürün Çeşidi</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.ToplamUrunCesidi</h3>
-                    </div>
+            @foreach (var kart in new[]
+            {
+                ("Toplam Ürün", Model.ToplamUrunCesidi.ToString(), ""),
+                ("Toplam Stok", Model.ToplamStokAdedi.ToString(), ""),
+                ("Kritik Stok", Model.KritikStokSayisi.ToString(), "warning"),
+                ("Bugünkü Giriş", Model.BugunkuStokGirisAdedi.ToString(), "income"),
+                ("Bugünkü Çıkış", Model.BugunkuStokCikisAdedi.ToString(), "expense"),
+                ("İade Girişi", Model.BugunkuIadeGirisAdedi.ToString(), "return"),
+                ("Hasarlı / İnceleme", Model.HasarliIncelemeIadeUrunSayisi.ToString(), "warning")
+            })
+            {
+                <div class="col-sm-6 col-xl">
+                    <a asp-controller="@(kart.Item1 == "Kritik Stok"
+                           ? "Urunler"
+                           : kart.Item1.Contains("İade") ||
+                             kart.Item1.Contains("Hasarlı")
+                               ? "IadeDegisimTalepleri"
+                               : "StokHareketleri")"
+                       asp-action="@(kart.Item1.Contains("İade") ||
+                           kart.Item1.Contains("Hasarlı")
+                               ? "IadeBelgeleri"
+                               : "Index")"
+                       asp-route-kritikStok="@(kart.Item1 == "Kritik Stok"
+                           ? "true"
+                           : null)"
+                       class="dashboard-metric-link">
+                        <div class="dashboard-metric @kart.Item3">
+                            <span>@kart.Item1</span>
+                            <strong>@kart.Item2</strong>
+                            <small>Detaya git</small>
+                        </div>
+                    </a>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Stok Adedi</p>
-                        <h3 class="h4 fw-bold text-info mb-0">@Model.ToplamStokAdedi</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Kritik Stok Sayısı</p>
-                        <h3 class="h4 fw-bold text-warning mb-0">@Model.KritikStokSayisi</h3>
-                    </div>
-                </div>
-            </div>
+            }
         </section>
 
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
+        <section class="row g-4 mb-4">
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
                     <div class="card-body">
                         <h2 class="h5 fw-bold mb-3">Son Stok Hareketleri</h2>
-                        @await Html.PartialAsync("_DashboardStokHareketleri", Model)
-                    </div>
-                </section>
-            </div>
-
-            <div class="col-lg-6">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                            <h2 class="h5 fw-bold mb-0">Kritik Stoktaki Ürünler</h2>
-
-                            <a asp-controller="Urunler"
-                               asp-action="Index"
-                               asp-route-kritikStok="true"
-                               class="btn btn-sm btn-outline-warning">
-                                Kritik Stok Ürünlerini Gör
-                            </a>
-                        </div>
-                        @await Html.PartialAsync("_DashboardKritikStok", Model)
-                    </div>
-                </section>
-            </div>
-        </div>
-    }
-    else if (muhasebe)
-    {
-        <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.BugunkuGelir)</h3>
+                        @if (Model.SonStokHareketleri.Any())
+                        {
+                            @await Html.PartialAsync("_DashboardStokHareketleri", Model)
+                        }
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+            <div class="col-xl-6">
+                <div class="card border-0 shadow-sm dashboard-section-card">
                     <div class="card-body">
-                        <p class="text-muted mb-2">Bugünkü Gider</p>
-                        <h3 class="h4 fw-bold text-danger mb-0">@Tl(Model.BugunkuGider)</h3>
+                        <h2 class="h5 fw-bold mb-3">Hasarlı / İnceleme Gereken İadeler</h2>
+                        @foreach (var urun in Model.SorunluIadeUrunleri)
+                        {
+                            <div class="dashboard-list-row">
+                                <div>
+                                    <strong>@urun.UrunAdi</strong>
+                                    <small class="d-block">
+                                        @urun.TalepNo · @urun.UrunDurumu · @urun.Adet adet
+                                    </small>
+                                </div>
+                                <a asp-controller="IadeDegisimTalepleri"
+                                   asp-action="Details"
+                                   asp-route-id="@urun.TalepId"
+                                   class="btn btn-sm btn-outline-secondary">Aç</a>
+                            </div>
+                        }
+                        @if (!Model.SorunluIadeUrunleri.Any())
+                        {
+                            <p class="text-muted mb-0">İncelenecek iade ürünü yok.</p>
+                        }
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Aylık Gelir</p>
-                        <h3 class="h4 fw-bold text-info mb-0">@Tl(Model.AylikGelir)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Aylık Gider</p>
-                        <h3 class="h4 fw-bold text-warning mb-0">@Tl(Model.AylikGider)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gelir</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Tl(Model.ToplamGelir)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Gider</p>
-                        <h3 class="h4 fw-bold text-danger mb-0">@Tl(Model.ToplamGider)</h3>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <h2 class="h5 fw-bold mb-3">Ödeme Tipine Göre Gelir</h2>
-
-                @if (Model.OdemeTipineGoreGelirler.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Ödeme Tipi</th>
-                                    <th>Satış Sayısı</th>
-                                    <th class="text-end">Toplam Gelir</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.OdemeTipineGoreGelirler)
-                                {
-                                    <tr>
-                                        <td>@item.OdemeTipi</td>
-                                        <td>@item.SatisSayisi</td>
-                                        <td class="text-end fw-semibold">@Tl(item.ToplamGelir)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted py-4 text-center">Henüz gelir kaydı yok.</div>
-                }
-            </div>
-        </section>
-
-        <section class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h2 class="h5 fw-bold mb-3">En Yüksek Giderler</h2>
-                @await Html.PartialAsync("_DashboardGiderler", Model)
             </div>
         </section>
     }
     else if (insanKaynaklari)
     {
         <section class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Toplam Personel</p>
-                        <h3 class="h4 fw-bold text-primary mb-0">@Model.ToplamPersonel</h3>
-                    </div>
+            @foreach (var kart in new[]
+            {
+                ("Toplam Personel", Model.ToplamPersonel.ToString()),
+                ("Aktif Personel", Model.AktifPersonel.ToString()),
+                ("Ortalama Maaş", Tl(Model.OrtalamaMaas)),
+                ("En Yüksek Maaş", Tl(Model.EnYuksekMaas)),
+                ("En Düşük Maaş", Tl(Model.EnDusukMaas))
+            })
+            {
+                <div class="col-sm-6 col-xl">
+                    <a asp-controller="Personeller" asp-action="Index"
+                       class="dashboard-metric-link">
+                        <div class="dashboard-metric">
+                            <span>@kart.Item1</span>
+                            <strong>@kart.Item2</strong>
+                            <small>Personellere git</small>
+                        </div>
+                    </a>
                 </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Aktif Personel</p>
-                        <h3 class="h4 fw-bold text-success mb-0">@Model.AktifPersonel</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">Ortalama Maaş</p>
-                        <h3 class="h4 fw-bold text-info mb-0">@Tl(Model.OrtalamaMaas)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">En Yüksek Maaş</p>
-                        <h3 class="h4 fw-bold text-warning mb-0">@Tl(Model.EnYuksekMaas)</h3>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm h-100 border-start border-4 border-secondary">
-                    <div class="card-body">
-                        <p class="text-muted mb-2">En Düşük Maaş</p>
-                        <h3 class="h4 fw-bold text-secondary mb-0">@Tl(Model.EnDusukMaas)</h3>
-                    </div>
-                </div>
-            </div>
+            }
         </section>
 
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h2 class="h5 fw-bold mb-3">Personel Listesi Özeti</h2>
-                        @await Html.PartialAsync("_DashboardPersoneller", Model)
-                    </div>
-                </section>
-            </div>
-
-            <div class="col-lg-4">
-                <section class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h2 class="h5 fw-bold mb-3">Yakında</h2>
-                        <div class="list-group">
-                            <div class="list-group-item">İzin Yönetimi yakında</div>
-                            <div class="list-group-item">Mesai Yönetimi yakında</div>
-                            <div class="list-group-item">Maaş Ödemeleri yakında</div>
-                            <div class="list-group-item">Prim / Performans yakında</div>
-                        </div>
-                    </div>
-                </section>
+        <div class="card border-0 shadow-sm dashboard-section-card">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-3">Personel Listesi Özeti</h2>
+                @await Html.PartialAsync("_DashboardPersoneller", Model)
             </div>
         </div>
     }
-    else
-    {
-        <section class="card border-0 shadow-sm">
-            <div class="card-body p-4">
-                <h2 class="h4 fw-bold">Hoş geldiniz, @Model.KullaniciAdi</h2>
-                <p class="text-muted mb-2">Rolünüz: <strong>@Model.Rol</strong></p>
-                <p class="mb-0">
-                    Bu panelde size tanımlanan yetkiler kapsamında ERP sistemini görüntüleyebilirsiniz.
-                    Yetkiniz olmayan modüller menülerde gösterilmez.
-                </p>
-            </div>
-        </section>
-    }
 
-    @if (adminGrafikGorsun || yoneticiGrafikGorsun || kasiyerGrafikGorsun || depoGrafikGorsun || muhasebeGrafikGorsun)
+    @if (yonetim || muhasebe || satisPersoneli || depo)
     {
         <section class="mt-4">
-            <div class="mb-3">
-                <h2 class="h4 fw-bold mb-1">Görsel Raporlar</h2>
-                <p class="text-muted mb-0">
-                    Satış, stok ve finans verileri grafiklerle özetlenir.
-                </p>
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                <div>
+                    <h2 class="h4 fw-bold mb-1">Görsel Özetler</h2>
+                    <p class="text-muted mb-0">
+                        Rolünüz için anlamlı güncel veriler.
+                    </p>
+                </div>
             </div>
 
             <div class="row g-4">
-                @if (adminGrafikGorsun || yoneticiGrafikGorsun || kasiyerGrafikGorsun)
+                @if (yonetim || satisPersoneli)
                 {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <h3 class="h6 fw-bold">
-                                    @(kasiyer ? "Son 7 Gün Kendi Satışlarım" : "Günlük Satış Grafiği")
-                                </h3>
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h3 class="h6 fw-bold mb-0">
+                                        @(satisPersoneli
+                                            ? "Son 7 Gün Kendi Satışlarım"
+                                            : "Son 7 Gün Satış")
+                                    </h3>
+                                    @if (yonetim || kasiyer)
+                                    {
+                                        <a asp-controller="Satislar"
+                                           asp-action="Index"
+                                           class="small">Satışlara git</a>
+                                    }
+                                </div>
                                 @if (Model.GunlukSatisValues.Any())
                                 {
-                                    <canvas id="gunlukSatisChart" height="140"></canvas>
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="gunlukSatisChart"></canvas>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
                                 }
                             </div>
                         </div>
                     </div>
                 }
 
-                @if (adminGrafikGorsun || yoneticiGrafikGorsun || muhasebeGrafikGorsun)
+                @if (yonetim || muhasebe)
                 {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <h3 class="h6 fw-bold">Gelir-Gider Grafiği</h3>
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <h3 class="h6 fw-bold">Gelir / Gider</h3>
                                 @if (Model.GelirGiderValues.Any())
                                 {
-                                    <canvas id="gelirGiderChart" height="140"></canvas>
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="gelirGiderChart"></canvas>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
                                 }
                             </div>
                         </div>
                     </div>
                 }
 
-                @if (adminGrafikGorsun)
+                @if (yonetim)
                 {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <h3 class="h6 fw-bold">Kategori Bazlı Satış Grafiği</h3>
-                                @if (Model.KategoriSatisValues.Any())
-                                {
-                                    <canvas id="kategoriSatisChart" height="140"></canvas>
-                                }
-                                else
-                                {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                }
-
-                @if (adminGrafikGorsun || yoneticiGrafikGorsun)
-                {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
                                 <h3 class="h6 fw-bold">En Çok Satılan Ürünler</h3>
                                 @if (Model.EnCokSatilanUrunValues.Any())
                                 {
-                                    <canvas id="enCokSatilanChart" height="140"></canvas>
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="enCokSatilanChart"></canvas>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
                                 }
                             </div>
                         </div>
                     </div>
                 }
 
-                @if (adminGrafikGorsun || yoneticiGrafikGorsun || depoGrafikGorsun)
+                @if (yonetim || depo)
                 {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <h3 class="h6 fw-bold">Kritik Stok Grafiği</h3>
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <h3 class="h6 fw-bold">Kritik Stok</h3>
                                 @if (Model.KritikStokValues.Any())
                                 {
-                                    <canvas id="kritikStokChart" height="140"></canvas>
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="kritikStokChart"></canvas>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
                                 }
                             </div>
                         </div>
                     </div>
                 }
 
-                @if (muhasebeGrafikGorsun)
+                @if (muhasebe)
                 {
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body">
-                                <h3 class="h6 fw-bold">Aylık Gelir-Gider Grafiği</h3>
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <h3 class="h6 fw-bold">Aylık Gelir / Gider</h3>
                                 @if (Model.AylikGelirGiderLabels.Any())
                                 {
-                                    <canvas id="aylikGelirGiderChart" height="140"></canvas>
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="aylikGelirGiderChart"></canvas>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <p class="text-muted mb-0">Bu grafik için yeterli veri bulunamadı.</p>
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (yonetim || muhasebe)
+                {
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h3 class="h6 fw-bold mb-0">Satış İadeleri Trendi</h3>
+                                    <a asp-controller="IadeDegisimTalepleri"
+                                       asp-action="IadeBelgeleri"
+                                       class="small">İade belgeleri</a>
+                                </div>
+                                @if (Model.IadeTrendValues.Any())
+                                {
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="iadeTrendChart"></canvas>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (depo)
+                {
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm dashboard-section-card dashboard-chart-card">
+                            <div class="card-body dashboard-chart-body">
+                                <h3 class="h6 fw-bold">
+                                    Son 7 Gün Stok Giriş / Çıkış / İade
+                                </h3>
+                                @if (Model.StokHareketLabels.Any())
+                                {
+                                    <div class="dashboard-chart-wrapper">
+                                        <canvas id="stokHareketChart"></canvas>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="dashboard-chart-empty">
+                                        Grafik için yeterli veri bulunamadı.
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -910,23 +1129,93 @@
 
     <script type="application/json" id="gunlukSatisLabelsJson">@Html.Raw(gunlukSatisLabelsJson)</script>
     <script type="application/json" id="gunlukSatisValuesJson">@Html.Raw(gunlukSatisValuesJson)</script>
-
     <script type="application/json" id="gelirGiderLabelsJson">@Html.Raw(gelirGiderLabelsJson)</script>
     <script type="application/json" id="gelirGiderValuesJson">@Html.Raw(gelirGiderValuesJson)</script>
-
-    <script type="application/json" id="kategoriSatisLabelsJson">@Html.Raw(kategoriSatisLabelsJson)</script>
-    <script type="application/json" id="kategoriSatisValuesJson">@Html.Raw(kategoriSatisValuesJson)</script>
-
     <script type="application/json" id="enCokSatilanLabelsJson">@Html.Raw(enCokSatilanLabelsJson)</script>
     <script type="application/json" id="enCokSatilanValuesJson">@Html.Raw(enCokSatilanValuesJson)</script>
-
     <script type="application/json" id="kritikStokLabelsJson">@Html.Raw(kritikStokLabelsJson)</script>
     <script type="application/json" id="kritikStokValuesJson">@Html.Raw(kritikStokValuesJson)</script>
-
     <script type="application/json" id="aylikGelirGiderLabelsJson">@Html.Raw(aylikGelirGiderLabelsJson)</script>
     <script type="application/json" id="aylikGelirValuesJson">@Html.Raw(aylikGelirValuesJson)</script>
     <script type="application/json" id="aylikGiderValuesJson">@Html.Raw(aylikGiderValuesJson)</script>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+    <script type="application/json" id="stokHareketLabelsJson">@Html.Raw(stokHareketLabelsJson)</script>
+    <script type="application/json" id="stokGirisValuesJson">@Html.Raw(stokGirisValuesJson)</script>
+    <script type="application/json" id="stokCikisValuesJson">@Html.Raw(stokCikisValuesJson)</script>
+    <script type="application/json" id="iadeGirisValuesJson">@Html.Raw(iadeGirisValuesJson)</script>
+    <script type="application/json" id="iadeTrendLabelsJson">@Html.Raw(iadeTrendLabelsJson)</script>
+    <script type="application/json" id="iadeTrendValuesJson">@Html.Raw(iadeTrendValuesJson)</script>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        if (typeof Chart !== "undefined") {
+            Chart.defaults.responsive = true;
+            Chart.defaults.maintainAspectRatio = false;
+        }
+    </script>
+    <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const read = id => {
+                const element = document.getElementById(id);
+                return element ? JSON.parse(element.textContent || "[]") : [];
+            };
+
+            const iadeCanvas = document.getElementById("iadeTrendChart");
+            if (iadeCanvas && typeof Chart !== "undefined") {
+                new Chart(iadeCanvas, {
+                    type: "line",
+                    data: {
+                        labels: read("iadeTrendLabelsJson"),
+                        datasets: [{
+                            label: "İade Tutarı",
+                            data: read("iadeTrendValuesJson"),
+                            borderColor: "#ea580c",
+                            backgroundColor: "rgba(234, 88, 12, .12)",
+                            fill: true,
+                            tension: .3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            const stokCanvas = document.getElementById("stokHareketChart");
+            if (stokCanvas && typeof Chart !== "undefined") {
+                new Chart(stokCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: read("stokHareketLabelsJson"),
+                        datasets: [
+                            {
+                                label: "Giriş",
+                                data: read("stokGirisValuesJson"),
+                                backgroundColor: "#15803d"
+                            },
+                            {
+                                label: "Çıkış",
+                                data: read("stokCikisValuesJson"),
+                                backgroundColor: "#dc2626"
+                            },
+                            {
+                                label: "İade Girişi",
+                                data: read("iadeGirisValuesJson"),
+                                backgroundColor: "#ea580c"
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        });
+    </script>
+}

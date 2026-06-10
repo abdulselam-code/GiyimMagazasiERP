@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using GiyimMagazasiERP.Data;
+using GiyimMagazasiERP.Models;
 using GiyimMagazasiERP.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,22 @@ public class DashboardController : Controller
         var ayBaslangici = new DateTime(bugun.Year, bugun.Month, 1);
         var sonrakiAyBaslangici = ayBaslangici.AddMonths(1);
         var ayBitisi = sonrakiAyBaslangici.AddDays(-1);
+        var rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Personel";
+        var kullaniciIdMetni =
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
+        int? kullaniciId = int.TryParse(kullaniciIdMetni, out var id)
+            ? id
+            : null;
+        int? personelId = null;
+
+        if (kullaniciId.HasValue)
+        {
+            personelId = await _context.Kullanicilar
+                .AsNoTracking()
+                .Where(x => x.Id == kullaniciId.Value)
+                .Select(x => x.PersonelId)
+                .FirstOrDefaultAsync();
+        }
 
         var toplamGelir = await _context.FinansHareketleri
             .AsNoTracking()
@@ -38,7 +55,7 @@ public class DashboardController : Controller
         var model = new DashboardViewModel
         {
             KullaniciAdi = User.Identity?.Name ?? "Kullanıcı",
-            Rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Personel",
+            Rol = rol,
 
             BugununTarihi = bugun,
             BuAyBaslangicTarihi = ayBaslangici,
@@ -129,6 +146,131 @@ public class DashboardController : Controller
                
         };
 
+        model.BugunkuNet = model.BugunkuGelir - model.BugunkuGider;
+        model.SatisIadeleriToplami = await _context.FinansHareketleri
+            .AsNoTracking()
+            .Where(x =>
+                x.HareketTipi == "Gider" &&
+                x.Kategori == "Satış İadesi")
+            .SumAsync(x => (decimal?)x.Tutar) ?? 0;
+
+        model.BugunkuIadeTutari = await _context.IadeDegisimTalepleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Durum == IadeDegisimTalebi.DurumTamamlandi &&
+                x.TamamlanmaTarihi >= bugun &&
+                x.TamamlanmaTarihi < yarin)
+            .SumAsync(x => (decimal?)x.ToplamIadeTutari) ?? 0;
+
+        model.BekleyenToptanTalepSayisi =
+            await _context.ToptanSatisTalepleri
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum ==
+                        ToptanSatisTalebi.DurumYoneticiOnayiBekliyor ||
+                    x.Durum ==
+                        ToptanSatisTalebi.DurumMuhasebeOnayiBekliyor);
+
+        model.BekleyenIadeTalepSayisi =
+            await _context.IadeDegisimTalepleri
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum ==
+                        IadeDegisimTalebi.DurumYoneticiOnayiBekliyor ||
+                    x.Durum ==
+                        IadeDegisimTalebi.DurumMuhasebeOnayiBekliyor);
+
+        model.MuhasebeOnayiBekleyenToptanSayisi =
+            await _context.ToptanSatisTalepleri
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum ==
+                    ToptanSatisTalebi.DurumMuhasebeOnayiBekliyor);
+
+        model.MuhasebeOnayiBekleyenIadeSayisi =
+            await _context.IadeDegisimTalepleri
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum ==
+                    IadeDegisimTalebi.DurumMuhasebeOnayiBekliyor);
+
+        model.TamamlananIadeBelgesiSayisi =
+            await _context.IadeDegisimTalepleri
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum == IadeDegisimTalebi.DurumTamamlandi &&
+                    x.IadeBelgeNo != null &&
+                    x.IadeBelgeNo != "");
+
+        model.BugunkuStokGirisAdedi = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Tarih >= bugun &&
+                x.Tarih < yarin &&
+                x.HareketTipi == "Giris")
+            .SumAsync(x => (int?)x.Miktar) ?? 0;
+
+        model.BugunkuStokCikisAdedi = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Tarih >= bugun &&
+                x.Tarih < yarin &&
+                (x.HareketTipi == "Cikis" ||
+                 x.HareketTipi == "SatisCikis" ||
+                 x.HareketTipi == "FireCikis"))
+            .SumAsync(x => (int?)x.Miktar) ?? 0;
+
+        model.BugunkuIadeGirisAdedi = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Tarih >= bugun &&
+                x.Tarih < yarin &&
+                x.HareketTipi == "IadeGiris")
+            .SumAsync(x => (int?)x.Miktar) ?? 0;
+
+        model.HasarliIncelemeIadeUrunSayisi =
+            await _context.IadeDegisimTalepDetaylari
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.IadeDegisimTalebi.Durum ==
+                        IadeDegisimTalebi.DurumTamamlandi &&
+                    (x.UrunDurumu ==
+                        IadeDegisimTalepDetayi.UrunDurumuHasarli ||
+                     x.UrunDurumu ==
+                        IadeDegisimTalepDetayi
+                            .UrunDurumuIncelemeGerekli));
+
+        if (kullaniciId.HasValue)
+        {
+            model.BenimBekleyenToptanTalepSayisi =
+                await _context.ToptanSatisTalepleri
+                    .AsNoTracking()
+                    .CountAsync(x =>
+                        (x.TalepEdenKullaniciId == kullaniciId.Value ||
+                         (personelId.HasValue &&
+                          x.TalepEdenPersonelId == personelId.Value)) &&
+                        (x.Durum ==
+                            ToptanSatisTalebi
+                                .DurumYoneticiOnayiBekliyor ||
+                         x.Durum ==
+                            ToptanSatisTalebi
+                                .DurumMuhasebeOnayiBekliyor));
+
+            model.BenimBekleyenIadeTalepSayisi =
+                await _context.IadeDegisimTalepleri
+                    .AsNoTracking()
+                    .CountAsync(x =>
+                        (x.TalepEdenKullaniciId == kullaniciId.Value ||
+                         (personelId.HasValue &&
+                          x.TalepEdenPersonelId == personelId.Value)) &&
+                        (x.Durum ==
+                            IadeDegisimTalebi
+                                .DurumYoneticiOnayiBekliyor ||
+                         x.Durum ==
+                            IadeDegisimTalebi
+                                .DurumMuhasebeOnayiBekliyor));
+        }
+
         model.HizliIslemler = HizliIslemleriGetir();
 
         model.IsletmeKurulusTarihi = await _context.MagazaBilgileri
@@ -179,22 +321,14 @@ public class DashboardController : Controller
     .Include(x => x.Musteri)
     .AsQueryable();
 
-        if (User.IsInRole("Kasiyer"))
+        if (User.IsInRole("Kasiyer") || User.IsInRole("Personel"))
         {
-            var kullaniciIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (int.TryParse(kullaniciIdText, out var kullaniciId))
+            if (personelId.HasValue)
             {
-                var personelId = await _context.Kullanicilar
-                    .AsNoTracking()
-                    .Where(x => x.Id == kullaniciId)
-                    .Select(x => x.PersonelId)
-                    .FirstOrDefaultAsync();
-                if (personelId.HasValue)
-                {
-                    satisSorgusu = satisSorgusu.Where(x => x.PersonelId == personelId.Value);
+                satisSorgusu = satisSorgusu
+                    .Where(x => x.PersonelId == personelId.Value);
 
-                    model.BugunkuSatisSayisi = await satisSorgusu
+                model.BugunkuSatisSayisi = await satisSorgusu
                         .CountAsync(x => x.SatisTarihi >= bugun && x.SatisTarihi < yarin);
 
                     model.BugunkuSatisGeliri = await satisSorgusu
@@ -204,16 +338,9 @@ public class DashboardController : Controller
                     model.AylikSatisSayisi = await satisSorgusu
                         .CountAsync(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici);
 
-                    model.AylikSatisGeliri = await satisSorgusu
+                model.AylikSatisGeliri = await satisSorgusu
                         .Where(x => x.SatisTarihi >= ayBaslangici && x.SatisTarihi < sonrakiAyBaslangici)
                         .SumAsync(x => (decimal?)x.NetTutar) ?? 0;
-                }
-                else
-                {
-                    model.KasiyerPersonelEslesmesiVarMi = false;
-                    model.UyariMesaji = "Bu kullanıcıya bağlı personel kaydı bulunamadı.";
-                    satisSorgusu = satisSorgusu.Where(x => false);
-                }
             }
             else
             {
@@ -302,6 +429,140 @@ public class DashboardController : Controller
                 Maas = x.Maas
             })
             .ToListAsync();
+
+        model.SonIadeBelgeleri = await _context.IadeDegisimTalepleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Durum == IadeDegisimTalebi.DurumTamamlandi &&
+                x.IadeBelgeNo != null &&
+                x.IadeBelgeNo != "")
+            .OrderByDescending(x => x.TamamlanmaTarihi)
+            .Take(5)
+            .Select(x => new DashboardIadeBelgesiViewModel
+            {
+                Id = x.Id,
+                BelgeNo = x.IadeBelgeNo!,
+                TalepNo = x.TalepNo,
+                Tarih = x.TamamlanmaTarihi ?? x.TalepTarihi,
+                MusteriAdi = x.Musteri != null
+                    ? x.Musteri.AdSoyad
+                    : "Nihai Tüketici",
+                Tutar = x.ToplamIadeTutari
+            })
+            .ToListAsync();
+
+        var bekleyenToptan = await _context.ToptanSatisTalepleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Durum ==
+                    ToptanSatisTalebi.DurumYoneticiOnayiBekliyor ||
+                x.Durum ==
+                    ToptanSatisTalebi.DurumMuhasebeOnayiBekliyor)
+            .OrderByDescending(x => x.TalepTarihi)
+            .Take(5)
+            .Select(x => new DashboardTalepOzetViewModel
+            {
+                Id = x.Id,
+                Modul = "Toptan",
+                TalepNo = x.TalepNo,
+                Durum = x.Durum,
+                Tarih = x.TalepTarihi,
+                Tutar = x.NetTutar
+            })
+            .ToListAsync();
+
+        var bekleyenIade = await _context.IadeDegisimTalepleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Durum ==
+                    IadeDegisimTalebi.DurumYoneticiOnayiBekliyor ||
+                x.Durum ==
+                    IadeDegisimTalebi.DurumMuhasebeOnayiBekliyor)
+            .OrderByDescending(x => x.TalepTarihi)
+            .Take(5)
+            .Select(x => new DashboardTalepOzetViewModel
+            {
+                Id = x.Id,
+                Modul = "İade",
+                TalepNo = x.TalepNo,
+                Durum = x.Durum,
+                Tarih = x.TalepTarihi,
+                Tutar = x.ToplamIadeTutari
+            })
+            .ToListAsync();
+
+        model.BekleyenOnaylar = bekleyenToptan
+            .Concat(bekleyenIade)
+            .OrderByDescending(x => x.Tarih)
+            .Take(6)
+            .ToList();
+
+        if (kullaniciId.HasValue)
+        {
+            model.SonIadeTalepleri =
+                await _context.IadeDegisimTalepleri
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.TalepEdenKullaniciId == kullaniciId.Value ||
+                        (personelId.HasValue &&
+                         x.TalepEdenPersonelId == personelId.Value))
+                    .OrderByDescending(x => x.TalepTarihi)
+                    .Take(5)
+                    .Select(x => new DashboardTalepOzetViewModel
+                    {
+                        Id = x.Id,
+                        Modul = "İade",
+                        TalepNo = x.TalepNo,
+                        Durum = x.Durum,
+                        Tarih = x.TalepTarihi,
+                        Tutar = x.ToplamIadeTutari
+                    })
+                    .ToListAsync();
+
+            model.SonToptanTalepleri =
+                await _context.ToptanSatisTalepleri
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.TalepEdenKullaniciId == kullaniciId.Value ||
+                        (personelId.HasValue &&
+                         x.TalepEdenPersonelId == personelId.Value))
+                    .OrderByDescending(x => x.TalepTarihi)
+                    .Take(5)
+                    .Select(x => new DashboardTalepOzetViewModel
+                    {
+                        Id = x.Id,
+                        Modul = "Toptan",
+                        TalepNo = x.TalepNo,
+                        Durum = x.Durum,
+                        Tarih = x.TalepTarihi,
+                        Tutar = x.NetTutar
+                    })
+                    .ToListAsync();
+        }
+
+        model.SorunluIadeUrunleri =
+            await _context.IadeDegisimTalepDetaylari
+                .AsNoTracking()
+                .Where(x =>
+                    x.IadeDegisimTalebi.Durum ==
+                        IadeDegisimTalebi.DurumTamamlandi &&
+                    (x.UrunDurumu ==
+                        IadeDegisimTalepDetayi.UrunDurumuHasarli ||
+                     x.UrunDurumu ==
+                        IadeDegisimTalepDetayi
+                            .UrunDurumuIncelemeGerekli))
+                .OrderByDescending(x =>
+                    x.IadeDegisimTalebi.TamamlanmaTarihi)
+                .Take(6)
+                .Select(x => new DashboardIadeUrunViewModel
+                {
+                    TalepId = x.IadeDegisimTalebiId,
+                    TalepNo = x.IadeDegisimTalebi.TalepNo,
+                    UrunAdi = x.UrunAdiSnapshot,
+                    UrunDurumu = x.UrunDurumu,
+                    Adet = x.IadeAdedi
+                })
+                .ToListAsync();
 
         await GrafikVerileriniDoldur(model, satisSorgusu);
 
@@ -413,6 +674,80 @@ public class DashboardController : Controller
         model.AylikGelirGiderLabels = aylikFinans.Select(x => $"{x.Month:00}/{x.Year}").ToList();
         model.AylikGelirValues = aylikFinans.Select(x => x.Gelir).ToList();
         model.AylikGiderValues = aylikFinans.Select(x => x.Gider).ToList();
+
+        var stokBaslangic = DateTime.Today.AddDays(-6);
+        var stokBitis = DateTime.Today.AddDays(1);
+        var stokHam = await _context.StokHareketleri
+            .AsNoTracking()
+            .Where(x => x.Tarih >= stokBaslangic && x.Tarih < stokBitis)
+            .GroupBy(x => new
+            {
+                x.Tarih.Year,
+                x.Tarih.Month,
+                x.Tarih.Day
+            })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                g.Key.Day,
+                Giris = g.Where(x => x.HareketTipi == "Giris")
+                    .Sum(x => (int?)x.Miktar) ?? 0,
+                Cikis = g.Where(x =>
+                        x.HareketTipi == "Cikis" ||
+                        x.HareketTipi == "SatisCikis" ||
+                        x.HareketTipi == "FireCikis")
+                    .Sum(x => (int?)x.Miktar) ?? 0,
+                Iade = g.Where(x => x.HareketTipi == "IadeGiris")
+                    .Sum(x => (int?)x.Miktar) ?? 0
+            })
+            .ToListAsync();
+
+        for (var gun = stokBaslangic; gun < stokBitis; gun = gun.AddDays(1))
+        {
+            var satir = stokHam.FirstOrDefault(x =>
+                x.Year == gun.Year &&
+                x.Month == gun.Month &&
+                x.Day == gun.Day);
+
+            model.StokHareketLabels.Add(gun.ToString("dd/MM"));
+            model.StokGirisValues.Add(satir?.Giris ?? 0);
+            model.StokCikisValues.Add(satir?.Cikis ?? 0);
+            model.IadeGirisValues.Add(satir?.Iade ?? 0);
+        }
+
+        var iadeTrend = await _context.IadeDegisimTalepleri
+            .AsNoTracking()
+            .Where(x =>
+                x.Durum == IadeDegisimTalebi.DurumTamamlandi &&
+                x.TamamlanmaTarihi.HasValue)
+            .GroupBy(x => new
+            {
+                x.TamamlanmaTarihi!.Value.Year,
+                x.TamamlanmaTarihi.Value.Month
+            })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                Tutar = g.Sum(x => x.ToplamIadeTutari)
+            })
+            .OrderByDescending(x => x.Year)
+            .ThenByDescending(x => x.Month)
+            .Take(6)
+            .ToListAsync();
+
+        iadeTrend = iadeTrend
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ToList();
+
+        model.IadeTrendLabels = iadeTrend
+            .Select(x => $"{x.Month:00}/{x.Year}")
+            .ToList();
+        model.IadeTrendValues = iadeTrend
+            .Select(x => x.Tutar)
+            .ToList();
     }
 
     private List<DashboardQuickActionViewModel> HizliIslemleriGetir()
@@ -427,6 +762,9 @@ public class DashboardController : Controller
                 Link("Mağaza Bilgileri", "MagazaBilgileri", "Index", "secondary"),
                 Link("Finans Hareketleri", "FinansHareketleri", "Index", "warning"),
                 Link("Faturalar", "Faturalar", "Index", "info"),
+                Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
+                Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
+                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("SQL Panel", "SqlYonetici", "Index", "dark"),
                 Link("DB Panel", "VeritabaniYonetici", "Index", "dark")
@@ -443,19 +781,33 @@ public class DashboardController : Controller
                 Link("Mağaza Bilgileri", "MagazaBilgileri", "Index", "secondary"),
                 Link("Personeller", "Personeller"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
-                Link("Faturalar", "Faturalar", "Index", "info")
+                Link("Faturalar", "Faturalar", "Index", "info"),
+                Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
+                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary")
             };
         }
 
         if (User.IsInRole("Kasiyer"))
         {
             return new()
-    {
-        Link("Satış Yap", "SatisIslemleri", "Create", "success"),
-        Link("Satışlarım", "Satislar"),
-        Link("Kendi Faturalarım", "Faturalar"),
-        Link("Fatura Ara / Yazdır", "Faturalar", "Index", "info")
-    };
+            {
+                Link("Satış Yap", "SatisIslemleri", "Create", "success"),
+                Link("Satışlarım", "Satislar"),
+                Link("Kendi Faturalarım", "Faturalar"),
+                Link("Benim İade Taleplerim", "IadeDegisimTalepleri", "BenimTaleplerim", "warning"),
+                Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
+                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary")
+            };
+        }
+
+        if (User.IsInRole("Personel"))
+        {
+            return new()
+            {
+                Link("Benim İade Taleplerim", "IadeDegisimTalepleri", "BenimTaleplerim", "warning"),
+                Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
+                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary")
+            };
         }
 
         if (User.IsInRole("Depo"))
@@ -465,7 +817,8 @@ public class DashboardController : Controller
                 Link("Ürünler", "Urunler"),
                 Link("Kategoriler", "Kategoriler"),
                 Link("Tedarikçiler", "Tedarikciler"),
-                Link("Stok Hareketleri", "StokHareketleri", "Index", "warning")
+                Link("Stok Hareketleri", "StokHareketleri", "Index", "warning"),
+                Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary")
             };
         }
 
@@ -476,7 +829,10 @@ public class DashboardController : Controller
                 Link("Finans Hareketleri", "FinansHareketleri", "Index", "warning"),
                 Link("Satışlar", "Satislar"),
                 Link("Faturalar", "Faturalar", "Index", "info"),
-                Link("Raporlar", "Raporlar", "Index", "info")
+                Link("Raporlar", "Raporlar", "Index", "info"),
+                Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
+                Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
+                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary")
             };
         }
 

@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Ana Sayfa";
@@ -6,96 +6,355 @@
     var girisVarMi = User.Identity?.IsAuthenticated == true;
     var kullaniciAdi = User.Identity?.Name ?? "Kullanıcı";
     var rol = User.FindFirst(ClaimTypes.Role)?.Value ?? "Tanımsız";
+
+    var admin = User.IsInRole("Admin");
+    var yonetici = User.IsInRole("Yonetici");
+    var kasiyer = User.IsInRole("Kasiyer");
+    var personel = User.IsInRole("Personel");
+    var depo = User.IsInRole("Depo");
+    var muhasebe = User.IsInRole("Muhasebe");
+    var ik = User.IsInRole("InsanKaynaklari");
 }
 
-<div class="container py-4">
-    <section class="rounded-4 p-4 p-lg-5 text-white shadow-sm mb-4" style="background: linear-gradient(135deg, #0f172a, #1d4ed8);">
+<style>
+    .home-page-wrapper {
+        width: 100%;
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 20px 40px;
+    }
+
+    .home-erp-hero {
+        padding: clamp(32px, 4vw, 56px);
+        color: #fff;
+        background: #172033;
+        border-radius: 8px;
+    }
+
+    .home-hero-copy {
+        max-width: 760px;
+    }
+
+    .home-hero-title {
+        max-width: 760px;
+        font-size: clamp(2rem, 3vw, 3.25rem);
+        line-height: 1.12;
+    }
+
+    .home-hero-description {
+        max-width: 720px;
+        font-size: clamp(1rem, 1.35vw, 1.2rem);
+        line-height: 1.65;
+    }
+
+    .home-user-panel {
+        width: 100%;
+        max-width: 360px;
+        margin-left: auto;
+        padding: 24px;
+        color: #172033;
+        background: #fff;
+        border: 1px solid #dfe5ec;
+        border-radius: 7px;
+    }
+
+    .home-module-link {
+        display: block;
+        height: 100%;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .home-module-card {
+        height: 100%;
+        min-height: 190px;
+        padding: 24px;
+        background: #fff;
+        border: 1px solid #dfe5ec;
+        border-radius: 7px;
+        transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .home-module-link:hover .home-module-card {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .09);
+    }
+
+    .home-module-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        margin-bottom: 14px;
+        color: #1d4ed8;
+        background: #eff6ff;
+        border-radius: 6px;
+        font-weight: 800;
+    }
+
+    .home-benefit {
+        height: 100%;
+        min-height: 128px;
+        padding: 20px;
+        background: #f8fafc;
+        border-left: 3px solid #2563eb;
+    }
+
+    .home-benefit p,
+    .home-module-card p {
+        line-height: 1.55;
+    }
+
+    @@media (max-width: 991.98px) {
+        .home-user-panel {
+            max-width: none;
+            margin-left: 0;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .home-page-wrapper {
+            padding: 18px 12px 30px;
+        }
+
+        .home-erp-hero {
+            padding: 26px 20px;
+        }
+
+        .home-module-card {
+            min-height: 0;
+        }
+
+        .home-benefit {
+            min-height: 0;
+        }
+    }
+</style>
+
+<div class="home-page-wrapper">
+    <section class="home-erp-hero mb-4">
         <div class="row align-items-center g-4">
-            <div class="col-lg-8">
-                <h1 class="display-6 fw-bold mb-3">
+            <div class="col-lg-8 home-hero-copy">
+                <h1 class="home-hero-title fw-bold mb-3">
                     Giyim Mağazası ERP ve İşletme Yönetim Sistemi
                 </h1>
-
-                <p class="lead mb-0">
-                    Satış, stok, müşteri, personel, finans ve raporlama süreçlerini tek panelden yönetin.
+                <p class="home-hero-description text-white-50 mb-0">
+                    Satış, stok, müşteri, finans, iade, toptan satış ve
+                    raporlama süreçlerini tek panelden yönetin.
                 </p>
             </div>
-
             <div class="col-lg-4">
-                <div class="bg-white text-dark rounded-4 p-4 shadow-sm">
+                <div class="home-user-panel">
                     @if (girisVarMi)
                     {
-                        <p class="text-muted mb-1">Hoş geldiniz,</p>
-                        <h2 class="h4 fw-bold mb-2">@kullaniciAdi</h2>
-                        <p class="mb-3">
-                            <span class="text-muted">Rolünüz:</span>
-                            <strong>@rol</strong>
-                        </p>
-
-                        <a asp-controller="Dashboard"
-                           asp-action="Index"
+                        <span class="text-muted small">Hoş geldiniz</span>
+                        <h2 class="h4 fw-bold mt-1 mb-1">@kullaniciAdi</h2>
+                        <p class="text-muted mb-3">Rolünüz: <strong>@rol</strong></p>
+                        <a asp-controller="Dashboard" asp-action="Index"
                            class="btn btn-primary w-100">
                             Dashboard'a Git
                         </a>
                     }
                     else
                     {
-                        <h2 class="h5 fw-bold mb-2">Devam etmek için giriş yapınız.</h2>
-                        <p class="text-muted mb-3">
-                            ERP paneline erişmek için kullanıcı hesabınızla oturum açın.
+                        <h2 class="h5 fw-bold">ERP paneline giriş yapın</h2>
+                        <p class="text-muted">
+                            Yetkinize uygun çalışma alanına güvenli şekilde ulaşın.
                         </p>
-
-                        <a asp-controller="Auth"
-                           asp-action="Login"
-                           class="btn btn-primary w-100">
-                            Giriş Yap
-                        </a>
+                        <a asp-controller="Auth" asp-action="Login"
+                           class="btn btn-primary w-100">Giriş Yap</a>
                     }
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="row g-3">
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold">Satış Yönetimi</h2>
-                    <p class="text-muted mb-0">
-                        Sepetli satış, müşteri takibi ve fatura süreçleri yönetilir.
+    @if (girisVarMi)
+    {
+        <section class="mb-5">
+            <div class="mb-3">
+                <h2 class="h4 fw-bold mb-1">Modüller</h2>
+                <p class="text-muted mb-0">
+                    Rolünüze açık işlemlere doğrudan ulaşın.
+                </p>
+            </div>
+
+            <div class="row g-3">
+                @if (admin || yonetici || kasiyer)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="SatisIslemleri" asp-action="Create"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">S</span>
+                                <h3 class="h5 fw-bold">Satış Yönetimi</h3>
+                                <p class="text-muted mb-0">
+                                    Perakende satış, müşteri ve fatura işlemleri.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || kasiyer || personel || muhasebe)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="ToptanSatisTalepleri"
+                           asp-action="@(admin || yonetici || muhasebe
+                               ? "Index"
+                               : "BenimTaleplerim")"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">T</span>
+                                <h3 class="h5 fw-bold">Toptan Satış Talepleri</h3>
+                                <p class="text-muted mb-0">
+                                    Kurumsal teklif, talep ve onay süreçleri.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || muhasebe || depo || kasiyer || personel)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="IadeDegisimTalepleri"
+                           asp-action="@(admin || yonetici || muhasebe || depo
+                               ? "Index"
+                               : "BenimTaleplerim")"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">İ</span>
+                                <h3 class="h5 fw-bold">İade / Değişim</h3>
+                                <p class="text-muted mb-0">
+                                    Talep, onay, stok ve iade belgesi takibi.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || depo)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="Urunler" asp-action="Index"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">D</span>
+                                <h3 class="h5 fw-bold">Stok Yönetimi</h3>
+                                <p class="text-muted mb-0">
+                                    Ürün, kategori, kritik stok ve hareket takibi.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || muhasebe)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="FinansHareketleri" asp-action="Index"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">F</span>
+                                <h3 class="h5 fw-bold">Finans Yönetimi</h3>
+                                <p class="text-muted mb-0">
+                                    Gelir, gider, net durum ve satış iadeleri.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || kasiyer || muhasebe)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="Faturalar" asp-action="Index"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">B</span>
+                                <h3 class="h5 fw-bold">Fatura ve Belgeler</h3>
+                                <p class="text-muted mb-0">
+                                    Satış faturalarını görüntüleyin ve yazdırın.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || muhasebe)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="Raporlar" asp-action="Index"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">R</span>
+                                <h3 class="h5 fw-bold">Raporlama</h3>
+                                <p class="text-muted mb-0">
+                                    Satış, finans, müşteri ve stok analizleri.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+
+                @if (admin || yonetici || ik)
+                {
+                    <div class="col-md-6 col-xl-3">
+                        <a asp-controller="Personeller" asp-action="Index"
+                           class="home-module-link">
+                            <div class="home-module-card">
+                                <span class="home-module-mark">P</span>
+                                <h3 class="h5 fw-bold">Personel Yönetimi</h3>
+                                <p class="text-muted mb-0">
+                                    Personel, departman ve maaş bilgileri.
+                                </p>
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <section>
+        <div class="mb-3">
+            <h2 class="h4 fw-bold mb-1">Neden Bu Sistem?</h2>
+            <p class="text-muted mb-0">
+                Mağazanın temel operasyonları birbiriyle bağlantılı çalışır.
+            </p>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-6 col-xl-3">
+                <div class="home-benefit">
+                    <strong>Gerçek Zamanlı Stok</strong>
+                    <p class="text-muted small mb-0 mt-1">
+                        Satış ve iade hareketleri stoklara anında yansır.
                     </p>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold">Stok Yönetimi</h2>
-                    <p class="text-muted mb-0">
-                        Ürün, kategori, tedarikçi ve stok hareketleri takip edilir.
+            <div class="col-md-6 col-xl-3">
+                <div class="home-benefit">
+                    <strong>Satış ve Fatura</strong>
+                    <p class="text-muted small mb-0 mt-1">
+                        Satıştan belgeye kadar tek ve izlenebilir akış.
                     </p>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold">Finans Yönetimi</h2>
-                    <p class="text-muted mb-0">
-                        Gelir, gider, net kazanç ve işletme giderleri izlenir.
+            <div class="col-md-6 col-xl-3">
+                <div class="home-benefit">
+                    <strong>Kurumsal Onay Süreci</strong>
+                    <p class="text-muted small mb-0 mt-1">
+                        Toptan satışlar rol bazlı onaylarla ilerler.
                     </p>
                 </div>
             </div>
-        </div>
-
-        <div class="col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <h2 class="h5 fw-bold">Raporlama</h2>
-                    <p class="text-muted mb-0">
-                        Günlük, aylık ve yıllık raporlarla işletme performansı analiz edilir.
+            <div class="col-md-6 col-xl-3">
+                <div class="home-benefit">
+                    <strong>İade ve Finans Entegrasyonu</strong>
+                    <p class="text-muted small mb-0 mt-1">
+                        Tamamlanan iadeler stok ve finans kayıtlarıyla eşleşir.
                     </p>
                 </div>
             </div>
