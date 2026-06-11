@@ -97,6 +97,22 @@
 - [ ] Rol bazlı AccessDenied davranışı korunmuş.
 - [ ] Proje hatasız build alıyor.
 
+## Kasa Kapanışı Testleri
+
+- [ ] `018_create_kasa_kapanislari.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] Kasiyer yalnızca kendi adına kasa kapanışı oluşturabiliyor.
+- [ ] Aynı kasiyer ve tarih için ikinci kapanış engelleniyor.
+- [ ] Beklenen nakit, kredi kartı ve havale tutarları günlük satışlardan doğru hesaplanıyor.
+- [ ] Tamamlanmış iadeler ilgili ödeme tipinden düşülüyor.
+- [ ] Sayılan tutarlar girildiğinde ödeme tipi ve toplam farkları doğru hesaplanıyor.
+- [ ] Admin, Yonetici ve Muhasebe hazırlanmış kapanışı onaylayabiliyor.
+- [ ] Red nedeni boş bırakıldığında red işlemi engelleniyor.
+- [ ] Onaylanan veya reddedilen kapanış tekrar işleme alınamıyor.
+- [ ] Kasiyer başka bir kasiyerin kapanış detayına erişemiyor.
+- [ ] Personel, Depo ve InsanKaynaklari rolleri modüle erişemiyor.
+- [ ] Dashboard ve Hareketler menüsü role göre doğru bağlantıyı gösteriyor.
+- [ ] Satış, fatura, finans, iade ve toptan satış akışlarında regresyon oluşmuyor.
+
 ## Personel İzinleri Testleri
 
 - [ ] `016_create_personel_izinleri.sql` tekrar çalıştırıldığında hata vermiyor.

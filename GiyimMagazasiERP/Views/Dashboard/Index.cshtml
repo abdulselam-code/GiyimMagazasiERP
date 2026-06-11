@@ -375,6 +375,62 @@
         </section>
     }
 
+    @if (yonetim || muhasebe)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="KasaKapanislari"
+                   asp-action="Index"
+                   asp-route-durum="Hazirlandi"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Onay Bekleyen Kasa Kapanışı</span>
+                        <strong>@Model.OnayBekleyenKasaKapanisiSayisi</strong>
+                        <small>Kapanış mutabakatlarını incele</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a asp-controller="KasaKapanislari"
+                   asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric @(Model.BugunkuKasaFarki == 0 ? "income" : "expense")">
+                        <span>Bugünkü Kasa Farkı</span>
+                        <strong>@Tl(Model.BugunkuKasaFarki)</strong>
+                        <small>@Model.BugunkuKasaKapanisDurumu</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+    else if (kasiyer)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="KasaKapanislari"
+                   asp-action="BenimKapanislarim"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric">
+                        <span>Bugünkü Kasa Kapanışım</span>
+                        <strong>@Model.BugunkuKasaKapanisDurumu</strong>
+                        <small>Kapanış detayına git</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a asp-controller="KasaKapanislari"
+                   asp-action="BenimKapanislarim"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric @(Model.BugunkuKasaFarki == 0 ? "income" : "expense")">
+                        <span>Bugünkü Kasa Farkım</span>
+                        <strong>@Tl(Model.BugunkuKasaFarki)</strong>
+                        <small>Beklenen ve sayılan tutarı karşılaştır</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+
     @if (yonetim)
     {
         <section class="row g-3 mb-4">

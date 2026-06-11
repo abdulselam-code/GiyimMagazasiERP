@@ -1,0 +1,303 @@
+@model GiyimMagazasiERP.Models.KasaKapanisi
+@using GiyimMagazasiERP.Models
+
+@{
+    ViewData["Title"] = "Kasa Kapanışı Detayı";
+    var yonetebilir =
+        User.IsInRole("Admin") ||
+        User.IsInRole("Yonetici") ||
+        User.IsInRole("Muhasebe");
+
+    string DurumMetni(string durum) => durum switch
+    {
+        KasaKapanisi.DurumHazirlandi => "Onay Bekliyor",
+        KasaKapanisi.DurumOnaylandi => "Onaylandı",
+        KasaKapanisi.DurumReddedildi => "Reddedildi",
+        _ => durum
+    };
+
+    string DurumRengi(string durum) => durum switch
+    {
+        KasaKapanisi.DurumHazirlandi => "warning",
+        KasaKapanisi.DurumOnaylandi => "success",
+        KasaKapanisi.DurumReddedildi => "danger",
+        _ => "secondary"
+    };
+
+    string FarkRengi(decimal fark) =>
+        fark == 0 ? "text-success" :
+        fark > 0 ? "text-primary" : "text-danger";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <h1 class="h3 fw-bold mb-0">Kasa Kapanışı Detayı</h1>
+                <span class="badge text-bg-@DurumRengi(Model.Durum)">
+                    @DurumMetni(Model.Durum)
+                </span>
+            </div>
+            <p class="text-muted mb-0">@Model.KapanisNo</p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="@(User.IsInRole("Kasiyer") ? "BenimKapanislarim" : "Index")"
+               class="btn btn-outline-secondary">
+                Listeye Dön
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                Yeni Kapanış
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    @if (yonetebilir && Model.Durum == KasaKapanisi.DurumHazirlandi)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">Mutabakat İşlemi</h2>
+                        <p class="text-muted mb-0">
+                            Sayım sonuçlarını inceleyerek kapanışı onaylayın veya gerekçesiyle reddedin.
+                        </p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button"
+                                class="btn btn-success"
+                                data-bs-toggle="modal"
+                                data-bs-target="#onayModal">
+                            Kapanışı Onayla
+                        </button>
+                        <button type="button"
+                                class="btn btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#redModal">
+                            Kapanışı Reddet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">Kapanış Bilgileri</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Kapanış No</dt>
+                        <dd class="col-sm-7">@Model.KapanisNo</dd>
+
+                        <dt class="col-sm-5">Tarih</dt>
+                        <dd class="col-sm-7">@Model.Tarih.ToString("dd.MM.yyyy")</dd>
+
+                        <dt class="col-sm-5">Kasiyer</dt>
+                        <dd class="col-sm-7">@Model.KasaPersonel.AdSoyad</dd>
+
+                        <dt class="col-sm-5">Kullanıcı</dt>
+                        <dd class="col-sm-7">@Model.KasaKullanici.KullaniciAdi</dd>
+
+                        <dt class="col-sm-5">Oluşturma</dt>
+                        <dd class="col-sm-7">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-5">Satış / İade</dt>
+                        <dd class="col-sm-7">@Model.SatisSayisi / @Model.IadeSayisi</dd>
+
+                        <dt class="col-sm-5">İade Toplamı</dt>
+                        <dd class="col-sm-7">@Model.IadeToplami.ToString("N2") TL</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold mb-3">Onay Bilgileri</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Durum</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge text-bg-@DurumRengi(Model.Durum)">
+                                @DurumMetni(Model.Durum)
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-5">İşlem Yapan</dt>
+                        <dd class="col-sm-7">
+                            @(Model.OnaylayanKullanici?.AdSoyad
+                              ?? Model.OnaylayanKullanici?.KullaniciAdi
+                              ?? "Henüz işlem yapılmadı")
+                        </dd>
+
+                        <dt class="col-sm-5">İşlem Tarihi</dt>
+                        <dd class="col-sm-7">
+                            @(Model.OnayTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz işlem yapılmadı")
+                        </dd>
+
+                        <dt class="col-sm-5">Açıklama</dt>
+                        <dd class="col-sm-7">@(Model.Aciklama ?? "-")</dd>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.RedNedeni))
+                        {
+                            <dt class="col-sm-5">Red Nedeni</dt>
+                            <dd class="col-sm-7 text-danger fw-semibold">@Model.RedNedeni</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-3">Ödeme Tipi Mutabakatı</h2>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ödeme Tipi</th>
+                            <th class="text-end">Beklenen</th>
+                            <th class="text-end">Sayılan</th>
+                            <th class="text-end">Fark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Nakit</td>
+                            <td class="text-end">@Model.BeklenenNakit.ToString("N2") TL</td>
+                            <td class="text-end">@Model.SayilanNakit.ToString("N2") TL</td>
+                            <td class="text-end fw-semibold @FarkRengi(Model.FarkNakit)">
+                                @Model.FarkNakit.ToString("N2") TL
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Kredi Kartı</td>
+                            <td class="text-end">@Model.BeklenenKrediKarti.ToString("N2") TL</td>
+                            <td class="text-end">@Model.SayilanKrediKarti.ToString("N2") TL</td>
+                            <td class="text-end fw-semibold @FarkRengi(Model.FarkKrediKarti)">
+                                @Model.FarkKrediKarti.ToString("N2") TL
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Havale</td>
+                            <td class="text-end">@Model.BeklenenHavale.ToString("N2") TL</td>
+                            <td class="text-end">@Model.SayilanHavale.ToString("N2") TL</td>
+                            <td class="text-end fw-semibold @FarkRengi(Model.FarkHavale)">
+                                @Model.FarkHavale.ToString("N2") TL
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Toplam</th>
+                            <th class="text-end">@Model.BeklenenToplam.ToString("N2") TL</th>
+                            <th class="text-end">@Model.SayilanToplam.ToString("N2") TL</th>
+                            <th class="text-end @FarkRengi(Model.FarkToplam)">
+                                @Model.FarkToplam.ToString("N2") TL
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (yonetebilir && Model.Durum == KasaKapanisi.DurumHazirlandi)
+{
+    <div class="modal fade" id="onayModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">Kasa Kapanışını Onayla</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">
+                        <strong>@Model.KapanisNo</strong> numaralı kapanış onaylanacaktır.
+                    </p>
+                    <p class="text-muted mb-0">Bu işlem kayıt altına alınacaktır.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Vazgeç
+                    </button>
+                    <form asp-action="Onayla" asp-route-id="@Model.Id" method="post">
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Convert.ToBase64String(Model.RowVersion)" />
+                        <button type="submit" class="btn btn-success submit-once">
+                            Onayla
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="redModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form asp-action="Reddet" asp-route-id="@Model.Id" method="post">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5">Kasa Kapanışını Reddet</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Convert.ToBase64String(Model.RowVersion)" />
+                        <label for="redNedeni" class="form-label fw-semibold">
+                            Red Nedeni
+                        </label>
+                        <textarea id="redNedeni"
+                                  name="redNedeni"
+                                  class="form-control"
+                                  rows="4"
+                                  maxlength="500"
+                                  required
+                                  placeholder="Kapanışın reddedilme nedenini yazınız"></textarea>
+                        <div class="form-text">Bu işlem kayıt altına alınacaktır.</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Vazgeç
+                        </button>
+                        <button type="submit" class="btn btn-danger submit-once">
+                            Reddet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", () => {
+                form.querySelectorAll(".submit-once").forEach(button => {
+                    button.disabled = true;
+                });
+            });
+        });
+    </script>
+}

@@ -115,6 +115,14 @@ public class SatisIslemleriController : Controller
                 "Seçilen personel toptan satış yapmaya yetkili değildir.");
         }
 
+        if (personel is not null &&
+            await AktifKasaKapanisiVarMi(personel.Id, DateTime.Today))
+        {
+            ModelState.AddModelError(
+                "",
+                "Bu kasiyer için gün sonu kasa kapanışı yapılmış. Yeni satış oluşturmak için önce kapanışın reddedilmesi veya yetkili tarafından yeniden açılması gerekir.");
+        }
+
         if (!ModelState.IsValid)
         {
             await DropdownlariDoldur(
@@ -231,6 +239,23 @@ public class SatisIslemleriController : Controller
 
         try
         {
+            if (await AktifKasaKapanisiVarMi(personel.Id, satisTarihi.Date))
+            {
+                await transaction.RollbackAsync();
+
+                ModelState.AddModelError(
+                    "",
+                    "Bu kasiyer için gün sonu kasa kapanışı yapılmış. Yeni satış oluşturmak için önce kapanışın reddedilmesi veya yetkili tarafından yeniden açılması gerekir.");
+
+                await DropdownlariDoldur(
+                    model.MusteriId,
+                    personelId,
+                    model.SatisTuru,
+                    model.OdemeTipi);
+
+                return View(model);
+            }
+
             var satis = new Satis
             {
                 MusteriId = model.MusteriId,
@@ -467,6 +492,22 @@ public class SatisIslemleriController : Controller
 
         ViewData["SatisPersonelleriJson"] = personelSecenekleri;
 
+        var bugun = DateTime.Today;
+        var kasaKilitliPersonelIdleri = await _context.KasaKapanislari
+            .AsNoTracking()
+            .Where(x =>
+                x.Tarih == bugun &&
+                (x.Durum == KasaKapanisi.DurumHazirlandi ||
+                 x.Durum == KasaKapanisi.DurumOnaylandi))
+            .Select(x => x.KasaPersonelId)
+            .Distinct()
+            .ToListAsync();
+
+        ViewData["KasaKilitliPersonelIdleri"] = kasaKilitliPersonelIdleri;
+        ViewData["BugunKasaKapaliMi"] =
+            personelId.HasValue &&
+            kasaKilitliPersonelIdleri.Contains(personelId.Value);
+
         var otomatikPersonel = await OtomatikPersonelBul();
 
         ViewData["OtomatikPersonelAdi"] = otomatikPersonel is not null
@@ -522,5 +563,20 @@ public class SatisIslemleriController : Controller
             odemeTipi);
 
         ViewData["SatisTuru"] = satisTuru;
+    }
+
+    private Task<bool> AktifKasaKapanisiVarMi(
+        int personelId,
+        DateTime tarih)
+    {
+        var gun = tarih.Date;
+
+        return _context.KasaKapanislari
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.KasaPersonelId == personelId &&
+                x.Tarih == gun &&
+                (x.Durum == KasaKapanisi.DurumHazirlandi ||
+                 x.Durum == KasaKapanisi.DurumOnaylandi));
     }
 }

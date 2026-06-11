@@ -147,6 +147,39 @@ public class DashboardController : Controller
         };
 
         model.BugunkuNet = model.BugunkuGelir - model.BugunkuGider;
+        model.OnayBekleyenKasaKapanisiSayisi =
+            await _context.KasaKapanislari
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum == KasaKapanisi.DurumHazirlandi);
+
+        var bugunkuKapanislar = _context.KasaKapanislari
+            .AsNoTracking()
+            .Where(x => x.Tarih == bugun);
+
+        if (rol == "Kasiyer" && kullaniciId.HasValue)
+        {
+            bugunkuKapanislar = bugunkuKapanislar
+                .Where(x => x.KasaKullaniciId == kullaniciId.Value);
+        }
+
+        model.BugunkuKasaFarki =
+            await bugunkuKapanislar
+                .SumAsync(x => (decimal?)x.FarkToplam) ?? 0;
+
+        var bugunkuKapanisDurumu = await bugunkuKapanislar
+            .OrderByDescending(x => x.Id)
+            .Select(x => x.Durum)
+            .FirstOrDefaultAsync();
+
+        model.BugunkuKasaKapanisDurumu = bugunkuKapanisDurumu switch
+        {
+            KasaKapanisi.DurumHazirlandi => "Hazırlandı",
+            KasaKapanisi.DurumOnaylandi => "Onaylandı",
+            KasaKapanisi.DurumReddedildi => "Reddedildi",
+            _ => "Kapanış yapılmadı"
+        };
+
         model.SatisIadeleriToplami = await _context.FinansHareketleri
             .AsNoTracking()
             .Where(x =>
@@ -766,6 +799,7 @@ public class DashboardController : Controller
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
                 Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("SQL Panel", "SqlYonetici", "Index", "dark"),
@@ -786,6 +820,7 @@ public class DashboardController : Controller
                 Link("Faturalar", "Faturalar", "Index", "info"),
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
                 Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary")
             };
         }
@@ -797,6 +832,8 @@ public class DashboardController : Controller
                 Link("Satış Yap", "SatisIslemleri", "Create", "success"),
                 Link("Satışlarım", "Satislar"),
                 Link("Kendi Faturalarım", "Faturalar"),
+                Link("Gün Sonu Kapanışı", "KasaKapanislari", "Create", "secondary"),
+                Link("Benim Kasa Kapanışlarım", "KasaKapanislari", "BenimKapanislarim", "info"),
                 Link("Benim İade Taleplerim", "IadeDegisimTalepleri", "BenimTaleplerim", "warning"),
                 Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
                 Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary"),
@@ -842,6 +879,7 @@ public class DashboardController : Controller
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
                 Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
                 Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };

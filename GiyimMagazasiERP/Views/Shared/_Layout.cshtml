@@ -31,6 +31,7 @@
     aktifController == "FinansHareketleri" ||
     aktifController == "ToptanSatisTalepleri" ||
     aktifController == "IadeDegisimTalepleri" ||
+    aktifController == "KasaKapanislari" ||
     aktifController == "StokHareketleri";
 
     var analizAktif =
@@ -247,6 +248,28 @@
                                                    asp-controller="Satislar"
                                                    asp-action="Index">
                                                     Satışlar
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "KasaKapanislari" ? "active" : "")"
+                                                   asp-controller="KasaKapanislari"
+                                                   asp-action="Index">
+                                                    Kasa Kapanışları
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (kasiyer)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "KasaKapanislari" ? "active" : "")"
+                                                   asp-controller="KasaKapanislari"
+                                                   asp-action="BenimKapanislarim">
+                                                    Benim Kasa Kapanışlarım
                                                 </a>
                                             </li>
                                         }

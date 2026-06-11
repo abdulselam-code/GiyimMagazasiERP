@@ -51,6 +51,9 @@ public class DashboardViewModel
     public int TamamlananIadeBelgesiSayisi { get; set; }
     public int BenimBekleyenToptanTalepSayisi { get; set; }
     public int BenimBekleyenIadeTalepSayisi { get; set; }
+    public int OnayBekleyenKasaKapanisiSayisi { get; set; }
+    public decimal BugunkuKasaFarki { get; set; }
+    public string BugunkuKasaKapanisDurumu { get; set; } = "Kapanış yapılmadı";
 
     public int BugunkuStokGirisAdedi { get; set; }
     public int BugunkuStokCikisAdedi { get; set; }

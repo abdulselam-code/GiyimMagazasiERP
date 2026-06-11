@@ -1,12 +1,35 @@
+using System.Globalization;
 using GiyimMagazasiERP.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var turkceKultur = new CultureInfo("tr-TR");
+CultureInfo.DefaultThreadCurrentCulture = turkceKultur;
+CultureInfo.DefaultThreadCurrentUICulture = turkceKultur;
+
 // MVC servisleri
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.ModelBindingMessageProvider.SetValueMustBeANumberAccessor(
+        alanAdi => $"{alanAdi} alanına geçerli bir sayı giriniz.");
+    options.ModelBindingMessageProvider.SetAttemptedValueIsInvalidAccessor(
+        (deger, alanAdi) =>
+            $"{alanAdi} alanına geçerli bir değer giriniz.");
+    options.ModelBindingMessageProvider.SetValueIsInvalidAccessor(
+        deger => $"'{deger}' geçerli bir değer değildir.");
+});
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    options.DefaultRequestCulture =
+        new RequestCulture(turkceKultur);
+    options.SupportedCultures = new[] { turkceKultur };
+    options.SupportedUICultures = new[] { turkceKultur };
+});
 
 // Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -44,6 +67,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseRequestLocalization();
 
 app.UseRouting();
 

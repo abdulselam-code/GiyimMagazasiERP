@@ -19,6 +19,10 @@
     var otomatikPersonelAdi = ViewData["OtomatikPersonelAdi"]?.ToString() ?? "Uygun personel bulunamadı";
     var personelEslesmeVarMi = ViewData["PersonelEslesmeVarMi"] as bool? ?? true;
     var personelHataMesaji = ViewData["PersonelHataMesaji"]?.ToString();
+    var bugunKasaKapaliMi = ViewData["BugunKasaKapaliMi"] as bool? ?? false;
+    var kasaKilitliPersonelIdleriJson =
+        JsonSerializer.Serialize(
+            ViewData["KasaKilitliPersonelIdleri"] ?? Array.Empty<int>());
 }
 
 
@@ -48,6 +52,13 @@
         }
 
         <div id="sepetUyariAlani"></div>
+        <div id="kasaKapanisUyarisi"
+             class="alert alert-warning @(bugunKasaKapaliMi ? "" : "d-none")">
+            @(dogrudanToptanYetkili
+                ? "Seçilen kasiyerin bugünkü kasa kapanışı oluşturulduğu için yeni satış yapılamaz."
+                : "Bugünkü kasa kapanışınız oluşturulduğu için yeni satış yapılamaz.")
+        </div>
+
         @if (!personelEslesmeVarMi && !string.IsNullOrWhiteSpace(personelHataMesaji))
         {
             <div class="alert alert-warning">
@@ -327,8 +338,9 @@
 
                         <div class="d-grid gap-2 mt-4">
                             <button type="submit"
+                                    id="satisiTamamlaButonu"
                                     class="btn btn-success btn-lg"
-                                    disabled="@(!personelEslesmeVarMi)">
+                                    disabled="@(!personelEslesmeVarMi || bugunKasaKapaliMi)">
                                 Satışı Tamamla
                             </button>
 
@@ -351,6 +363,9 @@
     @Html.Raw(satisPersonelleriJson)
 </script>
 <script type="application/json" id="mevcutSepetJson">@Html.Raw(mevcutSepetJson)</script>
+<script type="application/json" id="kasaKilitliPersonelIdleriJson">
+    @Html.Raw(kasaKilitliPersonelIdleriJson)
+</script>
 
 @section Scripts {
     @{
@@ -364,6 +379,9 @@
         document.getElementById("satisPersonelleriJson")?.textContent || "[]"
         );
         const mevcutSepet = JSON.parse(document.getElementById("mevcutSepetJson").textContent || "[]");
+        const kasaKilitliPersonelIdleri = JSON.parse(
+        document.getElementById("kasaKilitliPersonelIdleriJson")?.textContent || "[]"
+        ).map(Number);
 
         
 
@@ -385,6 +403,10 @@
         const urunBilgiAlani = document.getElementById("urunBilgiAlani");
         const toptanAciklamaAlani = document.getElementById("toptanAciklamaAlani");
         const dogrudanToptanUyarisi = document.getElementById("dogrudanToptanUyarisi");
+        const kasaKapanisUyarisi = document.getElementById("kasaKapanisUyarisi");
+        const satisiTamamlaButonu = document.getElementById("satisiTamamlaButonu");
+        const personelEslesmeVarMi = @personelEslesmeVarMi.ToString().ToLowerInvariant();
+        const otomatikPersonelId = Number(@(Model.PersonelId?.ToString() ?? "0"));
 
         const ozetSatisTuru = document.getElementById("ozetSatisTuru");
         const ozetUrunSayisi = document.getElementById("ozetUrunSayisi");
@@ -407,6 +429,25 @@
         Adet: Number(x.Adet) || 1,
         StokMiktari: Number(x.StokMiktari) || 0
         })) : [];
+
+        function seciliSatisPersoneliIdGetir() {
+        return personelSecimi
+        ? Number(personelSecimi.value)
+        : otomatikPersonelId;
+        }
+
+        function kasaKapanisKilitDurumunuGuncelle() {
+        const seciliPersonelId = seciliSatisPersoneliIdGetir();
+        const kasaKilitli = kasaKilitliPersonelIdleri.includes(seciliPersonelId);
+
+        kasaKapanisUyarisi?.classList.toggle("d-none", !kasaKilitli);
+
+        if (satisiTamamlaButonu) {
+        satisiTamamlaButonu.disabled = !personelEslesmeVarMi || kasaKilitli;
+        }
+
+        return kasaKilitli;
+        }
 
         function tlFormatla(tutar) {
         return new Intl.NumberFormat("tr-TR", {
@@ -481,6 +522,8 @@
         personelSecimi.value = oncekiPersonelHalaUygun
         ? oncekiSecim
         : "";
+
+        kasaKapanisKilitDurumunuGuncelle();
 
         if (personelAciklama) {
         personelAciklama.textContent = satisTuru === "Toptan"
@@ -710,8 +753,15 @@
         urunSecimi.addEventListener("change", urunBilgisiniGuncelle);
         sepeteEkleBtn.addEventListener("click", sepeteUrunEkle);
         musteriSecimi.addEventListener("change", sepetiGuncelle);
+        personelSecimi?.addEventListener("change", kasaKapanisKilitDurumunuGuncelle);
 
         satisFormu.addEventListener("submit", function (event) {
+        if (kasaKapanisKilitDurumunuGuncelle()) {
+        event.preventDefault();
+        uyariGoster("Bu kasiyer için gün sonu kasa kapanışı yapılmış. Yeni satış oluşturmak için önce kapanışın reddedilmesi veya yetkili tarafından yeniden açılması gerekir.");
+        return;
+        }
+
         if (satisTuruInput.value === "Toptan" && !dogrudanToptanYetkili) {
         event.preventDefault();
         satisTuruAyarla("Perakende");
@@ -743,5 +793,6 @@
         satisTuruAyarla(satisTuruInput.value || "Perakende");
         urunBilgisiniGuncelle();
         sepetiGuncelle();
+        kasaKapanisKilitDurumunuGuncelle();
     </script>
 }

@@ -20,6 +20,7 @@ yönetebilecek durumdadır.
 - Müşteri ve personel yönetimi
 - Tarih filtreli raporlar
 - Responsive Ana Sayfa ve Dashboard
+- Kasa kapanışı / gün sonu mutabakatı, onay ve red süreci
 
 ## Demo Veriler
 
@@ -41,7 +42,6 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 - Resmi e-Fatura/e-Arşiv ve GİB entegrasyonu yoktur.
 - İade Belgesi uygulama içi operasyon belgesidir; resmi mali belge değildir.
 - Tek mağaza senaryosu esas alınmıştır.
-- Kasa/gün sonu mutabakatı bulunmamaktadır.
 - Depo ve karantina stokları ayrı fiziksel lokasyonlar olarak yönetilmemektedir.
 - E-posta ve SMS bildirim altyapısı bulunmamaktadır.
 
@@ -65,7 +65,6 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 
 ## Gelecek Geliştirmeler
 
-- Kasa/gün sonu mutabakatı
 - Resmi e-Fatura/e-Arşiv entegrasyonu
 - Detaylı iade nedenleri raporu
 - Ürün bazlı kârlılık raporu
@@ -84,3 +83,16 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 - Kalan hakkı aşan yıllık izin talepleri oluşturma ve onay aşamalarında engellenir.
 - Onay, red ve iptal işlemleri özet gösteren Bootstrap modallarıyla güvenli biçimde tamamlanır.
 - Gelecek aşamada vardiya, mesai ve puantaj yönetimi eklenebilir.
+
+## Kasa Kapanışı / Gün Sonu Mutabakatı
+
+- Kasiyerin belirli tarihteki satışları ödeme tipine göre hesaplanır.
+- Tamamlanmış iadeler ödeme tipi bulunabildiğinde ilgili tutardan düşülür.
+- Sayılan ve beklenen tutarlar arasındaki eksik/fazla farkı kayıt altına alınır.
+- Aynı kasiyer ve tarih için ikinci kapanış hem uygulama hem veritabanı
+  seviyesinde engellenir.
+- Admin, Yonetici ve Muhasebe kapanışları onaylayabilir veya gerekçesiyle
+  reddedebilir.
+- Kasiyer yalnızca kendi kapanışlarını görür; diğer roller backend yetkisiyle
+  sınırlandırılır.
+- Eşzamanlı onay/red işlemleri RowVersion ile korunur.

@@ -46,6 +46,7 @@ public class AppDbContext : DbContext
     public DbSet<PersonelIzni> PersonelIzinleri => Set<PersonelIzni>();
     public DbSet<PersonelIzinBakiyesi> PersonelIzinBakiyeleri
         => Set<PersonelIzinBakiyesi>();
+    public DbSet<KasaKapanisi> KasaKapanislari => Set<KasaKapanisi>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -690,6 +691,55 @@ modelBuilder.Entity<IadeDegisimYeniUrunDetayi>(entity =>
             entity.HasOne(x => x.Personel)
                 .WithMany()
                 .HasForeignKey(x => x.PersonelId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<KasaKapanisi>(entity =>
+        {
+            entity.ToTable("KasaKapanislari");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.KapanisNo).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Durum).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Tarih).HasColumnType("date");
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.RedNedeni).HasMaxLength(500);
+            entity.Property(x => x.RowVersion).IsRowVersion();
+
+            entity.Property(x => x.BeklenenNakit).HasPrecision(18, 2);
+            entity.Property(x => x.BeklenenKrediKarti).HasPrecision(18, 2);
+            entity.Property(x => x.BeklenenHavale).HasPrecision(18, 2);
+            entity.Property(x => x.BeklenenToplam).HasPrecision(18, 2);
+            entity.Property(x => x.SayilanNakit).HasPrecision(18, 2);
+            entity.Property(x => x.SayilanKrediKarti).HasPrecision(18, 2);
+            entity.Property(x => x.SayilanHavale).HasPrecision(18, 2);
+            entity.Property(x => x.SayilanToplam).HasPrecision(18, 2);
+            entity.Property(x => x.FarkNakit).HasPrecision(18, 2);
+            entity.Property(x => x.FarkKrediKarti).HasPrecision(18, 2);
+            entity.Property(x => x.FarkHavale).HasPrecision(18, 2);
+            entity.Property(x => x.FarkToplam).HasPrecision(18, 2);
+            entity.Property(x => x.IadeToplami).HasPrecision(18, 2);
+
+            entity.HasIndex(x => x.KapanisNo).IsUnique();
+            entity.HasIndex(x => new { x.KasaPersonelId, x.Tarih }).IsUnique();
+            entity.HasIndex(x => x.Tarih);
+            entity.HasIndex(x => x.KasaPersonelId);
+            entity.HasIndex(x => x.KasaKullaniciId);
+            entity.HasIndex(x => x.Durum);
+
+            entity.HasOne(x => x.KasaPersonel)
+                .WithMany()
+                .HasForeignKey(x => x.KasaPersonelId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.KasaKullanici)
+                .WithMany()
+                .HasForeignKey(x => x.KasaKullaniciId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.OnaylayanKullanici)
+                .WithMany()
+                .HasForeignKey(x => x.OnaylayanKullaniciId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
     }

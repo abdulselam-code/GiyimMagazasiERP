@@ -102,3 +102,20 @@ talebi oluşturulamaz ve bakiye onay sırasında yeniden kontrol edilir.
 
 Onay, red ve iptal işlemleri işlem özeti gösteren Bootstrap pencereleriyle
 tamamlanır. Red işlemi için neden yazılması zorunludur.
+
+## Kasa Kapanışı / Gün Sonu Mutabakatı
+
+Kasiyer, **Hareketler > Benim Kasa Kapanışlarım** ekranından **Gün Sonu
+Kapanışı Oluştur** seçeneğini açar. Sistem seçilen tarihte kasiyerin yaptığı
+satışları ödeme tipine göre toplar ve tamamlanmış iadeleri düşerek beklenen
+nakit, kredi kartı ve havale tutarlarını hesaplar. Kasiyer fiziki kasa ve
+terminal kayıtlarındaki sayılan tutarları girer.
+
+Fark, `Sayılan - Beklenen` olarak hesaplanır. Sıfır fark mutabakat sağlandığını,
+negatif fark kasa eksiğini, pozitif fark ise kasa fazlasını gösterir. Kapanış
+kaydedildiğinde **Hazırlandı** durumuna geçer.
+
+Admin, Yonetici ve Muhasebe rolleri **Hareketler > Kasa Kapanışları**
+ekranından tüm kapanışları inceler. Hazırlanmış kayıt onaylanabilir veya red
+nedeni yazılarak reddedilebilir. Onaylanan ya da reddedilen kapanış tekrar
+işleme alınamaz. Kasiyer yalnızca kendi kapanışlarını görüntüleyebilir.

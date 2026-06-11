@@ -1,0 +1,399 @@
+@model GiyimMagazasiERP.ViewModels.KasaKapanisiOlusturViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Kasa Kapanışı Oluştur";
+    var yoneticiModu = ViewData["YoneticiModu"] as bool? ?? false;
+    var kasiyerler = ViewData["Kasiyerler"] as SelectList;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Gün Sonu Kasa Kapanışı Oluştur</h1>
+            <p class="text-muted mb-0">
+                Sistem, seçilen tarih ve kasiyerin satış/iade kayıtlarından beklenen
+                tutarı hesaplar. Sayılan tutarları girerek mutabakatı oluşturun.
+            </p>
+        </div>
+        <a asp-action="@(User.IsInRole("Kasiyer") ? "BenimKapanislarim" : "Index")"
+           class="btn btn-outline-secondary">
+            Listeye Dön
+        </a>
+    </div>
+
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 fw-bold mb-3">Kapanış Dönemi</h2>
+            <form asp-action="Create"
+                  method="get"
+                  id="beklenenTutarHesaplamaFormu"
+                  novalidate>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="kapanisTarihi" class="form-label">
+                            Kapanış Tarihi
+                        </label>
+                        <input type="date"
+                               name="tarih"
+                               value="@Model.Tarih.ToString("yyyy-MM-dd")"
+                               class="form-control"
+                               id="kapanisTarihi"
+                               required />
+                        <div id="kapanisTarihiHatasi"
+                             class="text-danger small mt-1 d-none">
+                            Lütfen geçerli bir kapanış tarihi seçiniz.
+                        </div>
+                    </div>
+
+                    @if (yoneticiModu)
+                    {
+                        <div class="col-md-5">
+                            <label for="kasaPersonelId" class="form-label">
+                                Kasiyer
+                            </label>
+                            <select name="kasaPersonelId"
+                                    asp-items="kasiyerler"
+                                    class="form-select"
+                                    id="kasaPersonelId">
+                                <option value="">Kasiyer seçiniz</option>
+                            </select>
+                        </div>
+                    }
+
+                    <div class="col-md-3">
+                        <button type="submit"
+                                class="btn btn-outline-primary w-100"
+                                id="beklenenTutarHesaplaButonu">
+                            Beklenen Tutarları Hesapla
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="form-text mt-3">
+                Tarih ve kasiyer seçiminizi yaptıktan sonra hesaplama butonuna basınız.
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Beklenen Nakit</div>
+                    <div class="h5 fw-bold mb-0">@Model.BeklenenNakit.ToString("N2") TL</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Beklenen Kredi Kartı</div>
+                    <div class="h5 fw-bold mb-0">@Model.BeklenenKrediKarti.ToString("N2") TL</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Beklenen Havale</div>
+                    <div class="h5 fw-bold mb-0">@Model.BeklenenHavale.ToString("N2") TL</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-primary shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Beklenen Toplam</div>
+                    <div class="h5 fw-bold text-primary mb-0">@Model.BeklenenToplam.ToString("N2") TL</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-light border mb-4">
+        <div class="row g-2">
+            <div class="col-md-4">
+                Satış sayısı: <strong>@Model.SatisSayisi</strong>
+            </div>
+            <div class="col-md-4">
+                Tamamlanan iade: <strong>@Model.IadeSayisi</strong>
+            </div>
+            <div class="col-md-4">
+                İade toplamı: <strong>@Model.IadeToplami.ToString("N2") TL</strong>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.DagitilamayanIadeToplami > 0)
+    {
+        <div class="alert alert-warning">
+            Ödeme tipine dağıtılamayan
+            <strong>@Model.DagitilamayanIadeToplami.ToString("N2") TL</strong>
+            iade bulunmaktadır. Bu tutar açıklamaya not olarak eklenecektir.
+        </div>
+    }
+
+    <form asp-action="Create" method="post" id="kasaKapanisFormu">
+        <input asp-for="Tarih" type="hidden" />
+        <input asp-for="KasaPersonelId" type="hidden" />
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="h5 fw-bold mb-1">Sayılan Tutarlar</h2>
+                <p class="text-muted mb-3">
+                    Nakit kasayı, kart terminalini ve havale kayıtlarını ayrı girin.
+                </p>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="SayilanNakit" class="form-label">Sayılan Nakit</label>
+                        <div class="input-group">
+                            <input asp-for="SayilanNakit"
+                                   type="text"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   class="form-control sayilan-tutar"
+                                   data-val-number="Sayılan nakit alanına geçerli bir tutar giriniz."
+                                   data-beklenen="@Model.BeklenenNakit.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                            <span class="input-group-text">TL</span>
+                        </div>
+                        <span asp-validation-for="SayilanNakit" class="text-danger"></span>
+                        <div class="small mt-2">
+                            Fark: <strong id="farkNakit">0,00 TL</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SayilanKrediKarti" class="form-label">Sayılan Kredi Kartı</label>
+                        <div class="input-group">
+                            <input asp-for="SayilanKrediKarti"
+                                   type="text"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   class="form-control sayilan-tutar"
+                                   data-val-number="Sayılan kredi kartı alanına geçerli bir tutar giriniz."
+                                   data-beklenen="@Model.BeklenenKrediKarti.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                            <span class="input-group-text">TL</span>
+                        </div>
+                        <span asp-validation-for="SayilanKrediKarti" class="text-danger"></span>
+                        <div class="small mt-2">
+                            Fark: <strong id="farkKrediKarti">0,00 TL</strong>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SayilanHavale" class="form-label">Sayılan Havale</label>
+                        <div class="input-group">
+                            <input asp-for="SayilanHavale"
+                                   type="text"
+                                   inputmode="decimal"
+                                   autocomplete="off"
+                                   class="form-control sayilan-tutar"
+                                   data-val-number="Sayılan havale alanına geçerli bir tutar giriniz."
+                                   data-beklenen="@Model.BeklenenHavale.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+                            <span class="input-group-text">TL</span>
+                        </div>
+                        <span asp-validation-for="SayilanHavale" class="text-danger"></span>
+                        <div class="small mt-2">
+                            Fark: <strong id="farkHavale">0,00 TL</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Sayılan Toplam</div>
+                            <div class="h4 fw-bold mb-0" id="sayilanToplam">0,00 TL</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Toplam Kasa Farkı</div>
+                            <div class="h4 fw-bold mb-0" id="farkToplam">0,00 TL</div>
+                            <span class="badge text-bg-success mt-2" id="mutabakatDurumu">
+                                Mutabık
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label asp-for="Aciklama" class="form-label">Açıklama</label>
+                    <textarea asp-for="Aciklama"
+                              class="form-control"
+                              rows="3"
+                              maxlength="500"
+                              placeholder="Varsa kasa farkı veya gün sonu notunu yazınız"></textarea>
+                    <span asp-validation-for="Aciklama" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-end gap-2">
+            <a asp-action="@(User.IsInRole("Kasiyer") ? "BenimKapanislarim" : "Index")"
+               class="btn btn-outline-secondary">
+                Vazgeç
+            </a>
+            <button type="submit" class="btn btn-primary" id="kaydetButonu">
+                <span class="spinner-border spinner-border-sm me-2 d-none"
+                      id="kaydetSpinner"
+                      aria-hidden="true"></span>
+                <span id="kaydetButonMetni">Kapanışı Kaydet</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const tarih = document.getElementById("kapanisTarihi");
+            const personel = document.getElementById("kasaPersonelId");
+            const hesaplamaFormu = document.getElementById("beklenenTutarHesaplamaFormu");
+            const tarihHatasi = document.getElementById("kapanisTarihiHatasi");
+            const hesaplaButonu = document.getElementById("beklenenTutarHesaplaButonu");
+            const sayilanAlanlar = Array.from(document.querySelectorAll(".sayilan-tutar"));
+            const form = document.getElementById("kasaKapanisFormu");
+            const kaydetButonu = document.getElementById("kaydetButonu");
+            const kaydetSpinner = document.getElementById("kaydetSpinner");
+            const kaydetButonMetni = document.getElementById("kaydetButonMetni");
+
+            function trOndalikDeger(deger) {
+                if (typeof deger !== "string") return NaN;
+
+                const temiz = deger.trim().replace(/\s/g, "");
+                if (!temiz) return NaN;
+
+                if (temiz.includes(",") && temiz.includes(".")) {
+                    return Number(temiz.replace(/\./g, "").replace(",", "."));
+                }
+
+                return Number(temiz.replace(",", "."));
+            }
+
+            if (window.jQuery?.validator) {
+                jQuery.validator.methods.number = function (value, element) {
+                    return this.optional(element) ||
+                        /^-?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d+)?$/.test(value.trim()) ||
+                        /^-?\d+(?:\.\d+)?$/.test(value.trim());
+                };
+
+                jQuery.validator.methods.range = function (value, element, param) {
+                    if (this.optional(element)) return true;
+
+                    const sayisalDeger = trOndalikDeger(value);
+                    const minimum = trOndalikDeger(String(param[0]));
+                    const maksimum = trOndalikDeger(String(param[1]));
+
+                    return !Number.isNaN(sayisalDeger) &&
+                        sayisalDeger >= minimum &&
+                        sayisalDeger <= maksimum;
+                };
+            }
+
+            hesaplamaFormu?.addEventListener("submit", event => {
+                const tarihGecerli =
+                    tarih?.value &&
+                    !Number.isNaN(Date.parse(`${tarih.value}T00:00:00`));
+
+                tarihHatasi?.classList.toggle("d-none", Boolean(tarihGecerli));
+
+                if (!tarihGecerli) {
+                    event.preventDefault();
+                    tarih?.focus();
+                    return;
+                }
+
+                hesaplaButonu.disabled = true;
+                hesaplaButonu.textContent = "Hesaplanıyor...";
+            });
+
+            tarih?.addEventListener("input", () => {
+                if (tarih.value) {
+                    tarihHatasi?.classList.add("d-none");
+                }
+            });
+
+            function sayi(deger) {
+                if (!deger) return 0;
+                const sonuc = trOndalikDeger(String(deger));
+                return Number.isNaN(sonuc) ? 0 : sonuc;
+            }
+
+            function para(deger) {
+                return deger.toLocaleString("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + " TL";
+            }
+
+            function farkGoster(element, fark) {
+                element.textContent = para(fark);
+                element.classList.toggle("text-success", fark === 0);
+                element.classList.toggle("text-primary", fark > 0);
+                element.classList.toggle("text-danger", fark < 0);
+            }
+
+            function hesapla() {
+                const degerler = sayilanAlanlar.map(x => ({
+                    sayilan: sayi(x.value),
+                    beklenen: sayi(x.dataset.beklenen)
+                }));
+
+                const farklar = degerler.map(x => x.sayilan - x.beklenen);
+                const sayilanToplam = degerler.reduce((toplam, x) => toplam + x.sayilan, 0);
+                const farkToplam = farklar.reduce((toplam, x) => toplam + x, 0);
+
+                farkGoster(document.getElementById("farkNakit"), farklar[0] ?? 0);
+                farkGoster(document.getElementById("farkKrediKarti"), farklar[1] ?? 0);
+                farkGoster(document.getElementById("farkHavale"), farklar[2] ?? 0);
+                document.getElementById("sayilanToplam").textContent = para(sayilanToplam);
+                farkGoster(document.getElementById("farkToplam"), farkToplam);
+
+                const mutabakat = document.getElementById("mutabakatDurumu");
+                const mutabik = Math.abs(farkToplam) < 0.005;
+                mutabakat.textContent = mutabik ? "Mutabık" : "Eksik / Fazla var";
+                mutabakat.classList.toggle("text-bg-success", mutabik);
+                mutabakat.classList.toggle("text-bg-warning", !mutabik);
+            }
+
+            sayilanAlanlar.forEach(x => x.addEventListener("input", hesapla));
+            hesapla();
+
+            function kaydetButonunuSifirla() {
+                kaydetButonu.disabled = false;
+                kaydetSpinner.classList.add("d-none");
+                kaydetButonMetni.textContent = "Kapanışı Kaydet";
+                hesaplaButonu.disabled = false;
+                hesaplaButonu.textContent = "Beklenen Tutarları Hesapla";
+            }
+
+            form?.addEventListener("submit", event => {
+                if (window.jQuery?.validator &&
+                    !jQuery(form).valid()) {
+                    event.preventDefault();
+                    kaydetButonunuSifirla();
+                    return;
+                }
+
+                kaydetButonu.disabled = true;
+                kaydetSpinner.classList.remove("d-none");
+                kaydetButonMetni.textContent = "Kaydediliyor...";
+            });
+
+            form?.addEventListener("invalid", kaydetButonunuSifirla, true);
+            window.addEventListener("pageshow", kaydetButonunuSifirla);
+        })();
+    </script>
+}
