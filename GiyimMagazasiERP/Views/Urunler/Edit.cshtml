@@ -2,7 +2,7 @@
 @using System.Text.Json
 
 @{
-    ViewData["Title"] = "Ürün Düzenle";
+    ViewData["Title"] = "Ürün Kartını Düzenle";
     var altKategorilerJson = JsonSerializer.Serialize(ViewData["AltKategorilerJson"]);
     var tedarikciAltKategorilerJson = JsonSerializer.Serialize(ViewData["TedarikciAltKategorilerJson"]);
 }
@@ -10,7 +10,12 @@
 <div class="container py-4">
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <h1 class="h4 fw-bold mb-4">Ürün Düzenle</h1>
+            <h1 class="h4 fw-bold mb-4">Ürün Kartını Düzenle</h1>
+
+            <div class="alert alert-info">
+                Bu ekran ürün kartı bilgilerini düzenler; stok siparişi oluşturmaz.
+                Stok tamamlamak için <strong>Depo Sipariş Talebi</strong> kullanılmalıdır.
+            </div>
 
             <form asp-action="Edit" method="post">
                 <input type="hidden" asp-for="Id" />

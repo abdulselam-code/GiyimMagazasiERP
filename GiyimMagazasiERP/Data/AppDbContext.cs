@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<AltKategori> AltKategoriler => Set<AltKategori>();
     public DbSet<Tedarikci> Tedarikciler => Set<Tedarikci>();
     public DbSet<Urun> Urunler => Set<Urun>();
+    public DbSet<UrunTedarikci> UrunTedarikcileri => Set<UrunTedarikci>();
     public DbSet<Satis> Satislar => Set<Satis>();
     public DbSet<SatisDetayi> SatisDetaylari => Set<SatisDetayi>();
     public DbSet<StokHareketi> StokHareketleri => Set<StokHareketi>();
@@ -47,6 +48,10 @@ public class AppDbContext : DbContext
     public DbSet<PersonelIzinBakiyesi> PersonelIzinBakiyeleri
         => Set<PersonelIzinBakiyesi>();
     public DbSet<KasaKapanisi> KasaKapanislari => Set<KasaKapanisi>();
+    public DbSet<PersonelMesaiKaydi> PersonelMesaiKayitlari
+        => Set<PersonelMesaiKaydi>();
+    public DbSet<DepoSiparisTalebi> DepoSiparisTalepleri => Set<DepoSiparisTalebi>();
+    public DbSet<DepoSiparisTalepKalemi> DepoSiparisTalepKalemleri => Set<DepoSiparisTalepKalemi>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -152,6 +157,31 @@ public class AppDbContext : DbContext
             entity.HasOne(x => x.Tedarikci)
                 .WithMany(x => x.Urunler)
                 .HasForeignKey(x => x.TedarikciId);
+        });
+
+        modelBuilder.Entity<UrunTedarikci>(entity =>
+        {
+            entity.ToTable("UrunTedarikcileri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TedarikciUrunKodu).HasMaxLength(100);
+            entity.Property(x => x.BirimMaliyet).HasPrecision(18, 2);
+            entity.Property(x => x.IndirimOrani).HasPrecision(5, 2);
+            entity.Property(x => x.NetBirimMaliyet).HasPrecision(18, 2);
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.RowVersion).IsRowVersion();
+            entity.HasIndex(x => new { x.UrunId, x.TedarikciId }).IsUnique();
+            entity.HasIndex(x => x.UrunId);
+            entity.HasIndex(x => x.TedarikciId);
+            entity.HasIndex(x => x.AktifMi);
+            entity.HasIndex(x => x.VarsayilanMi);
+            entity.HasOne(x => x.Urun)
+                .WithMany(x => x.UrunTedarikcileri)
+                .HasForeignKey(x => x.UrunId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.Tedarikci)
+                .WithMany(x => x.UrunTedarikcileri)
+                .HasForeignKey(x => x.TedarikciId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<Satis>(entity =>
@@ -741,6 +771,85 @@ modelBuilder.Entity<IadeDegisimYeniUrunDetayi>(entity =>
                 .WithMany()
                 .HasForeignKey(x => x.OnaylayanKullaniciId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PersonelMesaiKaydi>(entity =>
+        {
+            entity.ToTable("PersonelMesaiKayitlari");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Tarih).HasColumnType("date");
+            entity.Property(x => x.VardiyaBaslangic).HasColumnType("time(0)");
+            entity.Property(x => x.VardiyaBitis).HasColumnType("time(0)");
+            entity.Property(x => x.GercekGiris).HasColumnType("time(0)");
+            entity.Property(x => x.GercekCikis).HasColumnType("time(0)");
+            entity.Property(x => x.PlanlananSaat).HasPrecision(5, 2);
+            entity.Property(x => x.GerceklesenSaat).HasPrecision(5, 2);
+            entity.Property(x => x.FazlaMesaiSaati).HasPrecision(5, 2);
+            entity.Property(x => x.MesaiTuru).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.Durum).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.RedNedeni).HasMaxLength(500);
+            entity.Property(x => x.RowVersion).IsRowVersion();
+
+            entity.HasIndex(x => x.PersonelId);
+            entity.HasIndex(x => x.KullaniciId);
+            entity.HasIndex(x => x.Tarih);
+            entity.HasIndex(x => x.Durum);
+            entity.HasIndex(x => x.MesaiTuru);
+            entity.HasIndex(x => x.OlusturmaTarihi);
+            entity.HasIndex(x => new { x.PersonelId, x.Tarih });
+
+            entity.HasOne(x => x.Personel)
+                .WithMany()
+                .HasForeignKey(x => x.PersonelId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.Kullanici)
+                .WithMany()
+                .HasForeignKey(x => x.KullaniciId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.OnaylayanKullanici)
+                .WithMany()
+                .HasForeignKey(x => x.OnaylayanKullaniciId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<DepoSiparisTalebi>(entity =>
+        {
+            entity.ToTable("DepoSiparisTalepleri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TalepNo).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Durum).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Oncelik).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.RedNedeni).HasMaxLength(500);
+            entity.Property(x => x.RowVersion).IsRowVersion();
+            entity.HasIndex(x => x.TalepNo).IsUnique();
+            entity.HasIndex(x => x.Durum);
+            entity.HasIndex(x => x.TalepTarihi);
+            entity.HasIndex(x => x.TalepEdenKullaniciId);
+            entity.HasIndex(x => x.Oncelik);
+            entity.HasOne(x => x.TalepEdenKullanici).WithMany().HasForeignKey(x => x.TalepEdenKullaniciId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.TalepEdenPersonel).WithMany().HasForeignKey(x => x.TalepEdenPersonelId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.OnaylayanKullanici).WithMany().HasForeignKey(x => x.OnaylayanKullaniciId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.TeslimAlanKullanici).WithMany().HasForeignKey(x => x.TeslimAlanKullaniciId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<DepoSiparisTalepKalemi>(entity =>
+        {
+            entity.ToTable("DepoSiparisTalepKalemleri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TahminiBirimMaliyet).HasPrecision(18, 2);
+            entity.Property(x => x.TahminiIndirimOrani).HasPrecision(5, 2);
+            entity.Property(x => x.Aciklama).HasMaxLength(300);
+            entity.HasIndex(x => new { x.DepoSiparisTalebiId, x.UrunId }).IsUnique();
+            entity.HasIndex(x => x.UrunId);
+            entity.HasOne(x => x.DepoSiparisTalebi).WithMany(x => x.Kalemler).HasForeignKey(x => x.DepoSiparisTalebiId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.Urun).WithMany().HasForeignKey(x => x.UrunId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.Tedarikci).WithMany().HasForeignKey(x => x.TedarikciId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.UrunTedarikci).WithMany().HasForeignKey(x => x.UrunTedarikciId).OnDelete(DeleteBehavior.NoAction);
         });
     }
 }

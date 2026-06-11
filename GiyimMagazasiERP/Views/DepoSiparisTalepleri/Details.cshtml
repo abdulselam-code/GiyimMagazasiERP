@@ -1,0 +1,430 @@
+@model GiyimMagazasiERP.ViewModels.DepoSiparisTalebiDetayViewModel
+@using GiyimMagazasiERP.Models
+
+@{
+    var talep = Model.Talep;
+    ViewData["Title"] = "Depo Sipariş Talebi Detayı";
+    var rowVersion = Convert.ToBase64String(talep.RowVersion);
+    var onayBekliyor = talep.Durum == DepoSiparisTalebi.DurumOnayBekliyor;
+    var onaylandi = talep.Durum == DepoSiparisTalebi.DurumOnaylandi;
+    var tahminiToplam = talep.Kalemler.Sum(x =>
+        (x.TahminiBirimMaliyet ?? 0) * x.TalepAdedi);
+    var toplamOnaylananAdet = talep.Kalemler.Sum(x => x.OnaylananAdet);
+    var onaylananTahminiToplam = talep.Kalemler.Sum(x =>
+        (x.TahminiBirimMaliyet ?? 0) * x.OnaylananAdet);
+    var talepEden = talep.TalepEdenPersonel?.AdSoyad
+        ?? talep.TalepEdenKullanici.KullaniciAdi;
+    var tedarikciOzeti = string.Join(", ", talep.Kalemler
+        .Select(x => x.Tedarikci?.FirmaAdi)
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Distinct());
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Depo Sipariş Talebi Detayı</h1>
+            <p class="text-muted mb-0">@talep.TalepNo</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div class="alert alert-info">
+        Bu kayıt mevcut ürünler için stok tamamlama talebidir.
+        Talep oluşturma ve onay stok miktarını değiştirmez; stok yalnız teslim alma işleminde güncellenir.
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between gap-3">
+                        <div>
+                            <div class="small text-muted">TALEP EDEN</div>
+                            <h2 class="h5 mb-0">
+                                @(talep.TalepEdenPersonel?.AdSoyad
+                                    ?? talep.TalepEdenKullanici.KullaniciAdi)
+                            </h2>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge text-bg-info">@talep.Durum</span>
+                            <div class="small text-muted mt-2">
+                                Tahmini toplam:
+                                <strong class="text-dark">@tahminiToplam.ToString("N2") TL</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ürün</th>
+                                    <th>Tedarikçi</th>
+                                    <th>Talep Anındaki Stok / Min.</th>
+                                    <th>Talep</th>
+                                    <th>Onaylanan</th>
+                                    <th>Teslim</th>
+                                    <th>Net Birim Maliyet</th>
+                                    <th>İndirim</th>
+                                    <th>Teslim Süresi</th>
+                                    <th>Tahmini Toplam</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kalem in talep.Kalemler)
+                                {
+                                    var kalemToplami =
+                                        (kalem.TahminiBirimMaliyet ?? 0) * kalem.TalepAdedi;
+
+                                    <tr class="@(kalem.MevcutStok <= kalem.MinimumStok
+                                        ? "table-warning"
+                                        : "")">
+                                        <td>
+                                            <strong>@kalem.Urun.UrunAdi</strong>
+                                            <div class="small text-muted">@kalem.Urun.Barkod</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold">
+                                                @(kalem.Tedarikci?.FirmaAdi ?? "-")
+                                            </div>
+                                            @if (kalem.UrunTedarikci?.VarsayilanMi == true)
+                                            {
+                                                <span class="badge text-bg-primary">Varsayılan</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="@(kalem.MevcutStok <= kalem.MinimumStok
+                                                ? "text-danger fw-semibold"
+                                                : "")">
+                                                @kalem.MevcutStok
+                                            </span>
+                                            / @kalem.MinimumStok
+                                        </td>
+                                        <td>@kalem.TalepAdedi</td>
+                                        <td>@kalem.OnaylananAdet</td>
+                                        <td>@kalem.TeslimAlinanAdet</td>
+                                        <td>
+                                            @(kalem.TahminiBirimMaliyet.HasValue
+                                                ? $"{kalem.TahminiBirimMaliyet:N2} TL"
+                                                : "-")
+                                        </td>
+                                        <td>
+                                            @(kalem.TahminiIndirimOrani.HasValue
+                                                ? $"%{kalem.TahminiIndirimOrani:N2}"
+                                                : "-")
+                                        </td>
+                                        <td>
+                                            @(kalem.TahminiTeslimSuresiGun is > 0
+                                                ? $"{kalem.TahminiTeslimSuresiGun} gün"
+                                                : "-")
+                                        </td>
+                                        <td class="fw-semibold">@kalemToplami.ToString("N2") TL</td>
+                                        <td>@(kalem.Aciklama ?? "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Süreç Bilgileri</h2>
+                    <dl class="mb-0">
+                        <dt>Öncelik</dt>
+                        <dd>@talep.Oncelik</dd>
+                        <dt>Talep Tarihi</dt>
+                        <dd>@talep.TalepTarihi.ToString("dd.MM.yyyy HH:mm")</dd>
+                        <dt>Onaylayan</dt>
+                        <dd>@(talep.OnaylayanKullanici?.KullaniciAdi ?? "-")</dd>
+                        <dt>Onay Tarihi</dt>
+                        <dd>@(talep.OnayTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "-")</dd>
+                        <dt>Teslim Alan</dt>
+                        <dd>@(talep.TeslimAlanKullanici?.KullaniciAdi ?? "-")</dd>
+                        <dt>Teslim Tarihi</dt>
+                        <dd>@(talep.TeslimAlmaTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "-")</dd>
+                        @if (!string.IsNullOrWhiteSpace(talep.RedNedeni))
+                        {
+                            <dt>Red Nedeni</dt>
+                            <dd class="text-danger">@talep.RedNedeni</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if ((onayBekliyor && (Model.OnaylayabilirMi || Model.TalepSahibiMi)) ||
+         (onaylandi && Model.TeslimAlabilirMi))
+    {
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body">
+                <h2 class="h5 fw-bold">Talep İşlemleri</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    @if (onayBekliyor && Model.OnaylayabilirMi)
+                    {
+                        <form asp-action="Onayla" asp-route-id="@talep.Id" method="post" id="onayForm">
+                            <input type="hidden" name="rowVersion" value="@rowVersion" />
+                            <button type="button" class="btn btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#onayModal">
+                                Onayla
+                            </button>
+                        </form>
+                        <form asp-action="Reddet" asp-route-id="@talep.Id" method="post" id="redForm"
+                              class="d-flex flex-wrap gap-2">
+                            <input type="hidden" name="rowVersion" value="@rowVersion" />
+                            <div>
+                                <input id="redNedeni" name="redNedeni" class="form-control"
+                                       style="width:260px" placeholder="Red nedenini yazınız" />
+                                <div id="redNedeniUyari" class="invalid-feedback">
+                                    Lütfen red nedenini yazınız.
+                                </div>
+                            </div>
+                            <button type="button" id="redAc" class="btn btn-danger">Reddet</button>
+                        </form>
+                    }
+                    @if (onayBekliyor && (Model.TalepSahibiMi || Model.OnaylayabilirMi))
+                    {
+                        <form asp-action="IptalEt" asp-route-id="@talep.Id" method="post" id="iptalForm">
+                            <input type="hidden" name="rowVersion" value="@rowVersion" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    data-bs-toggle="modal" data-bs-target="#iptalModal">
+                                İptal Et
+                            </button>
+                        </form>
+                    }
+                    @if (onaylandi && Model.TeslimAlabilirMi)
+                    {
+                        <form asp-action="TeslimAl" asp-route-id="@talep.Id" method="post" id="teslimForm">
+                            <input type="hidden" name="rowVersion" value="@rowVersion" />
+                            <button type="button" class="btn btn-primary"
+                                    data-bs-toggle="modal" data-bs-target="#teslimModal">
+                                Teslim Al ve Stoğa İşle
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="onayModal" tabindex="-1" aria-labelledby="onayModalBaslik" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <div>
+                    <div class="small text-uppercase text-muted fw-semibold">Onay İşlemi</div>
+                    <h2 class="modal-title fs-5" id="onayModalBaslik">
+                        Depo Sipariş Talebini Onayla
+                    </h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    Bu talebi onaylamak istediğinize emin misiniz?
+                </p>
+                <div class="alert alert-info mb-0">
+                    Onay işlemi stok miktarını artırmaz. Stok yalnızca teslim alma işleminde güncellenir.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+                <button type="button"
+                        class="btn btn-success modal-gonder"
+                        data-form="onayForm"
+                        data-islem-metni="Onaylanıyor...">
+                    Talebi Onayla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="iptalModal" tabindex="-1" aria-labelledby="iptalModalBaslik" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="iptalModalBaslik">Talebi İptal Et</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                Bekleyen depo sipariş talebi iptal edilecektir. Devam etmek istiyor musunuz?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+                <button type="button"
+                        class="btn btn-secondary modal-gonder"
+                        data-form="iptalForm"
+                        data-islem-metni="İptal ediliyor...">
+                    Talebi İptal Et
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="teslimModal" tabindex="-1" aria-labelledby="teslimModalBaslik" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <div>
+                    <div class="small text-uppercase text-muted fw-semibold">Teslim Alma İşlemi</div>
+                    <h2 class="modal-title fs-5" id="teslimModalBaslik">
+                        Ürünleri Teslim Al ve Stoğa İşle
+                    </h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Bu işlem onaylanan ürün adetlerini mevcut stoklara ekler ve otomatik stok hareketi oluşturur.
+                </p>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted">Talep No</div>
+                            <div class="fw-semibold">@talep.TalepNo</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted">Talep Eden</div>
+                            <div class="fw-semibold">@talepEden</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted">Toplam Onaylanan Adet</div>
+                            <div class="fw-semibold">@toplamOnaylananAdet</div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="small text-muted">Tahmini Toplam Tutar</div>
+                            <div class="fw-semibold">@onaylananTahminiToplam.ToString("N2") TL</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="border rounded p-3">
+                            <div class="small text-muted">Tedarikçi</div>
+                            <div class="fw-semibold">
+                                @(string.IsNullOrWhiteSpace(tedarikciOzeti) ? "-" : tedarikciOzeti)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-success mb-0">
+                            <strong>İşlem Sonucu:</strong> Stok girişi ve stok hareketi oluşacak.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ürün</th>
+                                <th>Tedarikçi</th>
+                                <th>Talep Anındaki Stok</th>
+                                <th>Onaylanan Adet</th>
+                                <th>Teslim Alınacak Adet</th>
+                                <th>İşlem Sonrası Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var kalem in talep.Kalemler)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@kalem.Urun.UrunAdi</td>
+                                    <td>@(kalem.Tedarikci?.FirmaAdi ?? "-")</td>
+                                    <td>@kalem.MevcutStok</td>
+                                    <td>@kalem.OnaylananAdet</td>
+                                    <td>@kalem.OnaylananAdet</td>
+                                    <td class="fw-semibold text-success">
+                                        @(kalem.MevcutStok + kalem.OnaylananAdet)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-warning mt-4 mb-0">
+                    <strong>Dikkat:</strong> Bu işlem tamamlandığında ürün stoğu artar ve stok hareketi
+                    oluşturulur. Teslim alınmış talep tekrar işleme alınamaz.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Vazgeç
+                </button>
+                <button type="button"
+                        class="btn btn-primary modal-gonder"
+                        data-form="teslimForm"
+                        data-islem-metni="İşleniyor...">
+                    Teslim Al ve Stoğa İşle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            document.getElementById("redAc")?.addEventListener("click", () => {
+                const input = document.getElementById("redNedeni");
+                if (!input.value.trim()) {
+                    input.classList.add("is-invalid");
+                    input.focus();
+                    return;
+                }
+                input.classList.remove("is-invalid");
+                document.getElementById("redForm").submit();
+            });
+
+            document.getElementById("redNedeni")?.addEventListener("input", event => {
+                if (event.target.value.trim())
+                    event.target.classList.remove("is-invalid");
+            });
+
+            document.querySelectorAll(".modal-gonder").forEach(button => {
+                button.addEventListener("click", () => {
+                    button.disabled = true;
+                    button.innerHTML = `
+                        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                        ${button.dataset.islemMetni ?? "İşleniyor..."}`;
+
+                    const form = document.getElementById(button.dataset.form);
+                    if (form)
+                        form.submit();
+                    else {
+                        button.disabled = false;
+                        button.textContent = "İşlemi Tamamla";
+                    }
+                });
+            });
+        })();
+    </script>
+}

@@ -29,7 +29,7 @@
             <p class="text-muted mb-0">Ürün, stok, ana kategori, alt kategori ve tedarikçi yönetimi</p>
         </div>
 
-        <a asp-action="Create" class="btn btn-primary">Yeni Ürün</a>
+        <a asp-action="Create" class="btn btn-primary">Yeni Ürün Kartı</a>
     </div>
 
     @if (TempData["Hata"] is not null)
@@ -191,7 +191,23 @@
                                     <td>@urun.Barkod</td>
                                     <td>@urun.Kategori.KategoriAdi</td>
                                     <td>@(urun.AltKategori?.AltKategoriAdi ?? "-")</td>
-                                    <td>@urun.Tedarikci.FirmaAdi</td>
+                                    <td>
+                                        @{
+                                            var aktifTedarikciler = urun.UrunTedarikcileri
+                                                .Where(x => x.AktifMi)
+                                                .ToList();
+                                            var varsayilanTedarikci = aktifTedarikciler
+                                                .FirstOrDefault(x => x.VarsayilanMi);
+                                        }
+                                        <div class="fw-semibold">
+                                            @(varsayilanTedarikci?.Tedarikci.FirmaAdi ?? urun.Tedarikci.FirmaAdi)
+                                        </div>
+                                        <div class="small text-muted">
+                                            @(aktifTedarikciler.Count > 0
+                                                ? $"{aktifTedarikciler.Count} aktif tedarikçi"
+                                                : "Bağlantı tanımlanmamış")
+                                        </div>
+                                    </td>
                                     <td>@urun.Beden</td>
                                     <td>@urun.Renk</td>
                                     <td>@urun.SatisFiyati.ToString("N2") TL</td>

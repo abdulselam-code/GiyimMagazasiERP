@@ -147,6 +147,71 @@ public class DashboardController : Controller
         };
 
         model.BugunkuNet = model.BugunkuGelir - model.BugunkuGider;
+        model.OnayBekleyenDepoSiparisSayisi =
+            await _context.DepoSiparisTalepleri.AsNoTracking()
+                .CountAsync(x => x.Durum == DepoSiparisTalebi.DurumOnayBekliyor);
+        model.TeslimBekleyenDepoSiparisSayisi =
+            await _context.DepoSiparisTalepleri.AsNoTracking()
+                .CountAsync(x => x.Durum == DepoSiparisTalebi.DurumOnaylandi);
+        model.GoruntulenebilirDepoSiparisSayisi =
+            await _context.DepoSiparisTalepleri.AsNoTracking()
+                .CountAsync(x => x.Durum == DepoSiparisTalebi.DurumOnaylandi ||
+                                 x.Durum == DepoSiparisTalebi.DurumTeslimAlindi);
+        if (kullaniciId.HasValue)
+        {
+            model.BenimOnayBekleyenDepoSiparisSayisi =
+                await _context.DepoSiparisTalepleri.AsNoTracking()
+                    .CountAsync(x =>
+                        x.TalepEdenKullaniciId == kullaniciId.Value &&
+                        x.Durum == DepoSiparisTalebi.DurumOnayBekliyor);
+        }
+        model.OnayBekleyenMesaiSayisi =
+            await _context.PersonelMesaiKayitlari
+                .AsNoTracking()
+                .CountAsync(x =>
+                    x.Durum == PersonelMesaiKaydi.DurumOnayBekliyor);
+
+        model.BuAyOnayliFazlaMesaiSaati =
+            await _context.PersonelMesaiKayitlari
+                .AsNoTracking()
+                .Where(x =>
+                    x.Durum == PersonelMesaiKaydi.DurumOnaylandi &&
+                    x.Tarih >= ayBaslangici &&
+                    x.Tarih < sonrakiAyBaslangici &&
+                    PersonelMesaiKaydi.FazlaMesaiKapsamindakiTurler.Contains(x.MesaiTuru))
+                .SumAsync(x => (decimal?)(
+                    x.FazlaMesaiSaati > 0
+                        ? x.FazlaMesaiSaati
+                        : x.GerceklesenSaat > 0
+                            ? x.GerceklesenSaat
+                            : x.PlanlananSaat)) ?? 0m;
+
+        if (personelId.HasValue)
+        {
+            model.BenimBekleyenMesaiSayisi =
+                await _context.PersonelMesaiKayitlari
+                    .AsNoTracking()
+                    .CountAsync(x =>
+                        x.PersonelId == personelId.Value &&
+                        x.Durum == PersonelMesaiKaydi.DurumOnayBekliyor);
+
+            model.BenimBuAyOnayliFazlaMesaiSaati =
+                await _context.PersonelMesaiKayitlari
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.PersonelId == personelId.Value &&
+                        x.Durum == PersonelMesaiKaydi.DurumOnaylandi &&
+                        x.Tarih >= ayBaslangici &&
+                        x.Tarih < sonrakiAyBaslangici &&
+                        PersonelMesaiKaydi.FazlaMesaiKapsamindakiTurler.Contains(x.MesaiTuru))
+                    .SumAsync(x => (decimal?)(
+                        x.FazlaMesaiSaati > 0
+                            ? x.FazlaMesaiSaati
+                            : x.GerceklesenSaat > 0
+                                ? x.GerceklesenSaat
+                                : x.PlanlananSaat)) ?? 0m;
+        }
+
         model.OnayBekleyenKasaKapanisiSayisi =
             await _context.KasaKapanislari
                 .AsNoTracking()
@@ -801,6 +866,9 @@ public class DashboardController : Controller
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
                 Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
                 Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary"),
+                Link("Mesai / Vardiya", "PersonelMesaileri", "Index", "secondary"),
+                Link("Puantaj Raporu", "Puantaj", "Index", "info"),
+                Link("Depo Sipariş Talepleri", "DepoSiparisTalepleri", "Index", "warning"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("SQL Panel", "SqlYonetici", "Index", "dark"),
                 Link("DB Panel", "VeritabaniYonetici", "Index", "dark")
@@ -821,7 +889,10 @@ public class DashboardController : Controller
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
                 Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
-                Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary")
+                Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary"),
+                Link("Mesai / Vardiya", "PersonelMesaileri", "Index", "secondary")
+                ,Link("Puantaj Raporu", "Puantaj", "Index", "info")
+                ,Link("Depo Sipariş Talepleri", "DepoSiparisTalepleri", "Index", "warning")
             };
         }
 
@@ -838,7 +909,11 @@ public class DashboardController : Controller
                 Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
                 Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary"),
                 Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
-                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary"),
+                Link("Benim Mesailerim", "PersonelMesaileri", "BenimMesailerim", "info"),
+                Link("Fazla Mesai Talebi", "PersonelMesaileri", "Create", "secondary")
+                ,Link("Depo Sipariş Taleplerim", "DepoSiparisTalepleri", "Index", "warning")
+                ,Link("Ürün Sipariş Talebi", "DepoSiparisTalepleri", "Create", "primary")
             };
         }
 
@@ -850,7 +925,9 @@ public class DashboardController : Controller
                 Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
                 Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary"),
                 Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
-                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary"),
+                Link("Benim Mesailerim", "PersonelMesaileri", "BenimMesailerim", "info"),
+                Link("Fazla Mesai Talebi", "PersonelMesaileri", "Create", "secondary")
             };
         }
 
@@ -864,7 +941,9 @@ public class DashboardController : Controller
                 Link("Stok Hareketleri", "StokHareketleri", "Index", "warning"),
                 Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
                 Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
-                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary"),
+                Link("Benim Mesailerim", "PersonelMesaileri", "BenimMesailerim", "info"),
+                Link("Fazla Mesai Talebi", "PersonelMesaileri", "Create", "secondary")
             };
         }
 
@@ -881,7 +960,10 @@ public class DashboardController : Controller
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
                 Link("Kasa Kapanışları", "KasaKapanislari", "Index", "secondary"),
                 Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
-                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary"),
+                Link("Onaylı Mesai Kayıtları", "PersonelMesaileri", "Index", "info")
+                ,Link("Puantaj Raporu", "Puantaj", "Index", "secondary")
+                ,Link("Depo Siparişleri", "DepoSiparisTalepleri", "Index", "warning")
             };
         }
 
@@ -891,7 +973,9 @@ public class DashboardController : Controller
             {
                 Link("Personeller", "Personeller"),
                 Link("Personel İzinleri", "PersonelIzinleri", "Index", "primary"),
-                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary"),
+                Link("Mesai / Vardiya", "PersonelMesaileri", "Index", "primary")
+                ,Link("Puantaj Raporu", "Puantaj", "Index", "info")
             };
         }
 

@@ -34,4 +34,7 @@ public class Urun
 
     public ICollection<StokHareketi> StokHareketleri { get; set; }
         = new List<StokHareketi>();
+
+    public ICollection<UrunTedarikci> UrunTedarikcileri { get; set; }
+        = new List<UrunTedarikci>();
 }

@@ -1,62 +1,257 @@
-﻿@model GiyimMagazasiERP.Models.Urun
+@model GiyimMagazasiERP.Models.Urun
 
 @{
     ViewData["Title"] = "Ürün Detayı";
+    var aktifTedarikciler = Model.UrunTedarikcileri
+        .Where(x => x.AktifMi)
+        .OrderBy(x => x.NetBirimMaliyet <= 0)
+        .ThenBy(x => x.NetBirimMaliyet)
+        .ToList();
+    var enUygun = aktifTedarikciler
+        .Where(x => x.NetBirimMaliyet > 0)
+        .OrderBy(x => x.NetBirimMaliyet)
+        .FirstOrDefault();
+    var enHizli = aktifTedarikciler
+        .Where(x => x.TeslimSuresiGun > 0)
+        .OrderBy(x => x.TeslimSuresiGun)
+        .ThenBy(x => x.NetBirimMaliyet)
+        .FirstOrDefault();
+    var varsayilan = aktifTedarikciler.FirstOrDefault(x => x.VarsayilanMi);
+    var tedarikciDuzenleyebilir = User.IsInRole("Admin") || User.IsInRole("Yonetici");
 }
 
 <div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Ürün Detayı</h1>
+            <p class="text-muted mb-0">Ürün kartı, stok bilgileri ve satın alma kaynakları.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div class="alert alert-info">
+        Bu ürün kartı mağazada satılacak ürünün tanım bilgisidir.
+        Stok satın alma ve tamamlama işlemleri Depo Sipariş Talepleri üzerinden yürütülür.
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Ürün Adı</dt>
+                        <dd class="col-sm-8 fw-semibold">@Model.UrunAdi</dd>
+                        <dt class="col-sm-4">Barkod</dt>
+                        <dd class="col-sm-8">@Model.Barkod</dd>
+                        <dt class="col-sm-4">Kategori</dt>
+                        <dd class="col-sm-8">
+                            @Model.Kategori.KategoriAdi /
+                            @(Model.AltKategori?.AltKategoriAdi ?? "-")
+                        </dd>
+                        <dt class="col-sm-4">Ana Tedarikçi</dt>
+                        <dd class="col-sm-8">@Model.Tedarikci.FirmaAdi</dd>
+                        <dt class="col-sm-4">Beden / Renk</dt>
+                        <dd class="col-sm-8">@Model.Beden / @Model.Renk</dd>
+                        <dt class="col-sm-4">Alış / Satış</dt>
+                        <dd class="col-sm-8">
+                            @Model.AlisFiyati.ToString("N2") TL /
+                            @Model.SatisFiyati.ToString("N2") TL
+                        </dd>
+                        <dt class="col-sm-4">KDV</dt>
+                        <dd class="col-sm-8">%@Model.KdvOrani.ToString("N2")</dd>
+                        <dt class="col-sm-4">Oluşturma Tarihi</dt>
+                        <dd class="col-sm-8">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy")</dd>
+                    </dl>
+                </div>
+                <div class="col-lg-4">
+                    <div class="border rounded p-3 h-100 bg-light">
+                        <div class="text-muted small">MEVCUT STOK</div>
+                        <div class="display-6 fw-bold">@Model.StokMiktari</div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <span>Minimum stok</span>
+                            <strong>@Model.MinimumStok</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span>Durum</span>
+                            <span class="badge @(Model.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                                @(Model.AktifMi ? "Aktif" : "Pasif")
+                            </span>
+                        </div>
+                        @if (Model.StokMiktari <= Model.MinimumStok)
+                        {
+                            <div class="alert alert-warning py-2 mt-3 mb-0">
+                                Ürün kritik stok seviyesinde.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="h4 fw-bold mb-1">Bağlı Tedarikçiler</h2>
+            <p class="text-muted mb-0">Bu ürün için fiyat, indirim ve teslim süresi karşılaştırması.</p>
+        </div>
+        @if (tedarikciDuzenleyebilir)
+        {
+            <a asp-controller="UrunTedarikcileri"
+               asp-action="Create"
+               asp-route-urunId="@Model.Id"
+               class="btn btn-primary">
+                Tedarikçi Ekle
+            </a>
+        }
+    </div>
+
+    @if (aktifTedarikciler.Any())
+    {
+        @if (aktifTedarikciler.Count == 1)
+        {
+            <div class="alert alert-warning">
+                Bu ürün için yalnızca bir aktif tedarikçi tanımlı.
+                Alternatif fiyat veya hızlı teslimat karşılaştırması için yeni tedarikçi bağlantısı ekleyebilirsiniz.
+            </div>
+        }
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">EN UYGUN TEDARİKÇİ</div>
+                        <div class="fw-bold mt-1">@(enUygun?.Tedarikci.FirmaAdi ?? "Belirlenmedi")</div>
+                        <div class="text-success">
+                            @(enUygun is null ? "Maliyet bilgisi yok" : $"{enUygun.NetBirimMaliyet:N2} TL")
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">EN HIZLI TEDARİKÇİ</div>
+                        <div class="fw-bold mt-1">@(enHizli?.Tedarikci.FirmaAdi ?? "Belirlenmedi")</div>
+                        <div>@(enHizli is null ? "Teslim süresi yok" : $"{enHizli.TeslimSuresiGun} gün")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">VARSAYILAN TEDARİKÇİ</div>
+                        <div class="fw-bold mt-1">@(varsayilan?.Tedarikci.FirmaAdi ?? "Belirlenmedi")</div>
+                        <div>@(varsayilan is null ? "-" : $"{varsayilan.NetBirimMaliyet:N2} TL")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <h1 class="h4 fw-bold mb-4">Ürün Detayı</h1>
-
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Ürün Adı</dt>
-                <dd class="col-sm-9">@Model.UrunAdi</dd>
-
-                <dt class="col-sm-3">Barkod</dt>
-                <dd class="col-sm-9">@Model.Barkod</dd>
-
-                <dt class="col-sm-3">Ana Kategori</dt>
-                <dd class="col-sm-9">@Model.Kategori.KategoriAdi</dd>
-
-                <dt class="col-sm-3">Alt Kategori</dt>
-                <dd class="col-sm-9">@(Model.AltKategori?.AltKategoriAdi ?? "-")</dd>
-
-                <dt class="col-sm-3">Tedarikçi</dt>
-                <dd class="col-sm-9">@Model.Tedarikci.FirmaAdi</dd>
-
-                <dt class="col-sm-3">Beden / Renk</dt>
-                <dd class="col-sm-9">@Model.Beden / @Model.Renk</dd>
-
-                <dt class="col-sm-3">Alış Fiyatı</dt>
-                <dd class="col-sm-9">@Model.AlisFiyati.ToString("N2") TL</dd>
-
-                <dt class="col-sm-3">Satış Fiyatı</dt>
-                <dd class="col-sm-9">@Model.SatisFiyati.ToString("N2") TL</dd>
-                <dt class="col-sm-3">KDV Oranı</dt>
-                <dd class="col-sm-9">%@Model.KdvOrani.ToString("N2")</dd>
-
-                <dt class="col-sm-3">Stok</dt>
-                <dd class="col-sm-9">@Model.StokMiktari</dd>
-
-                <dt class="col-sm-3">Minimum Stok</dt>
-                <dd class="col-sm-9">@Model.MinimumStok</dd>
-
-                <dt class="col-sm-3">Durum</dt>
-                <dd class="col-sm-9">
-                    <span class="badge @(Model.AktifMi ? "text-bg-success" : "text-bg-secondary")">
-                        @(Model.AktifMi ? "Aktif" : "Pasif")
-                    </span>
-                </dd>
-
-                <dt class="col-sm-3">Oluşturma Tarihi</dt>
-                <dd class="col-sm-9">@Model.OlusturmaTarihi.ToString("dd/MM/yyyy")</dd>
-            </dl>
-
-            <div class="mt-4">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Düzenle</a>
-                <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
-            </div>
+            @if (Model.UrunTedarikcileri.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Tedarikçi</th>
+                                <th>Ürün Kodu</th>
+                                <th>Birim Maliyet</th>
+                                <th>İndirim</th>
+                                <th>Net Maliyet</th>
+                                <th>Minimum</th>
+                                <th>Teslim</th>
+                                <th>Öneriler</th>
+                                <th>Durum</th>
+                                @if (tedarikciDuzenleyebilir)
+                                {
+                                    <th>İşlemler</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.UrunTedarikcileri
+                                .OrderByDescending(x => x.AktifMi)
+                                .ThenBy(x => x.NetBirimMaliyet))
+                            {
+                                <tr class="@(!item.AktifMi ? "table-secondary" : "")">
+                                    <td class="fw-semibold">@item.Tedarikci.FirmaAdi</td>
+                                    <td>@(item.TedarikciUrunKodu ?? "-")</td>
+                                    <td>@item.BirimMaliyet.ToString("N2") TL</td>
+                                    <td>%@item.IndirimOrani.ToString("N2")</td>
+                                    <td class="fw-semibold">@item.NetBirimMaliyet.ToString("N2") TL</td>
+                                    <td>@item.MinimumSiparisAdedi</td>
+                                    <td>@(item.TeslimSuresiGun > 0 ? $"{item.TeslimSuresiGun} gün" : "-")</td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @if (item.Id == enUygun?.Id)
+                                            {
+                                                <span class="badge text-bg-success">En Uygun</span>
+                                            }
+                                            @if (item.Id == enHizli?.Id)
+                                            {
+                                                <span class="badge text-bg-info">En Hızlı</span>
+                                            }
+                                            @if (item.VarsayilanMi)
+                                            {
+                                                <span class="badge text-bg-primary">Varsayılan</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(item.AktifMi ? "text-bg-success" : "text-bg-secondary")">
+                                            @(item.AktifMi ? "Aktif" : "Pasif")
+                                        </span>
+                                    </td>
+                                    @if (tedarikciDuzenleyebilir)
+                                    {
+                                        <td class="text-nowrap">
+                                            <a asp-controller="UrunTedarikcileri"
+                                               asp-action="Edit"
+                                               asp-route-id="@item.Id"
+                                               class="btn btn-sm btn-outline-warning">
+                                                Düzenle
+                                            </a>
+                                            <form asp-controller="UrunTedarikcileri"
+                                                  asp-action="DurumDegistir"
+                                                  asp-route-id="@item.Id"
+                                                  method="post"
+                                                  class="d-inline">
+                                                <input type="hidden"
+                                                       name="rowVersion"
+                                                       value="@Convert.ToBase64String(item.RowVersion)" />
+                                                <button class="btn btn-sm btn-outline-secondary">
+                                                    @(item.AktifMi ? "Pasifleştir" : "Aktifleştir")
+                                                </button>
+                                            </form>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-muted py-4">
+                    Bu ürün için bağlı tedarikçi tanımlanmamış.
+                </div>
+            }
         </div>
     </div>
 </div>

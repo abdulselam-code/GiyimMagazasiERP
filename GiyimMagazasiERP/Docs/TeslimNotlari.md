@@ -96,3 +96,38 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 - Kasiyer yalnızca kendi kapanışlarını görür; diğer roller backend yetkisiyle
   sınırlandırılır.
 - Eşzamanlı onay/red işlemleri RowVersion ile korunur.
+
+## Personel Mesai ve Vardiya Yönetimi
+
+- Personel vardiya, gerçekleşen çalışma ve fazla mesai süreleri kayıt altına alınır.
+- Gece vardiyası ve fazla mesai süreleri sunucu tarafında yeniden hesaplanır.
+- Çakışan bekleyen veya onaylı vardiyalar kayıt ve onay aşamasında engellenir.
+- Admin, Yonetici ve InsanKaynaklari onay/red sürecini yönetir.
+- Muhasebe yalnızca onaylı kayıtları bordro kontrolü amacıyla görüntüler.
+- Kasiyer, Personel ve Depo yalnızca kendi taleplerini görür ve bekleyen taleplerini iptal edebilir.
+- Bu sürüm maaş veya finans hareketi oluşturmaz; ilerideki bordro modülüne güvenli veri hazırlar.
+
+## Puantaj ve Depo Sipariş Talepleri
+
+- Aylık puantaj raporu aktif personeller için onaylı mesai, fazla mesai ve izin
+  kayıtlarından otomatik hesaplanır; ayrı puantaj tablosu oluşturulmaz.
+- Aya taşan izinler seçilen ay sınırlarına göre gün bazında kırpılır.
+- Depo ürün sipariş talepleri çoklu ürün kalemi, öncelik, onay/red ve iptal
+  süreçleriyle kayıt altına alınır.
+- Talep ve yönetici onayı stok miktarını değiştirmez.
+- Yalnız onaylı talebin teslim alınması ürün stoğunu artırır ve stok giriş
+  hareketi oluşturur; işlem transaction ile korunur.
+- Depo sipariş süreci satın alma faturası veya finans hareketi oluşturmaz.
+- Ürün-tedarikçi bağlantısı çoklu tedarikçi, maliyet, indirim, minimum sipariş,
+  teslim süresi ve varsayılan tedarikçi bilgileriyle genişletildi.
+- Depo sipariş ekranında ürün bazlı tedarikçi filtreleme ve En Uygun / En Hızlı /
+  Varsayılan önerileri eklendi.
+- En Uygun Fiyat, En Hızlı Teslimat ve maliyet-hız ağırlıklı Dengeli Seçim
+  seçenekleriyle tedarik karar desteği eklendi.
+- Ürün kalemlerinde karşılaştırmalı tedarikçi tablosu ve Seçilen etiketi
+  gösterilir; kullanıcı öneriyi elle değiştirebilir.
+- `023_seed_alternatif_urun_tedarikcileri.sql` ile seçili demo ürünlerine
+  hızlı teslimat ve düşük net maliyet odaklı alternatif tedarikçi verileri
+  eklendi; mevcut fiyat ve indirim kayıtları korunur.
+- Seçilen tedarikçi ve tahmini maliyet bilgileri talep kaleminde saklanır; onay
+  stok artırmaz, mevcut teslim alma transaction akışı korunur.

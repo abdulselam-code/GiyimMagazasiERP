@@ -1,0 +1,30 @@
+@model GiyimMagazasiERP.ViewModels.PuantajIndexViewModel
+@{
+    ViewData["Title"] = "Puantaj Raporu";
+    var aylar = System.Globalization.CultureInfo.GetCultureInfo("tr-TR").DateTimeFormat.MonthNames;
+}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="mb-4"><h1 class="h3 fw-bold mb-1">Puantaj Raporu</h1><p class="text-muted mb-0">Aylık personel çalışma, izin ve fazla mesai özetlerini görüntüleyin.</p></div>
+    <div class="row g-3 mb-4">
+        @foreach (var kart in new[] { ("Toplam Planlanan Saat", Model.ToplamPlanlananSaat.ToString("N2"), "primary"), ("Toplam Gerçekleşen Saat", Model.ToplamGerceklesenSaat.ToString("N2"), "info"), ("Onaylı Fazla Mesai", Model.ToplamOnayliFazlaMesai.ToString("N2"), "success"), ("Toplam İzin Günü", Model.ToplamIzinGunu.ToString(), "secondary"), ("Bekleyen Mesai Talebi", Model.BekleyenMesaiTalebi.ToString(), "warning") })
+        {
+            <div class="col-sm-6 col-xl"><div class="card border-0 border-start border-4 border-@kart.Item3 shadow-sm h-100"><div class="card-body"><div class="small text-muted">@kart.Item1</div><strong class="fs-4 text-@kart.Item3">@kart.Item2</strong></div></div></div>
+        }
+    </div>
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2"><label class="form-label">Ay</label><select name="ay" class="form-select">@for(var i=1;i<=12;i++){<option value="@i" selected="@(Model.Ay==i)">@aylar[i-1]</option>}</select></div>
+            <div class="col-md-2"><label class="form-label">Yıl</label><input name="yil" type="number" min="2000" max="2100" value="@Model.Yil" class="form-control"/></div>
+            <div class="col-md-3"><label class="form-label">Personel Arama</label><input name="arama" value="@Model.Arama" class="form-control" placeholder="Ad veya pozisyon"/></div>
+            <div class="col-md-2"><label class="form-label">Departman</label><select name="departman" class="form-select"><option value="">Tümü</option>@foreach(var d in Model.Departmanlar){<option value="@d" selected="@(Model.Departman==d)">@d</option>}</select></div>
+            <div class="col-md-1"><label class="form-label">Kayıt</label><select name="pageSize" class="form-select">@foreach(var n in new[]{10,25,50,100}){<option value="@n" selected="@(Model.PageSize==n)">@n</option>}</select></div>
+            <div class="col-md-2 d-flex gap-2"><button class="btn btn-primary flex-fill">Göster</button><a asp-action="Index" class="btn btn-outline-secondary">Temizle</a></div>
+        </form>
+    </div></div>
+    <div class="card border-0 shadow-sm"><div class="card-body"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead class="table-dark"><tr><th>Personel</th><th>Departman</th><th>Pozisyon</th><th>Planlanan</th><th>Gerçekleşen</th><th>Fazla Mesai</th><th>Normal Vardiya</th><th>Yıllık İzin</th><th>Diğer İzin</th><th>Toplam İzin</th><th>Bekleyen</th><th>Durum</th><th>İşlem</th></tr></thead>
+        <tbody>@if(Model.Items.Any()){foreach(var x in Model.Items){<tr><td><strong>@x.PersonelAdi</strong></td><td>@x.Departman</td><td>@x.Pozisyon</td><td>@x.PlanlananSaat.ToString("N2")</td><td>@x.GerceklesenSaat.ToString("N2")</td><td class="text-success fw-semibold">@x.OnayliFazlaMesai.ToString("N2")</td><td>@x.NormalVardiyaSayisi</td><td>@x.YillikIzinGunu</td><td>@x.DigerIzinGunu</td><td>@x.ToplamIzinGunu</td><td>@x.BekleyenMesaiSayisi</td><td><span class="badge text-bg-@(x.BekleyenMesaiSayisi>0?"warning":x.OnayliFazlaMesai>0?"success":"secondary")">@x.DurumNotu</span></td><td><div class="d-flex gap-1"><a asp-controller="PersonelMesaileri" asp-action="Index" asp-route-personelId="@x.PersonelId" class="btn btn-sm btn-outline-primary">Mesai</a><a asp-controller="PersonelIzinleri" asp-action="Index" asp-route-arama="@x.PersonelAdi" class="btn btn-sm btn-outline-secondary">İzin</a></div></td></tr>}}else{<tr><td colspan="13" class="text-center text-muted py-4">Kayıt bulunamadı.</td></tr>}</tbody>
+    </table></div>
+    @if(Model.TotalPages>1){<nav class="mt-4"><ul class="pagination justify-content-center">@for(var p=1;p<=Model.TotalPages;p++){<li class="page-item @(p==Model.Page?"active":"")"><a class="page-link" asp-route-page="@p" asp-route-pageSize="@Model.PageSize" asp-route-ay="@Model.Ay" asp-route-yil="@Model.Yil" asp-route-arama="@Model.Arama" asp-route-departman="@Model.Departman">@p</a></li>}</ul></nav>}
+    </div></div>
+</div>

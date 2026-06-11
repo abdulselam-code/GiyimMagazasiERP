@@ -119,3 +119,70 @@ Admin, Yonetici ve Muhasebe rolleri **Hareketler > Kasa Kapanışları**
 ekranından tüm kapanışları inceler. Hazırlanmış kayıt onaylanabilir veya red
 nedeni yazılarak reddedilebilir. Onaylanan ya da reddedilen kapanış tekrar
 işleme alınamaz. Kasiyer yalnızca kendi kapanışlarını görüntüleyebilir.
+
+## Personel Mesai ve Vardiya
+
+Kasiyer, Personel ve Depo kullanıcıları **Benim Mesailerim** ekranından kendi
+vardiya kayıtlarını görüntüler ve **Fazla Mesai Talebi Oluştur** bağlantısıyla
+yalnızca kendi adlarına Fazla Mesai veya Ek Vardiya talebi oluşturur. Vardiya
+başlangıç ve bitiş saati gece yarısını aşıyorsa sistem bitişi ertesi gün kabul
+eder. Gerçek giriş ve çıkış birlikte girildiğinde gerçekleşen süre ve fazla
+mesai otomatik hesaplanır.
+
+Admin, Yonetici ve InsanKaynaklari rolleri **Mesai / Vardiya** ekranından tüm
+aktif personeller adına kayıt oluşturabilir, bekleyen kayıtları onaylayabilir
+veya gerekçesiyle reddedebilir. Aynı personelin aynı tarihte çakışan bekleyen
+veya onaylı vardiyaları hem kayıt hem onay aşamasında engellenir.
+
+Muhasebe rolü **Mesai Kayıtları** ekranında yalnızca onaylanmış kayıtları görür.
+Bu ekran bordro ve maaş kontrolüne veri hazırlar; bu aşamada otomatik maaş veya
+finans hareketi oluşturmaz.
+
+## Puantaj Raporu
+
+Admin, Yonetici, InsanKaynaklari ve Muhasebe kullanıcıları **Puantaj Raporu**
+ekranında ay ve yıl seçerek aktif personellerin onaylı vardiya, gerçekleşen
+çalışma, fazla mesai ve izin özetlerini görüntüler. Başka aya taşan izinlerde
+yalnız seçilen ay içinde kalan günler hesaplanır. Rapor yeni kayıt üretmez;
+Personel Mesai Kayıtları ile Personel İzinlerinden anlık olarak hesaplanır.
+
+## Depo Ürün Sipariş Talepleri
+
+Depo kullanıcısı **Ürün Sipariş Talebi Oluştur** ekranında bir veya daha fazla
+aktif ürün, ürüne bağlı tedarikçi, talep adedi ve öncelik seçerek talep
+oluşturur. Ürün seçildiğinde mevcut stok, minimum stok ve kritik stok durumu
+gösterilir. Tedarikçi listesi yalnız seçilen ürüne ait aktif bağlantılardan
+oluşur; net maliyet, indirim ve teslim süresi birlikte gösterilir.
+
+Talep başındaki **Tedarik Tercihi** alanı önerinin nasıl üretileceğini belirler:
+
+- **En Uygun Fiyat:** Net birim maliyeti en düşük tedarikçiyi önerir.
+- **En Hızlı Teslimat:** Teslim süresi en kısa tedarikçiyi önerir.
+- **Dengeli Seçim:** Net maliyeti yüzde 55, teslim süresini yüzde 45 ağırlıkla
+  karşılaştırır ve toplam skoru en iyi tedarikçiyi önerir.
+
+Karşılaştırma tablosunda En Uygun, En Hızlı, Varsayılan ve Seçilen etiketleri
+gösterilir. Öneri zorunlu değildir; depocu farklı bir tedarikçiyi elle seçebilir.
+
+Ürün detayındaki **Bağlı Tedarikçiler** bölümünde ürünün satın alınabileceği
+firmalar karşılaştırılır. Net birim maliyeti en düşük olan bağlantı **En Uygun**,
+teslim süresi en kısa olan bağlantı **En Hızlı**, ürün için ana tercih olarak
+işaretlenen bağlantı ise **Varsayılan** rozeti alır. Depo kullanıcısı bu
+bilgileri görüntüler; bağlantı ekleme ve düzenleme Admin/Yonetici tarafından
+yapılır.
+
+Bağlı tedarikçisi olmayan ürün için Depo rolü talep gönderemez. Admin/Yonetici
+eski ürün kartındaki ana tedarikçiyle devam edebilir; kurumsal kullanımda önce
+ürün detayından satın alma koşullarının tanımlanması önerilir.
+
+Talep oluşturulması stoğu değiştirmez. Admin veya Yonetici talebi onayladığında kalemlerin
+onaylanan adetleri talep adetleri olarak sabitlenir; yine stok artmaz.
+
+Onaylanmış talep Admin, Yonetici veya talebin sahibi Depo kullanıcısı tarafından
+teslim alındığında ürün stokları transaction içinde artırılır ve her ürün için
+`Giris` türünde stok hareketi oluşturulur. İşlem başarısız olursa tüm stok
+değişiklikleri geri alınır. Bu süreç satın alma faturası veya finans hareketi
+oluşturmaz.
+
+**Yeni Ürün** işlemi yalnız ürün kartı/master data oluşturur. Stok tamamlamak
+için yeni ürün açmak yerine Depo Sipariş Talebi kullanılmalıdır.

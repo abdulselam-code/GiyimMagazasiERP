@@ -1,0 +1,64 @@
+@model GiyimMagazasiERP.Models.UrunTedarikci
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="TedarikciId" class="form-label">Tedarikçi</label>
+        <select asp-for="TedarikciId" asp-items="ViewBag.TedarikciId" class="form-select">
+            <option value="">Tedarikçi seçiniz</option>
+        </select>
+        <span asp-validation-for="TedarikciId" class="text-danger"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="TedarikciUrunKodu" class="form-label">Tedarikçi Ürün Kodu</label>
+        <input asp-for="TedarikciUrunKodu" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="BirimMaliyet" class="form-label">Birim Maliyet</label>
+        <div class="input-group">
+            <input asp-for="BirimMaliyet" class="form-control" />
+            <span class="input-group-text">TL</span>
+        </div>
+        <span asp-validation-for="BirimMaliyet" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="IndirimOrani" class="form-label">İndirim Oranı</label>
+        <div class="input-group">
+            <input asp-for="IndirimOrani" class="form-control" />
+            <span class="input-group-text">%</span>
+        </div>
+        <span asp-validation-for="IndirimOrani" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Net Birim Maliyet</label>
+        <input value="@Model.NetBirimMaliyet.ToString("N2") TL"
+               class="form-control bg-light" readonly />
+        <div class="form-text">Kaydederken birim maliyet ve indirimden yeniden hesaplanır.</div>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="MinimumSiparisAdedi" class="form-label">Minimum Sipariş Adedi</label>
+        <input asp-for="MinimumSiparisAdedi" type="number" min="1" class="form-control" />
+        <span asp-validation-for="MinimumSiparisAdedi" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="TeslimSuresiGun" class="form-label">Teslim Süresi</label>
+        <div class="input-group">
+            <input asp-for="TeslimSuresiGun" type="number" min="0" class="form-control" />
+            <span class="input-group-text">gün</span>
+        </div>
+        <span asp-validation-for="TeslimSuresiGun" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 d-flex align-items-end gap-4 pb-2">
+        <div class="form-check">
+            <input asp-for="VarsayilanMi" class="form-check-input" />
+            <label asp-for="VarsayilanMi" class="form-check-label">Varsayılan</label>
+        </div>
+        <div class="form-check">
+            <input asp-for="AktifMi" class="form-check-input" />
+            <label asp-for="AktifMi" class="form-check-label">Aktif</label>
+        </div>
+    </div>
+    <div class="col-12">
+        <label asp-for="Aciklama" class="form-label">Açıklama</label>
+        <textarea asp-for="Aciklama" class="form-control" rows="3"></textarea>
+    </div>
+</div>

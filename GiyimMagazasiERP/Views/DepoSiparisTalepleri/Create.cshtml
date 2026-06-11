@@ -1,0 +1,648 @@
+@model GiyimMagazasiERP.ViewModels.DepoSiparisTalebiOlusturViewModel
+@using GiyimMagazasiERP.Models
+@using GiyimMagazasiERP.ViewModels
+@using Microsoft.AspNetCore.Mvc.Rendering
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Ürün Sipariş Talebi Oluştur";
+    var kritikUrunler = ViewData["KritikUrunler"] as List<Urun> ?? new();
+    var urunBilgileriJson = JsonSerializer.Serialize(ViewData["UrunBilgileriJson"]);
+    var urunTedarikcileriJson = JsonSerializer.Serialize(ViewData["UrunTedarikcileriJson"]);
+    var depoRolu = User.IsInRole("Depo");
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Ürün Sipariş Talebi Oluştur</h1>
+            <p class="text-muted mb-0">
+                Bu ekran sistemde kayıtlı ürünler için stok tamamlama talebi oluşturur.
+                Talep oluşturmak veya onaylamak stok artırmaz.
+                Stok yalnızca teslim alma işleminde güncellenir.
+            </p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">Listeye Dön</a>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>Ürün kartı ile sipariş talebi farklı işlemlerdir.</strong>
+        Yeni bir ürün tanımlamak için Ürünler bölümünü; mevcut ürünün stoğunu tamamlamak için bu ekranı kullanın.
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-9">
+            <form asp-action="Create" method="post" id="talepFormu">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <label asp-for="Oncelik" class="form-label">Öncelik</label>
+                                <select asp-for="Oncelik" class="form-select">
+                                    @foreach (var oncelik in DepoSiparisTalebi.Oncelikler)
+                                    {
+                                        <option value="@oncelik">@oncelik</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="TedarikTercihi" class="form-label">Tedarik Tercihi</label>
+                                <select asp-for="TedarikTercihi"
+                                        id="tedarikTercihi"
+                                        class="form-select">
+                                    <option value="@DepoSiparisTalebiOlusturViewModel.TercihEnUygunFiyat">
+                                        En Uygun Fiyat
+                                    </option>
+                                    <option value="@DepoSiparisTalebiOlusturViewModel.TercihEnHizliTeslimat">
+                                        En Hızlı Teslimat
+                                    </option>
+                                    <option value="@DepoSiparisTalebiOlusturViewModel.TercihDengeli">
+                                        Dengeli Seçim
+                                    </option>
+                                </select>
+                                <span asp-validation-for="TedarikTercihi" class="text-danger"></span>
+                                <div class="form-text">
+                                    Öneriyi değiştirir; tedarikçiyi yine elle seçebilirsiniz.
+                                </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label asp-for="Aciklama" class="form-label">Talep Açıklaması</label>
+                                <input asp-for="Aciklama" class="form-control"
+                                       placeholder="Talebin genel gerekçesi veya notu" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                            <div>
+                                <h2 class="h5 fw-bold mb-1">Ürün Kalemleri</h2>
+                                <p class="small text-muted mb-0">
+                                    Her ürün için bağlı tedarikçiler fiyat ve teslim süresiyle karşılaştırılır.
+                                </p>
+                            </div>
+                            <button type="button" id="satirEkle" class="btn btn-sm btn-outline-primary">
+                                Ürün Satırı Ekle
+                            </button>
+                        </div>
+
+                        <div id="kalemler">
+                            @for (var i = 0; i < Model.Kalemler.Count; i++)
+                            {
+                                <div class="border rounded p-3 mb-3 kalem"
+                                     data-selected-supplier="@Model.Kalemler[i].UrunTedarikciId">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-lg-5">
+                                            <label class="form-label">Ürün</label>
+                                            <select asp-for="Kalemler[i].UrunId"
+                                                    asp-items="@(ViewData["Urunler"] as SelectList)"
+                                                    class="form-select urun-secimi">
+                                                <option value="">Ürün seçiniz</option>
+                                            </select>
+                                            <span asp-validation-for="Kalemler[i].UrunId" class="text-danger"></span>
+                                        </div>
+                                        <div class="col-lg-5">
+                                            <label class="form-label">Tedarikçi</label>
+                                            <select asp-for="Kalemler[i].UrunTedarikciId"
+                                                    class="form-select tedarikci-secimi">
+                                                <option value="">Önce ürün seçiniz</option>
+                                            </select>
+                                            <span asp-validation-for="Kalemler[i].UrunTedarikciId"
+                                                  class="text-danger"></span>
+                                        </div>
+                                        <div class="col-lg-2">
+                                            <button type="button"
+                                                    class="btn btn-outline-danger w-100 satir-sil">
+                                                Kaldır
+                                            </button>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Talep Adedi</label>
+                                            <input asp-for="Kalemler[i].TalepAdedi"
+                                                   type="number"
+                                                   min="1"
+                                                   class="form-control talep-adedi" />
+                                            <span asp-validation-for="Kalemler[i].TalepAdedi"
+                                                  class="text-danger"></span>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <label class="form-label">Kalem Açıklaması</label>
+                                            <input asp-for="Kalemler[i].Aciklama"
+                                                   class="form-control"
+                                                   placeholder="Ürüne özel not" />
+                                        </div>
+                                    </div>
+
+                                    <div class="urun-ozeti bg-light border rounded p-3 mt-3 d-none"></div>
+                                    <div class="tedarikci-onerileri mt-2"></div>
+                                    <div class="tedarikci-karsilastirma table-responsive mt-3 d-none"></div>
+                                    <div class="tedarikci-uyarisi alert alert-warning py-2 mt-3 mb-0 d-none"></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 p-3">
+                        <button id="talepGonder" class="btn btn-primary">
+                            Talebi Onaya Gönder
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-xl-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h5 fw-bold">Kritik Stok Önerileri</h2>
+                    @if (kritikUrunler.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Stok</th>
+                                        <th>Min.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var urun in kritikUrunler)
+                                    {
+                                        <tr>
+                                            <td>@urun.UrunAdi</td>
+                                            <td class="text-danger fw-semibold">@urun.StokMiktari</td>
+                                            <td>@urun.MinimumStok</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Kritik stok ürünü yok.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="urunBilgileriJson">@Html.Raw(urunBilgileriJson)</script>
+<script type="application/json" id="urunTedarikcileriJson">@Html.Raw(urunTedarikcileriJson)</script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const form = document.getElementById("talepFormu");
+            const kalemler = document.getElementById("kalemler");
+            const gonderButonu = document.getElementById("talepGonder");
+            const tercihSecimi = document.getElementById("tedarikTercihi");
+            const depoRolu = @depoRolu.ToString().ToLowerInvariant();
+            const urunler = JSON.parse(
+                document.getElementById("urunBilgileriJson").textContent || "[]");
+            const tedarikciler = JSON.parse(
+                document.getElementById("urunTedarikcileriJson").textContent || "[]");
+            const para = new Intl.NumberFormat("tr-TR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            function minimumAdetMesaji(minimumAdet) {
+                const sonRakam = Math.abs(Number(minimumAdet)) % 10;
+                const ekler = {
+                    0: "dur",
+                    1: "dir",
+                    2: "dir",
+                    3: "tür",
+                    4: "tür",
+                    5: "tir",
+                    6: "dır",
+                    7: "dir",
+                    8: "dir",
+                    9: "dur"
+                };
+
+                return `Seçilen tedarikçi için minimum sipariş adedi ${minimumAdet}'${ekler[sonRakam] ?? "dır"}.`;
+            }
+
+            if (window.jQuery?.validator) {
+                window.jQuery.validator.messages.min = function (minimumAdet, element) {
+                    return element.dataset.minimumMesaji
+                        ?? minimumAdetMesaji(minimumAdet);
+                };
+            }
+
+            function urunTedarikcileri(urunId) {
+                return tedarikciler.filter(x => Number(x.UrunId) === Number(urunId));
+            }
+
+            function onerileriBul(liste) {
+                const maliyetli = liste.filter(x => Number(x.NetBirimMaliyet) > 0);
+                const sureli = liste.filter(x => Number(x.TeslimSuresiGun) > 0);
+
+                const enUygun = [...maliyetli].sort((a, b) =>
+                    Number(a.NetBirimMaliyet) - Number(b.NetBirimMaliyet))[0];
+                const enHizli = [...sureli].sort((a, b) =>
+                    Number(a.TeslimSuresiGun) - Number(b.TeslimSuresiGun))[0];
+                const varsayilan = liste.find(x => x.VarsayilanMi);
+
+                const maliyetler = maliyetli.map(x => Number(x.NetBirimMaliyet));
+                const sureler = sureli.map(x => Number(x.TeslimSuresiGun));
+                const minMaliyet = Math.min(...maliyetler);
+                const maxMaliyet = Math.max(...maliyetler);
+                const minSure = Math.min(...sureler);
+                const maxSure = Math.max(...sureler);
+
+                const dengeli = [...liste]
+                    .map(item => {
+                        const maliyet = Number(item.NetBirimMaliyet);
+                        const sure = Number(item.TeslimSuresiGun);
+                        const maliyetSkoru = maliyet > 0
+                            ? (maxMaliyet === minMaliyet
+                                ? 0
+                                : (maliyet - minMaliyet) / (maxMaliyet - minMaliyet))
+                            : 1.25;
+                        const sureSkoru = sure > 0
+                            ? (maxSure === minSure
+                                ? 0
+                                : (sure - minSure) / (maxSure - minSure))
+                            : 1.25;
+
+                        return {
+                            item,
+                            skor: (maliyetSkoru * 0.55) + (sureSkoru * 0.45)
+                        };
+                    })
+                    .sort((a, b) => a.skor - b.skor)[0]?.item;
+
+                return {
+                    enUygun,
+                    enHizli,
+                    varsayilan,
+                    dengeli
+                };
+            }
+
+            function terciheGoreOneri(liste) {
+                const oneriler = onerileriBul(liste);
+
+                if (tercihSecimi.value === "EnUygunFiyat")
+                    return oneriler.enUygun ?? oneriler.varsayilan ?? liste[0];
+
+                if (tercihSecimi.value === "EnHizliTeslimat")
+                    return oneriler.enHizli ?? oneriler.varsayilan ?? liste[0];
+
+                return oneriler.dengeli ?? oneriler.varsayilan ?? liste[0];
+            }
+
+            function tercihAciklamasi() {
+                if (tercihSecimi.value === "EnUygunFiyat")
+                    return "Net birim maliyeti en düşük tedarikçi önerildi.";
+
+                if (tercihSecimi.value === "EnHizliTeslimat")
+                    return "Teslim süresi en kısa tedarikçi önerildi.";
+
+                return "Net maliyet %55, teslim süresi %45 ağırlıkla değerlendirilerek dengeli tedarikçi önerildi.";
+            }
+
+            function optionMetni(item) {
+                const maliyet = Number(item.NetBirimMaliyet) > 0
+                    ? `${para.format(item.NetBirimMaliyet)} TL`
+                    : "maliyet girilmemiş";
+                const teslim = Number(item.TeslimSuresiGun) > 0
+                    ? `${item.TeslimSuresiGun} gün`
+                    : "teslim süresi girilmemiş";
+                return `${item.TedarikciAdi} - ${maliyet} - %${para.format(item.IndirimOrani)} indirim - ${teslim}`;
+            }
+
+            function secilenTedarikciBilgisi(row) {
+                const select = row.querySelector(".tedarikci-secimi");
+                const item = tedarikciler.find(x => Number(x.Id) === Number(select.value));
+                const alan = row.querySelector(".tedarikci-onerileri");
+
+                if (!item) {
+                    alan.innerHTML = "";
+                    return;
+                }
+
+                const badges = [];
+                const liste = urunTedarikcileri(item.UrunId);
+                const oneriler = onerileriBul(liste);
+                const tercihOnerisi = terciheGoreOneri(liste);
+                if (oneriler.enUygun?.Id === item.Id)
+                    badges.push('<span class="badge text-bg-success">En Uygun</span>');
+                if (oneriler.enHizli?.Id === item.Id)
+                    badges.push('<span class="badge text-bg-info">En Hızlı</span>');
+                if (item.VarsayilanMi)
+                    badges.push('<span class="badge text-bg-primary">Varsayılan</span>');
+                badges.push('<span class="badge text-bg-dark">Seçilen</span>');
+
+                alan.innerHTML = `
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        ${badges.join("")}
+                        <span class="small text-muted">
+                            Minimum sipariş: ${item.MinimumSiparisAdedi} |
+                            Brüt maliyet: ${para.format(item.BirimMaliyet)} TL |
+                            Net maliyet: ${para.format(item.NetBirimMaliyet)} TL
+                        </span>
+                    </div>
+                    ${tercihOnerisi?.Id === item.Id
+                        ? `<div class="small text-success mt-1">${tercihAciklamasi()}</div>`
+                        : ""}`;
+
+                const adet = row.querySelector(".talep-adedi");
+                const minimumAdet = Math.max(1, Number(item.MinimumSiparisAdedi));
+                adet.min = minimumAdet;
+                adet.dataset.minimumMesaji = minimumAdetMesaji(minimumAdet);
+                validationMesajiniTemizle(adet);
+                adet.setCustomValidity("");
+                karsilastirmayiGoster(row, liste);
+            }
+
+            function validationMesajiAlani(adetInput) {
+                return adetInput.closest(".col-md-3")?.querySelector(".text-danger");
+            }
+
+            function validationMesajiniGoster(adetInput, mesaj) {
+                const mesajAlani = validationMesajiAlani(adetInput);
+                adetInput.classList.add("input-validation-error");
+
+                if (mesajAlani) {
+                    mesajAlani.textContent = mesaj;
+                    mesajAlani.classList.remove("field-validation-valid");
+                    mesajAlani.classList.add("field-validation-error");
+                }
+            }
+
+            function validationMesajiniTemizle(adetInput) {
+                const mesajAlani = validationMesajiAlani(adetInput);
+                adetInput.classList.remove("input-validation-error");
+
+                if (mesajAlani) {
+                    mesajAlani.textContent = "";
+                    mesajAlani.classList.remove("field-validation-error");
+                    mesajAlani.classList.add("field-validation-valid");
+                }
+            }
+
+            function talepAdediniDogrula(adetInput) {
+                const minimumAdet = Number(adetInput.min || 1);
+                const girilenAdet = Number(adetInput.value);
+                const mesaj = adetInput.dataset.minimumMesaji
+                    ?? minimumAdetMesaji(minimumAdet);
+
+                if (adetInput.value !== "" &&
+                    (!Number.isFinite(girilenAdet) || girilenAdet < minimumAdet)) {
+                    adetInput.setCustomValidity(mesaj);
+                    validationMesajiniGoster(adetInput, mesaj);
+                    return false;
+                }
+
+                adetInput.setCustomValidity("");
+                validationMesajiniTemizle(adetInput);
+                return true;
+            }
+
+            function karsilastirmayiGoster(row, liste) {
+                const alan = row.querySelector(".tedarikci-karsilastirma");
+                const secilenId = Number(row.querySelector(".tedarikci-secimi").value);
+
+                if (!liste.length) {
+                    alan.classList.add("d-none");
+                    alan.innerHTML = "";
+                    return;
+                }
+
+                const oneriler = onerileriBul(liste);
+                const tercihOnerisi = terciheGoreOneri(liste);
+                const satirlar = liste.map(item => {
+                    const etiketler = [];
+
+                    if (item.Id === oneriler.enUygun?.Id)
+                        etiketler.push('<span class="badge text-bg-success">En Uygun</span>');
+                    if (item.Id === oneriler.enHizli?.Id)
+                        etiketler.push('<span class="badge text-bg-info">En Hızlı</span>');
+                    if (item.VarsayilanMi)
+                        etiketler.push('<span class="badge text-bg-primary">Varsayılan</span>');
+                    if (item.Id === secilenId)
+                        etiketler.push('<span class="badge text-bg-dark">Seçilen</span>');
+
+                    const vurgu = item.Id === secilenId
+                        ? "table-primary"
+                        : (item.Id === tercihOnerisi?.Id ? "table-info" : "");
+
+                    return `
+                        <tr class="${vurgu}">
+                            <td class="fw-semibold">${item.TedarikciAdi}</td>
+                            <td>${Number(item.NetBirimMaliyet) > 0
+                                ? `${para.format(item.NetBirimMaliyet)} TL`
+                                : "-"}</td>
+                            <td>%${para.format(item.IndirimOrani)}</td>
+                            <td>${Number(item.TeslimSuresiGun) > 0
+                                ? `${item.TeslimSuresiGun} gün`
+                                : "-"}</td>
+                            <td>${item.MinimumSiparisAdedi}</td>
+                            <td><div class="d-flex flex-wrap gap-1">${etiketler.join("")}</div></td>
+                        </tr>`;
+                }).join("");
+
+                alan.innerHTML = `
+                    <div class="small fw-semibold mb-2">Tedarikçi Karşılaştırması</div>
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tedarikçi</th>
+                                <th>Net Maliyet</th>
+                                <th>İndirim</th>
+                                <th>Teslim Süresi</th>
+                                <th>Minimum Sipariş</th>
+                                <th>Etiket</th>
+                            </tr>
+                        </thead>
+                        <tbody>${satirlar}</tbody>
+                    </table>`;
+                alan.classList.remove("d-none");
+            }
+
+            function satiriGuncelle(row, ilkYukleme = false) {
+                const urunSelect = row.querySelector(".urun-secimi");
+                const tedarikciSelect = row.querySelector(".tedarikci-secimi");
+                const ozet = row.querySelector(".urun-ozeti");
+                const uyari = row.querySelector(".tedarikci-uyarisi");
+                const urun = urunler.find(x => Number(x.Id) === Number(urunSelect.value));
+                const liste = urun ? urunTedarikcileri(urun.Id) : [];
+                const oncekiSecim = ilkYukleme
+                    ? row.dataset.selectedSupplier
+                    : tedarikciSelect.value;
+
+                tedarikciSelect.innerHTML = '<option value="">Tedarikçi seçiniz</option>';
+                ozet.classList.toggle("d-none", !urun);
+                uyari.classList.add("d-none");
+                uyari.textContent = "";
+
+                if (!urun) {
+                    ozet.innerHTML = "";
+                    const adet = row.querySelector(".talep-adedi");
+                    adet.min = 1;
+                    delete adet.dataset.minimumMesaji;
+                    adet.setCustomValidity("");
+                    validationMesajiniTemizle(adet);
+                    row.querySelector(".tedarikci-onerileri").innerHTML = "";
+                    row.querySelector(".tedarikci-karsilastirma").classList.add("d-none");
+                    row.querySelector(".tedarikci-karsilastirma").innerHTML = "";
+                    formDurumunuGuncelle();
+                    return;
+                }
+
+                ozet.innerHTML = `
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <span><strong>Mevcut stok:</strong> ${urun.StokMiktari}</span>
+                        <span><strong>Minimum stok:</strong> ${urun.MinimumStok}</span>
+                        <span class="${urun.KritikMi ? "text-danger fw-semibold" : "text-success"}">
+                            ${urun.KritikMi ? "Kritik stok" : "Stok seviyesi normal"}
+                        </span>
+                    </div>`;
+
+                if (liste.length === 0) {
+                    uyari.textContent =
+                        "Bu ürün için tanımlı tedarikçi bulunamadı. Lütfen ürün detayından tedarikçi tanımlayın.";
+                    uyari.classList.remove("d-none");
+                    row.querySelector(".tedarikci-onerileri").innerHTML = "";
+                    row.querySelector(".tedarikci-karsilastirma").classList.add("d-none");
+                    row.querySelector(".tedarikci-karsilastirma").innerHTML = "";
+                    formDurumunuGuncelle();
+                    return;
+                }
+
+                liste.forEach(item => {
+                    const option = document.createElement("option");
+                    option.value = item.Id;
+                    option.textContent = optionMetni(item);
+                    tedarikciSelect.appendChild(option);
+                });
+
+                const otomatikSecim = liste.find(x => String(x.Id) === String(oncekiSecim))
+                    ?? terciheGoreOneri(liste);
+
+                tedarikciSelect.value = otomatikSecim?.Id ?? "";
+                secilenTedarikciBilgisi(row);
+                formDurumunuGuncelle();
+            }
+
+            function formDurumunuGuncelle() {
+                if (!depoRolu) {
+                    gonderButonu.disabled = false;
+                    return;
+                }
+
+                const tedarikcisizSatir = Array.from(kalemler.querySelectorAll(".kalem"))
+                    .some(row => {
+                        const urunId = row.querySelector(".urun-secimi").value;
+                        return urunId && urunTedarikcileri(urunId).length === 0;
+                    });
+
+                gonderButonu.disabled = tedarikcisizSatir;
+            }
+
+            function yenidenNumaralandir() {
+                kalemler.querySelectorAll(".kalem").forEach((row, index) => {
+                    row.querySelectorAll("[name]").forEach(element => {
+                        element.name = element.name.replace(
+                            /Kalemler\[\d+\]/,
+                            `Kalemler[${index}]`);
+                    });
+                    row.querySelectorAll("[id]").forEach(element => {
+                        element.id = element.id.replace(
+                            /Kalemler_\d+__/,
+                            `Kalemler_${index}__`);
+                    });
+                });
+            }
+
+            document.getElementById("satirEkle").addEventListener("click", () => {
+                const row = kalemler.querySelector(".kalem").cloneNode(true);
+                row.dataset.selectedSupplier = "";
+                row.querySelectorAll("input").forEach(input => {
+                    input.value = input.type === "number" ? "1" : "";
+                    input.classList.remove("input-validation-error");
+                });
+                row.querySelectorAll("select").forEach(select => select.selectedIndex = 0);
+                row.querySelector(".urun-ozeti").classList.add("d-none");
+                row.querySelector(".urun-ozeti").innerHTML = "";
+                row.querySelector(".tedarikci-onerileri").innerHTML = "";
+                row.querySelector(".tedarikci-karsilastirma").classList.add("d-none");
+                row.querySelector(".tedarikci-karsilastirma").innerHTML = "";
+                row.querySelector(".tedarikci-uyarisi").classList.add("d-none");
+                kalemler.appendChild(row);
+                yenidenNumaralandir();
+                formDurumunuGuncelle();
+            });
+
+            kalemler.addEventListener("change", event => {
+                const row = event.target.closest(".kalem");
+                if (!row) return;
+
+                if (event.target.classList.contains("urun-secimi"))
+                    satiriGuncelle(row);
+
+                if (event.target.classList.contains("tedarikci-secimi"))
+                    secilenTedarikciBilgisi(row);
+            });
+
+            kalemler.addEventListener("input", event => {
+                if (event.target.classList.contains("talep-adedi"))
+                    talepAdediniDogrula(event.target);
+            });
+
+            kalemler.addEventListener("invalid", event => {
+                if (event.target.classList.contains("talep-adedi"))
+                    talepAdediniDogrula(event.target);
+            }, true);
+
+            tercihSecimi.addEventListener("change", () => {
+                kalemler.querySelectorAll(".kalem").forEach(row => {
+                    const urunId = row.querySelector(".urun-secimi").value;
+                    const liste = urunTedarikcileri(urunId);
+                    const onerilen = terciheGoreOneri(liste);
+
+                    if (onerilen) {
+                        row.querySelector(".tedarikci-secimi").value = onerilen.Id;
+                        secilenTedarikciBilgisi(row);
+                    }
+                });
+            });
+
+            kalemler.addEventListener("click", event => {
+                if (!event.target.classList.contains("satir-sil"))
+                    return;
+
+                if (kalemler.querySelectorAll(".kalem").length > 1) {
+                    event.target.closest(".kalem").remove();
+                    yenidenNumaralandir();
+                    formDurumunuGuncelle();
+                }
+            });
+
+            form.addEventListener("submit", event => {
+                if (depoRolu && gonderButonu.disabled) {
+                    event.preventDefault();
+                    return;
+                }
+
+                const adetlerGecerli = Array.from(
+                    kalemler.querySelectorAll(".talep-adedi"))
+                    .every(talepAdediniDogrula);
+
+                if (!adetlerGecerli) {
+                    event.preventDefault();
+                    form.reportValidity();
+                }
+            });
+
+            kalemler.querySelectorAll(".kalem")
+                .forEach(row => satiriGuncelle(row, true));
+        })();
+    </script>
+}

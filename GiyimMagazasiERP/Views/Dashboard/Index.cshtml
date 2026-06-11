@@ -375,6 +375,156 @@
         </section>
     }
 
+    @if (yonetim || insanKaynaklari)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="PersonelMesaileri"
+                   asp-action="Index"
+                   asp-route-durum="OnayBekliyor"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Onay Bekleyen Mesai Talebi</span>
+                        <strong>@Model.OnayBekleyenMesaiSayisi</strong>
+                        <small>Mesai onaylarını incele</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a asp-controller="PersonelMesaileri"
+                   asp-action="Index"
+                   asp-route-durum="Onaylandi"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Bu Ay Onaylı Fazla Mesai</span>
+                        <strong>@Model.BuAyOnayliFazlaMesaiSaati.ToString("N2") saat</strong>
+                        <small>Mesai kayıtlarına git</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+    else if (muhasebe)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="PersonelMesaileri"
+                   asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Bu Ay Onaylı Fazla Mesai</span>
+                        <strong>@Model.BuAyOnayliFazlaMesaiSaati.ToString("N2") saat</strong>
+                        <small>Bordro kontrolü için kayıtları aç</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+    else if (kasiyer || personel || depo)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="PersonelMesaileri"
+                   asp-action="BenimMesailerim"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Bu Ay Onaylı Fazla Mesaim</span>
+                        <strong>@Model.BenimBuAyOnayliFazlaMesaiSaati.ToString("N2") saat</strong>
+                        <small>Kendi mesai kayıtlarını aç</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a asp-controller="PersonelMesaileri"
+                   asp-action="BenimMesailerim"
+                   asp-route-durum="OnayBekliyor"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen Mesai Taleplerim</span>
+                        <strong>@Model.BenimBekleyenMesaiSayisi</strong>
+                        <small>Talep durumlarını takip et</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+
+    @if (yonetim)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="DepoSiparisTalepleri" asp-action="Index"
+                   asp-route-durum="OnayBekliyor" class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Onay Bekleyen Depo Talebi</span>
+                        <strong>@Model.OnayBekleyenDepoSiparisSayisi</strong>
+                        <small>Stok tamamlama taleplerini incele</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <a asp-controller="Urunler" asp-action="Index"
+                   asp-route-kritikStok="true" class="dashboard-metric-link">
+                    <div class="dashboard-metric expense">
+                        <span>Kritik Stok Ürünü</span>
+                        <strong>@Model.KritikStokSayisi</strong>
+                        <small>Kritik ürünleri görüntüle</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+    else if (depo)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-4">
+                <a asp-controller="DepoSiparisTalepleri" asp-action="Index"
+                   asp-route-durum="OnayBekliyor" class="dashboard-metric-link">
+                    <div class="dashboard-metric warning">
+                        <span>Bekleyen Sipariş Taleplerim</span>
+                        <strong>@Model.BenimOnayBekleyenDepoSiparisSayisi</strong>
+                        <small>Taleplerimi görüntüle</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a asp-controller="DepoSiparisTalepleri" asp-action="Index"
+                   asp-route-durum="Onaylandi" class="dashboard-metric-link">
+                    <div class="dashboard-metric income">
+                        <span>Teslim Alınmayı Bekleyen</span>
+                        <strong>@Model.TeslimBekleyenDepoSiparisSayisi</strong>
+                        <small>Onaylı talepleri aç</small>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a asp-controller="Urunler" asp-action="Index"
+                   asp-route-kritikStok="true" class="dashboard-metric-link">
+                    <div class="dashboard-metric expense">
+                        <span>Kritik Stok Ürünü</span>
+                        <strong>@Model.KritikStokSayisi</strong>
+                        <small>Ürünleri görüntüle</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+    else if (muhasebe)
+    {
+        <section class="row g-3 mb-4">
+            <div class="col-md-6">
+                <a asp-controller="DepoSiparisTalepleri" asp-action="Index"
+                   class="dashboard-metric-link">
+                    <div class="dashboard-metric">
+                        <span>Onaylı / Teslim Alınan Depo Talepleri</span>
+                        <strong>@Model.GoruntulenebilirDepoSiparisSayisi</strong>
+                        <small>Görüntüleme ekranına git</small>
+                    </div>
+                </a>
+            </div>
+        </section>
+    }
+
     @if (yonetim || muhasebe)
     {
         <section class="row g-3 mb-4">

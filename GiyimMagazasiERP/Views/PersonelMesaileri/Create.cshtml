@@ -1,0 +1,122 @@
+@model GiyimMagazasiERP.ViewModels.PersonelMesaiOlusturViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+@{
+    ViewData["Title"] = "Mesai / Vardiya Kaydı Oluştur";
+    var yoneticiModu = ViewData["YoneticiModu"] as bool? == true;
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Mesai / Vardiya Kaydı Oluştur</h1>
+            <p class="text-muted mb-0">Çalışma planını veya fazla mesai talebini onay sürecine gönderin.</p>
+        </div>
+        <a asp-action="@(yoneticiModu ? "Index" : "BenimMesailerim")" class="btn btn-outline-secondary">Listeye Dön</a>
+    </div>
+
+    <div class="alert alert-info">Bu kayıt onaya gönderilir. Onaylanmadan kesin mesai kaydı sayılmaz.</div>
+
+    <form asp-action="Create" method="post" id="mesaiFormu">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                @if (yoneticiModu)
+                                {
+                                    <label asp-for="PersonelId" class="form-label"></label>
+                                    <select asp-for="PersonelId" asp-items="@(ViewData["Personeller"] as SelectList)" class="form-select"><option value="">Personel seçiniz</option></select>
+                                    <span asp-validation-for="PersonelId" class="text-danger"></span>
+                                }
+                                else
+                                {
+                                    <input asp-for="PersonelId" type="hidden" />
+                                    <div class="border rounded p-3 bg-body-tertiary">
+                                        <div class="text-muted small">Personel</div>
+                                        <strong>@ViewData["KendiPersonelAdi"]</strong>
+                                        <div class="small text-muted">@ViewData["KendiPersonelDetayi"]</div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="col-md-6"><label asp-for="Tarih" class="form-label"></label><input asp-for="Tarih" type="date" class="form-control" /><span asp-validation-for="Tarih" class="text-danger"></span></div>
+                            <div class="col-md-6"><label asp-for="MesaiTuru" class="form-label"></label><select asp-for="MesaiTuru" asp-items="@(ViewData["MesaiTurleri"] as SelectList)" class="form-select"><option value="">Mesai türü seçiniz</option></select><span asp-validation-for="MesaiTuru" class="text-danger"></span></div>
+                            <div class="col-md-6"><label asp-for="VardiyaBaslangic" class="form-label"></label><input asp-for="VardiyaBaslangic" type="time" class="form-control mesai-saati" /><span asp-validation-for="VardiyaBaslangic" class="text-danger"></span></div>
+                            <div class="col-md-6"><label asp-for="VardiyaBitis" class="form-label"></label><input asp-for="VardiyaBitis" type="time" class="form-control mesai-saati" /><span asp-validation-for="VardiyaBitis" class="text-danger"></span></div>
+                            <div class="col-md-6"><label asp-for="GercekGiris" class="form-label"></label><input asp-for="GercekGiris" type="time" class="form-control mesai-saati" /><span asp-validation-for="GercekGiris" class="text-danger"></span></div>
+                            <div class="col-md-6"><label asp-for="GercekCikis" class="form-label"></label><input asp-for="GercekCikis" type="time" class="form-control mesai-saati" /><span asp-validation-for="GercekCikis" class="text-danger"></span></div>
+                            <div class="col-12"><label asp-for="Aciklama" class="form-label"></label><textarea asp-for="Aciklama" rows="4" maxlength="500" class="form-control" placeholder="Mesai veya vardiya açıklaması"></textarea><span asp-validation-for="Aciklama" class="text-danger"></span></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 px-4 pb-4">
+                        <button type="submit" class="btn btn-primary">Onaya Gönder</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm position-sticky" style="top: 1rem;">
+                    <div class="card-body p-4">
+                        <h2 class="h5 fw-bold mb-3">Saat Özeti</h2>
+                        <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Planlanan Saat</span><strong id="planlananSaat">0,00</strong></div>
+                        <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Gerçekleşen Saat</span><strong id="gerceklesenSaat">0,00</strong></div>
+                        <div class="d-flex justify-content-between border-bottom py-2"><span class="text-muted">Fazla Mesai</span><strong id="fazlaMesaiSaati" class="text-success">0,00</strong></div>
+                        <div class="d-flex justify-content-between pt-3"><span class="text-muted">Durum</span><span class="badge text-bg-warning">Onaya Gönderilecek</span></div>
+                        <div id="saatUyarisi" class="alert alert-warning small mt-3 mb-0 d-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const parseTime = value => {
+                if (!value) return null;
+                const parts = value.split(":").map(Number);
+                return parts[0] * 60 + parts[1];
+            };
+            const duration = (start, end) => {
+                if (start === null || end === null || start === end) return null;
+                if (end < start) end += 24 * 60;
+                return (end - start) / 60;
+            };
+            const format = value => (value ?? 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const overtimeTypes = new Set([
+                "Fazla Mesai",
+                "Hafta Sonu Mesaisi",
+                "Resmi Tatil Mesaisi",
+                "Ek Vardiya"
+            ]);
+            const calculate = () => {
+                const planned = duration(parseTime(document.getElementById("VardiyaBaslangic").value), parseTime(document.getElementById("VardiyaBitis").value));
+                const actualStart = parseTime(document.getElementById("GercekGiris").value);
+                const actualEnd = parseTime(document.getElementById("GercekCikis").value);
+                const actual = duration(actualStart, actualEnd);
+                const overtimeType = overtimeTypes.has(document.getElementById("MesaiTuru").value);
+                const overtime = planned === null
+                    ? 0
+                    : overtimeType
+                        ? (actual ?? planned)
+                        : Math.max(0, (actual ?? 0) - planned);
+                const warning = document.getElementById("saatUyarisi");
+                let message = "";
+                if (planned === null) message = "Vardiya başlangıç ve bitiş saatleri farklı olmalıdır.";
+                else if ((actualStart === null) !== (actualEnd === null)) message = "Gerçek giriş ve çıkış saatlerini birlikte giriniz.";
+                else if (actualStart !== null && actual === null) message = "Gerçek giriş ve çıkış saatleri farklı olmalıdır.";
+                warning.textContent = message;
+                warning.classList.toggle("d-none", !message);
+                document.getElementById("planlananSaat").textContent = format(planned);
+                document.getElementById("gerceklesenSaat").textContent = format(actual);
+                document.getElementById("fazlaMesaiSaati").textContent = format(overtime);
+            };
+            document.querySelectorAll(".mesai-saati").forEach(x => x.addEventListener("change", calculate));
+            document.getElementById("MesaiTuru").addEventListener("change", calculate);
+            calculate();
+        })();
+    </script>
+}

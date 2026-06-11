@@ -24,18 +24,22 @@
         aktifController == "Kategoriler" ||
         aktifController == "AltKategoriler" ||
         aktifController == "Tedarikciler" ||
-        aktifController == "PersonelIzinleri";
+        aktifController == "PersonelIzinleri" ||
+        aktifController == "PersonelMesaileri" ||
+        aktifController == "DepoSiparisTalepleri";
 
     var hareketlerAktif =
     aktifController == "Satislar" ||
     aktifController == "FinansHareketleri" ||
     aktifController == "ToptanSatisTalepleri" ||
     aktifController == "IadeDegisimTalepleri" ||
-    aktifController == "KasaKapanislari" ||
+        aktifController == "KasaKapanislari" ||
+    aktifController == "DepoSiparisTalepleri" ||
     aktifController == "StokHareketleri";
 
     var analizAktif =
         aktifController == "Raporlar" ||
+        aktifController == "Puantaj" ||
         aktifController == "SqlYonetici" ||
         aktifController == "VeritabaniYonetici";
 }
@@ -132,6 +136,20 @@
                                 </li>
                             }
 
+                            @if (kasiyer || personel || depo)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link erp-menu-link @(
+                                        aktifController == "PersonelMesaileri"
+                                            ? "active fw-semibold"
+                                            : "")"
+                                       asp-controller="PersonelMesaileri"
+                                       asp-action="BenimMesailerim">
+                                        Benim Mesailerim
+                                    </a>
+                                </li>
+                            }
+
                             @if (admin || yonetici || depo || ik || muhasebe)
                             {
                                 <li class="nav-item dropdown">
@@ -221,6 +239,36 @@
                                                     Personel İzinleri
                                                 </a>
                                             </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "PersonelMesaileri" ? "active" : "")"
+                                                   asp-controller="PersonelMesaileri"
+                                                   asp-action="Index">
+                                                    Mesai / Vardiya
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "PersonelMesaileri" ? "active" : "")"
+                                                   asp-controller="PersonelMesaileri"
+                                                   asp-action="Index">
+                                                    Mesai Kayıtları
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || depo || muhasebe)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "DepoSiparisTalepleri" ? "active" : "")"
+                                                   asp-controller="DepoSiparisTalepleri"
+                                                   asp-action="Index">
+                                                    Depo Sipariş Talepleri
+                                                </a>
+                                            </li>
                                         }
                                     </ul>
                                 </li>
@@ -259,6 +307,17 @@
                                                    asp-controller="KasaKapanislari"
                                                    asp-action="Index">
                                                     Kasa Kapanışları
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || muhasebe || ik)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "Puantaj" ? "active" : "")"
+                                                   asp-controller="Puantaj"
+                                                   asp-action="Index">
+                                                    Puantaj Raporu
                                                 </a>
                                             </li>
                                         }
@@ -445,6 +504,42 @@
                                             İzin Talebi Oluştur
                                         </a>
                                     </li>
+
+                                    @if (muhasebe)
+                                    {
+                                        <li>
+                                            <a class="dropdown-item @(aktifController == "PersonelMesaileri" ? "active" : "")"
+                                               asp-controller="PersonelMesaileri"
+                                               asp-action="Index">
+                                                Onaylı Mesai Kayıtları
+                                            </a>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li>
+                                            <a class="dropdown-item @(
+                                                aktifController == "PersonelMesaileri" &&
+                                                aktifAction == "BenimMesailerim"
+                                                    ? "active"
+                                                    : "")"
+                                               asp-controller="PersonelMesaileri"
+                                               asp-action="BenimMesailerim">
+                                                Benim Mesailerim
+                                            </a>
+                                        </li>
+                                    }
+
+                                    @if (!muhasebe)
+                                    {
+                                        <li>
+                                            <a class="dropdown-item"
+                                               asp-controller="PersonelMesaileri"
+                                               asp-action="Create">
+                                                Fazla Mesai Talebi Oluştur
+                                            </a>
+                                        </li>
+                                    }
 
                                     <li>
                                         <hr class="dropdown-divider" />

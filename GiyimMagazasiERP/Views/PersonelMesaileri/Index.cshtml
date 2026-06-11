@@ -1,0 +1,239 @@
+@model GiyimMagazasiERP.ViewModels.PersonelMesaiListeViewModel
+@using GiyimMagazasiERP.Models
+
+@{
+    ViewData["Title"] = "Personel Mesai ve Vardiya";
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+    var kayitOlusturabilir = !User.IsInRole("Muhasebe");
+
+    string DurumMetni(string durum) => durum switch
+    {
+        PersonelMesaiKaydi.DurumOnayBekliyor => "Onay Bekliyor",
+        PersonelMesaiKaydi.DurumOnaylandi => "Onaylandı",
+        PersonelMesaiKaydi.DurumReddedildi => "Reddedildi",
+        PersonelMesaiKaydi.DurumIptalEdildi => "İptal Edildi",
+        _ => durum
+    };
+
+    string DurumRengi(string durum) => durum switch
+    {
+        PersonelMesaiKaydi.DurumOnayBekliyor => "warning",
+        PersonelMesaiKaydi.DurumOnaylandi => "success",
+        PersonelMesaiKaydi.DurumReddedildi => "danger",
+        PersonelMesaiKaydi.DurumIptalEdildi => "secondary",
+        _ => "secondary"
+    };
+
+    string SaatAraligi(TimeSpan baslangic, TimeSpan bitis) =>
+        $"{baslangic:hh\\:mm} - {bitis:hh\\:mm}" +
+        (bitis < baslangic ? " (+1 gün)" : "");
+}
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Personel Mesai ve Vardiya</h1>
+            <p class="text-muted mb-0">
+                Personel çalışma, vardiya ve fazla mesai kayıtlarını görüntüleyin ve onay süreçlerini yönetin.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="BenimMesailerim" class="btn btn-outline-secondary">Benim Mesailerim</a>
+            @if (kayitOlusturabilir)
+            {
+                <a asp-action="Create" class="btn btn-primary">Yeni Mesai Kaydı</a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+    @if (Model.SadeceOnayliKayitlar)
+    {
+        <div class="alert alert-info">
+            Muhasebe görünümünde yalnızca onaylanmış mesai kayıtları gösterilir.
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 border-start border-4 border-primary shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Bu Ay Planlanan Saat</div>
+                    <strong class="fs-4 text-primary">@Model.Ozet.BuAyToplamPlanlananSaat.ToString("N2") saat</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 border-start border-4 border-info shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Bu Ay Gerçekleşen Saat</div>
+                    <strong class="fs-4 text-info">@Model.Ozet.BuAyToplamGerceklesenSaat.ToString("N2") saat</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 border-start border-4 border-success shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Onaylı Fazla Mesai</div>
+                    <strong class="fs-4 text-success">@Model.Ozet.OnayliFazlaMesaiSaati.ToString("N2") saat</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 border-start border-4 border-warning shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Onay Bekleyen Talep</div>
+                    <strong class="fs-4 text-warning">@Model.Ozet.OnayBekleyenSayisi</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-xl-3 col-md-6">
+                    <label for="arama" class="form-label">Arama</label>
+                    <input id="arama" name="arama" value="@Model.Arama" class="form-control"
+                           placeholder="Personel, pozisyon veya açıklama" />
+                </div>
+                <div class="col-xl-2 col-md-6">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select id="durum" name="durum" class="form-select" disabled="@Model.SadeceOnayliKayitlar">
+                        <option value="Tumu" selected="@(Model.Durum == "Tumu")">Tümü</option>
+                        <option value="@PersonelMesaiKaydi.DurumOnayBekliyor" selected="@(Model.Durum == PersonelMesaiKaydi.DurumOnayBekliyor)">Onay Bekliyor</option>
+                        <option value="@PersonelMesaiKaydi.DurumOnaylandi" selected="@(Model.Durum == PersonelMesaiKaydi.DurumOnaylandi)">Onaylandı</option>
+                        <option value="@PersonelMesaiKaydi.DurumReddedildi" selected="@(Model.Durum == PersonelMesaiKaydi.DurumReddedildi)">Reddedildi</option>
+                        <option value="@PersonelMesaiKaydi.DurumIptalEdildi" selected="@(Model.Durum == PersonelMesaiKaydi.DurumIptalEdildi)">İptal Edildi</option>
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-6">
+                    <label for="mesaiTuru" class="form-label">Mesai Türü</label>
+                    <select id="mesaiTuru" name="mesaiTuru" class="form-select">
+                        <option value="Tumu">Tümü</option>
+                        @foreach (var tur in PersonelMesaiKaydi.MesaiTurleri)
+                        {
+                            <option value="@tur" selected="@(Model.MesaiTuru == tur)">@tur</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-6">
+                    <label for="personelId" class="form-label">Personel</label>
+                    <select id="personelId" name="personelId" class="form-select">
+                        <option value="">Tüm Personeller</option>
+                        @foreach (var personel in Model.Personeller)
+                        {
+                            <option value="@personel.Value" selected="@(Model.PersonelId?.ToString() == personel.Value)">@personel.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-xl col-md-6">
+                    <label for="baslangicTarihi" class="form-label">Başlangıç</label>
+                    <input id="baslangicTarihi" type="date" name="baslangicTarihi"
+                           value="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-xl col-md-6">
+                    <label for="bitisTarihi" class="form-label">Bitiş</label>
+                    <input id="bitisTarihi" type="date" name="bitisTarihi"
+                           value="@Model.BitisTarihi?.ToString("yyyy-MM-dd")" class="form-control" />
+                </div>
+                <div class="col-xl-1 col-md-6">
+                    <label for="pageSize" class="form-label">Kayıt</label>
+                    <select id="pageSize" name="pageSize" class="form-select">
+                        @foreach (var adet in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@adet" selected="@(Model.PageSize == adet)">@adet</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrele</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                <span class="text-muted">Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.</span>
+                <span class="text-muted">Sayfa @Model.Page / @Model.TotalPages</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Personel</th>
+                            <th>Tarih</th>
+                            <th>Mesai Türü</th>
+                            <th>Vardiya</th>
+                            <th>Gerçek Giriş / Çıkış</th>
+                            <th>Planlanan</th>
+                            <th>Gerçekleşen</th>
+                            <th>Fazla Mesai</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var kayit in Model.Items)
+                            {
+                                <tr>
+                                    <td>@siraNo</td>
+                                    <td><strong>@kayit.Personel.AdSoyad</strong><div class="small text-muted">@kayit.Personel.Pozisyon</div></td>
+                                    <td>@kayit.Tarih.ToString("dd.MM.yyyy")</td>
+                                    <td>@kayit.MesaiTuru</td>
+                                    <td class="text-nowrap">@SaatAraligi(kayit.VardiyaBaslangic, kayit.VardiyaBitis)</td>
+                                    <td class="text-nowrap">
+                                        @(kayit.GercekGiris.HasValue && kayit.GercekCikis.HasValue
+                                            ? SaatAraligi(kayit.GercekGiris.Value, kayit.GercekCikis.Value)
+                                            : "-")
+                                    </td>
+                                    <td>@kayit.PlanlananSaat.ToString("N2")</td>
+                                    <td>@kayit.GerceklesenSaat.ToString("N2")</td>
+                                    <td><strong class="text-success">@kayit.GosterilecekFazlaMesaiSaati.ToString("N2")</strong></td>
+                                    <td><span class="badge text-bg-@DurumRengi(kayit.Durum)">@DurumMetni(kayit.Durum)</span></td>
+                                    <td><a asp-action="Details" asp-route-id="@kayit.Id" class="btn btn-sm btn-outline-primary">Detay</a></td>
+                                </tr>
+                                siraNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="11" class="text-center text-muted py-4">Arama kriterlerine uygun mesai kaydı bulunamadı.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="mt-4" aria-label="Mesai kayıtları sayfaları">
+                    <ul class="pagination justify-content-center mb-0">
+                        @for (var sayfa = Math.Max(1, Model.Page - 2); sayfa <= Math.Min(Model.TotalPages, Model.Page + 2); sayfa++)
+                        {
+                            <li class="page-item @(sayfa == Model.Page ? "active" : "")">
+                                <a class="page-link" asp-route-page="@sayfa" asp-route-pageSize="@Model.PageSize"
+                                   asp-route-arama="@Model.Arama" asp-route-durum="@Model.Durum"
+                                   asp-route-mesaiTuru="@Model.MesaiTuru" asp-route-personelId="@Model.PersonelId"
+                                   asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                                   asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">@sayfa</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>

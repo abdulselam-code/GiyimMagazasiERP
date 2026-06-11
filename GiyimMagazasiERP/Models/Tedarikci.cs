@@ -17,4 +17,7 @@ public class Tedarikci
 
     public ICollection<Urun> Urunler { get; set; }
         = new List<Urun>();
+
+    public ICollection<UrunTedarikci> UrunTedarikcileri { get; set; }
+        = new List<UrunTedarikci>();
 }

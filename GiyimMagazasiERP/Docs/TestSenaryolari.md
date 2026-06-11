@@ -136,3 +136,67 @@
 - [ ] Yıllık izin onaylanırken bakiye yeniden kontrol ediliyor.
 - [ ] Onay, red ve iptal işlemleri Bootstrap modal üzerinden tamamlanıyor.
 - [ ] Red nedeni boşken red modalı açılmıyor ve işlem gönderilmiyor.
+
+## Personel Mesai ve Vardiya Testleri
+
+- [ ] `019_create_personel_mesai_kayitlari.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] Admin, Yonetici ve InsanKaynaklari tüm mesai kayıtlarını görebiliyor.
+- [ ] Kasiyer, Personel ve Depo yalnızca kendi mesai kayıtlarını görebiliyor.
+- [ ] Muhasebe yalnızca onaylanmış mesai kayıtlarını ve detaylarını görebiliyor.
+- [ ] Normal kullanıcı başka personel adına kayıt oluşturamıyor.
+- [ ] Yetkili kullanıcı aktif personel adına kayıt oluşturabiliyor.
+- [ ] Aynı başlangıç ve bitiş saati engelleniyor.
+- [ ] Gece vardiyası ertesi güne taşınarak doğru hesaplanıyor.
+- [ ] Gerçek giriş ve çıkıştan gerçekleşen saat ile fazla mesai doğru hesaplanıyor.
+- [ ] Çakışan bekleyen veya onaylı vardiya engelleniyor.
+- [ ] Çakışma onay sırasında yeniden kontrol ediliyor.
+- [ ] Bekleyen kayıt onaylanabiliyor veya zorunlu red nedeniyle reddedilebiliyor.
+- [ ] Talep sahibi bekleyen kendi kaydını iptal edebiliyor.
+- [ ] Onaylanan, reddedilen veya iptal edilen kayıt yeniden işleme alınamıyor.
+- [ ] RowVersion eşzamanlı işlem çakışmasını güvenli biçimde engelliyor.
+- [ ] Dashboard ve menü bağlantıları role göre doğru ekranı açıyor.
+
+## Puantaj Raporu Testleri
+
+- [ ] Admin, Yonetici, InsanKaynaklari ve Muhasebe puantaj ekranını açabiliyor.
+- [ ] Kasiyer, Personel ve Depo puantaj ekranına erişemiyor.
+- [ ] Ay, yıl, personel arama, departman ve kayıt sayısı filtreleri çalışıyor.
+- [ ] Planlanan ve gerçekleşen saatler yalnız onaylı mesailerden hesaplanıyor.
+- [ ] Fazla mesai kapsamındaki onaylı kayıtlar doğru saatle rapora yansıyor.
+- [ ] Aya taşan izinlerin yalnız seçilen aya düşen günleri hesaplanıyor.
+- [ ] Bekleyen mesai sayısı ve durum notu doğru görünüyor.
+
+## Depo Ürün Sipariş Talebi Testleri
+
+- [ ] `021_create_depo_siparis_talepleri.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] `022_create_urun_tedarikcileri.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] `023_seed_alternatif_urun_tedarikcileri.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] `023` sonrasında aktif ürün-tedarikçi bağlantılarında teslim süresi 0 kalmıyor.
+- [ ] Seçili demo ürünlerinde iki veya üç aktif tedarikçi bulunuyor.
+- [ ] Mevcut ürün kartlarındaki tedarikçiler varsayılan ürün-tedarikçi bağlantısına dönüşüyor.
+- [ ] Ürün detayında bağlı tedarikçiler fiyat, indirim, net maliyet ve teslim süresiyle görünüyor.
+- [ ] Kadın Hırka ürününe birden fazla tedarikçi eklenip karşılaştırılabiliyor.
+- [ ] En Uygun, En Hızlı ve Varsayılan rozetleri doğru bağlantıda görünüyor.
+- [ ] Depo, Admin ve Yonetici en az bir ürün kalemiyle talep oluşturabiliyor.
+- [ ] Ürün seçildiğinde tedarikçi listesi yalnız o ürüne bağlı aktif tedarikçileri gösteriyor.
+- [ ] Tedarikçi seçeneğinde net maliyet, indirim ve teslim süresi görünüyor.
+- [ ] En Uygun Fiyat tercihinde net maliyeti en düşük tedarikçi seçiliyor.
+- [ ] En Hızlı Teslimat tercihinde teslim süresi en kısa tedarikçi seçiliyor.
+- [ ] Dengeli Seçim maliyet yüzde 55 ve teslim süresi yüzde 45 ağırlıkla öneri üretiyor.
+- [ ] Karşılaştırma tablosundaki En Uygun, En Hızlı, Varsayılan ve Seçilen etiketleri doğru görünüyor.
+- [ ] Kullanıcı otomatik önerilen tedarikçiyi elle değiştirebiliyor.
+- [ ] Ürüne bağlı olmayan tedarikçi gönderildiğinde backend işlemi engelliyor.
+- [ ] Maliyet, indirim ve teslim süresi veritabanındaki bağlantıdan snapshot olarak kaydediliyor.
+- [ ] Depo rolü bağlı tedarikçisi olmayan ürün için talep gönderemiyor.
+- [ ] Aynı ürün aynı talepte iki kez eklenemiyor.
+- [ ] Talep oluşturulduğunda ürün stoğu değişmiyor.
+- [ ] Admin ve Yonetici bekleyen talebi onaylayabiliyor veya gerekçesiyle reddedebiliyor.
+- [ ] Red nedeni boş bırakıldığında işlem engelleniyor.
+- [ ] Onaylanan talep teslim alınmadan stok değişmiyor.
+- [ ] Teslim alma işleminde onaylanan adet kadar stok artıyor.
+- [ ] Her teslim kalemi için `Giris` stok hareketi oluşuyor.
+- [ ] Teslim alma transaction hatasında stok değişiklikleri geri alınıyor.
+- [ ] Depo başka kullanıcının talebini görüntüleyemiyor veya işleyemiyor.
+- [ ] Muhasebe talepleri yalnız görüntüleyebiliyor.
+- [ ] Kasiyer, Personel ve InsanKaynaklari modüle erişemiyor.
+- [ ] Satış, kasa kapanışı, iade, finans, mesai ve puantaj ekranlarında regresyon oluşmuyor.

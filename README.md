@@ -24,8 +24,12 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 - Finans ve stok hareketleri
 - Ürün, kategori ve alt kategori yönetimi
 - Tedarikçi ve tedarikçi-alt kategori yönetimi
+- Ürün bazlı çoklu tedarikçi, maliyet, indirim ve teslim süresi karşılaştırması
 - Müşteri ve personel yönetimi
 - Personel izin talebi, onay/red ve yıllık izin bakiyesi yönetimi
+- Personel mesai ve vardiya planlama, talep ve onay yönetimi
+- Aylık otomatik puantaj raporu
+- Depo ürün sipariş ve stok tamamlama talebi
 - Kasa kapanışı / gün sonu mutabakatı
 - Tarih filtreli raporlar
 - Kritik stok takibi
@@ -51,6 +55,28 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 7. Kritik stok ürünleri Dashboard ve ürün listesi üzerinden takip edilir.
 8. Personel izin talepleri rol bazlı olarak oluşturulur, profesyonel onay ekranlarıyla yönetilir ve yıllık izin bakiyesine göre kontrol edilir.
 9. Kasiyer gün sonu sayımını girer; beklenen ve sayılan tutarlar Yönetici/Muhasebe tarafından mutabakata alınır.
+10. Ürün kartı master data olarak ayrı yönetilir; mevcut ürünün stok tamamlaması
+    Depo Sipariş Talebi üzerinden seçilen ürün tedarikçisiyle yürütülür.
+
+## Ürün Kartı ve Depo Sipariş Talebi
+
+**Yeni Ürün** ekranı barkod, kategori, fiyat ve stok gibi ürün kartı bilgilerini
+tanımlar; satın alma veya stok giriş işlemi oluşturmaz. Bir ürünün birden fazla
+tedarikçisi ürün detayındaki **Bağlı Tedarikçiler** bölümünden maliyet, indirim,
+minimum sipariş ve teslim süresiyle tanımlanabilir.
+
+**Depo Sipariş Talebi** sistemde kayıtlı bir ürünün stoğunu tamamlamak içindir.
+Ürün seçildiğinde yalnız o ürüne bağlı aktif tedarikçiler karşılaştırılır.
+Tedarik tercihi **En Uygun Fiyat**, **En Hızlı Teslimat** veya **Dengeli
+Seçim** olarak belirlenebilir. Bu tercih karar desteği ve otomatik öneri
+sağlar; kullanıcı tedarikçiyi elle değiştirebilir.
+Talep ve yönetici onayı stoğu değiştirmez; stok yalnız teslim alma işleminde
+artırılır ve stok giriş hareketi oluşur.
+
+`023_seed_alternatif_urun_tedarikcileri.sql` demo ortamında seçili tekstil,
+çocuk ve aksesuar ürünlerine gerçekçi alternatif tedarikçiler ekler. Mevcut
+ürün-tedarikçi maliyetlerini değiştirmez; sıfır teslim sürelerini tamamlar ve
+karşılaştırma ekranı için hızlı/uygun maliyetli alternatifler hazırlar.
 
 ## Kurulum
 

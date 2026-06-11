@@ -45,6 +45,8 @@ public class UrunlerController : Controller
             .Include(x => x.Kategori)
             .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
+            .Include(x => x.UrunTedarikcileri)
+                .ThenInclude(x => x.Tedarikci)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(arama))
@@ -58,7 +60,9 @@ public class UrunlerController : Controller
                 x.Renk.Contains(arama) ||
                 x.Kategori.KategoriAdi.Contains(arama) ||
                 (x.AltKategori != null && x.AltKategori.AltKategoriAdi.Contains(arama)) ||
-                x.Tedarikci.FirmaAdi.Contains(arama));
+                x.Tedarikci.FirmaAdi.Contains(arama) ||
+                x.UrunTedarikcileri.Any(ut =>
+                    ut.AktifMi && ut.Tedarikci.FirmaAdi.Contains(arama)));
         }
 
         if (kategoriId.HasValue)
@@ -73,7 +77,10 @@ public class UrunlerController : Controller
 
         if (tedarikciId.HasValue)
         {
-            query = query.Where(x => x.TedarikciId == tedarikciId.Value);
+            query = query.Where(x =>
+                x.TedarikciId == tedarikciId.Value ||
+                x.UrunTedarikcileri.Any(ut =>
+                    ut.AktifMi && ut.TedarikciId == tedarikciId.Value));
         }
 
         if (durum == "aktif")
@@ -196,6 +203,8 @@ public class UrunlerController : Controller
             .Include(x => x.Kategori)
             .Include(x => x.AltKategori)
             .Include(x => x.Tedarikci)
+            .Include(x => x.UrunTedarikcileri)
+                .ThenInclude(x => x.Tedarikci)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (urun is null)
@@ -253,6 +262,7 @@ public class UrunlerController : Controller
         {
             _context.Add(urun);
             await _context.SaveChangesAsync();
+            await VarsayilanUrunTedarikcisiniGarantiEt(urun);
             return RedirectToAction(nameof(Index));
         }
 
@@ -318,6 +328,7 @@ public class UrunlerController : Controller
             {
                 _context.Update(urun);
                 await _context.SaveChangesAsync();
+                await VarsayilanUrunTedarikcisiniGarantiEt(urun);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -459,5 +470,61 @@ public class UrunlerController : Controller
                 nameof(urun.AltKategoriId),
                 "Seçilen alt kategori bu tedarikçi için tanımlı değil.");
         }
+    }
+
+    private async Task VarsayilanUrunTedarikcisiniGarantiEt(Urun urun)
+    {
+        var mevcut = await _context.UrunTedarikcileri
+            .FirstOrDefaultAsync(x =>
+                x.UrunId == urun.Id &&
+                x.TedarikciId == urun.TedarikciId);
+
+        if (mevcut is null)
+        {
+            var indirim = await _context.Tedarikciler
+                .Where(x => x.Id == urun.TedarikciId)
+                .Select(x => x.IndirimOrani)
+                .FirstOrDefaultAsync();
+
+            indirim = indirim is >= 0 and <= 100 ? indirim : 0;
+            mevcut = new UrunTedarikci
+            {
+                UrunId = urun.Id,
+                TedarikciId = urun.TedarikciId,
+                BirimMaliyet = urun.AlisFiyati,
+                IndirimOrani = indirim,
+                NetBirimMaliyet = Math.Round(
+                    urun.AlisFiyati * (1 - (indirim / 100m)),
+                    2,
+                    MidpointRounding.AwayFromZero),
+                MinimumSiparisAdedi = 1,
+                VarsayilanMi = true,
+                AktifMi = true,
+                Aciklama = "Ürün kartındaki ana tedarikçiden oluşturuldu.",
+                OlusturmaTarihi = DateTime.Now
+            };
+            _context.UrunTedarikcileri.Add(mevcut);
+        }
+        else
+        {
+            mevcut.VarsayilanMi = true;
+            mevcut.AktifMi = true;
+            mevcut.GuncellemeTarihi = DateTime.Now;
+        }
+
+        var digerVarsayilanlar = await _context.UrunTedarikcileri
+            .Where(x =>
+                x.UrunId == urun.Id &&
+                x.TedarikciId != urun.TedarikciId &&
+                x.VarsayilanMi)
+            .ToListAsync();
+
+        foreach (var diger in digerVarsayilanlar)
+        {
+            diger.VarsayilanMi = false;
+            diger.GuncellemeTarihi = DateTime.Now;
+        }
+
+        await _context.SaveChangesAsync();
     }
 }

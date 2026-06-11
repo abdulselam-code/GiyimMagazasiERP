@@ -1,0 +1,109 @@
+@model GiyimMagazasiERP.Models.PersonelMesaiKaydi
+@using GiyimMagazasiERP.Models
+
+@{
+    ViewData["Title"] = "Mesai Kaydı Detayı";
+    var yonetebilir = User.IsInRole("Admin") || User.IsInRole("Yonetici") || User.IsInRole("InsanKaynaklari");
+    var talepSahibi = ViewData["TalepSahibiMi"] as bool? == true;
+    var bekliyor = Model.Durum == PersonelMesaiKaydi.DurumOnayBekliyor;
+    var rowVersion = Convert.ToBase64String(Model.RowVersion);
+    string DurumMetni(string durum) => durum switch { PersonelMesaiKaydi.DurumOnayBekliyor => "Onay Bekliyor", PersonelMesaiKaydi.DurumOnaylandi => "Onaylandı", PersonelMesaiKaydi.DurumReddedildi => "Reddedildi", PersonelMesaiKaydi.DurumIptalEdildi => "İptal Edildi", _ => durum };
+    string DurumRengi(string durum) => durum switch { PersonelMesaiKaydi.DurumOnayBekliyor => "warning", PersonelMesaiKaydi.DurumOnaylandi => "success", PersonelMesaiKaydi.DurumReddedildi => "danger", _ => "secondary" };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div><h1 class="h3 fw-bold mb-1">Mesai Kaydı Detayı</h1><p class="text-muted mb-0">Kayıt #@Model.Id</p></div>
+        <div class="d-flex gap-2"><a asp-action="@(yonetebilir || User.IsInRole("Muhasebe") ? "Index" : "BenimMesailerim")" class="btn btn-outline-secondary">Listeye Dön</a>@if (!User.IsInRole("Muhasebe")) { <a asp-action="Create" class="btn btn-primary">Yeni Kayıt</a> }</div>
+    </div>
+    @if (TempData["Basari"] is not null) { <div class="alert alert-success">@TempData["Basari"]</div> }
+    @if (TempData["Hata"] is not null) { <div class="alert alert-danger">@TempData["Hata"]</div> }
+
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body p-4"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3"><div><div class="text-muted small">PERSONEL MESAİ / VARDİYA KAYDI</div><h2 class="h4 fw-bold mb-1">@Model.Personel.AdSoyad</h2><div class="text-muted">@Model.Personel.Pozisyon / @Model.Personel.Departman</div></div><span class="badge text-bg-@DurumRengi(Model.Durum) fs-6 px-3 py-2">@DurumMetni(Model.Durum)</span></div></div></div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+                <h2 class="h5 fw-bold mb-3">Mesai Bilgileri</h2>
+                <div class="row g-3">
+                    <div class="col-md-4"><div class="text-muted small">Tarih</div><strong>@Model.Tarih.ToString("dd.MM.yyyy")</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Mesai Türü</div><strong>@Model.MesaiTuru</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Vardiya</div><strong>@Model.VardiyaBaslangic.ToString("hh\\:mm") - @Model.VardiyaBitis.ToString("hh\\:mm")</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Gerçek Giriş / Çıkış</div><strong>@(Model.GercekGiris.HasValue ? $"{Model.GercekGiris:hh\\:mm} - {Model.GercekCikis:hh\\:mm}" : "Henüz girilmedi")</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Planlanan Saat</div><strong>@Model.PlanlananSaat.ToString("N2") saat</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Gerçekleşen Saat</div><strong>@Model.GerceklesenSaat.ToString("N2") saat</strong></div>
+                    <div class="col-md-4"><div class="text-muted small">Fazla Mesai</div><strong class="text-success">@Model.GosterilecekFazlaMesaiSaati.ToString("N2") saat</strong></div>
+                    <div class="col-md-8"><div class="text-muted small mb-1">Açıklama</div><div class="border rounded p-3 bg-body-tertiary">@(string.IsNullOrWhiteSpace(Model.Aciklama) ? "Açıklama girilmemiş." : Model.Aciklama)</div></div>
+                </div>
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
+                <h2 class="h5 fw-bold mb-3">Süreç Bilgileri</h2>
+                <dl class="mb-0">
+                    <dt class="text-muted fw-normal">Talep Eden</dt><dd class="fw-semibold">@(Model.Kullanici.AdSoyad ?? Model.Kullanici.KullaniciAdi)</dd>
+                    <dt class="text-muted fw-normal">Oluşturma Tarihi</dt><dd class="fw-semibold">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</dd>
+                    <dt class="text-muted fw-normal">Onaylayan / Reddeden</dt><dd class="fw-semibold">@(Model.OnaylayanKullanici?.AdSoyad ?? Model.OnaylayanKullanici?.KullaniciAdi ?? "Henüz işlem yok")</dd>
+                    <dt class="text-muted fw-normal">İşlem Tarihi</dt><dd class="fw-semibold">@(Model.OnayTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz işlem yok")</dd>
+                    @if (!string.IsNullOrWhiteSpace(Model.RedNedeni)) { <dt class="text-muted fw-normal">Red Nedeni</dt><dd class="text-danger fw-semibold">@Model.RedNedeni</dd> }
+                    @if (Model.IptalTarihi.HasValue) { <dt class="text-muted fw-normal">İptal Tarihi</dt><dd class="fw-semibold">@Model.IptalTarihi.Value.ToString("dd.MM.yyyy HH:mm")</dd> }
+                </dl>
+            </div></div>
+        </div>
+    </div>
+
+    @if (bekliyor && (yonetebilir || talepSahibi))
+    {
+        <div class="card border-0 shadow-sm mt-4"><div class="card-body p-4">
+            <h2 class="h5 fw-bold mb-3">Kayıt İşlemleri</h2>
+            <div class="row g-3">
+                @if (yonetebilir)
+                {
+                    <div class="col-lg-4"><form asp-action="Onayla" asp-route-id="@Model.Id" method="post" id="onayFormu"><input type="hidden" name="rowVersion" value="@rowVersion" /><button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#onayModal">Kaydı Onayla</button></form></div>
+                    <div class="col-lg-5"><form asp-action="Reddet" asp-route-id="@Model.Id" method="post" id="redFormu"><input type="hidden" name="rowVersion" value="@rowVersion" /><textarea id="redNedeni" name="redNedeni" class="form-control mb-2" rows="3" maxlength="500" placeholder="Red nedenini yazınız"></textarea><div id="redUyari" class="text-danger small d-none mb-2">Red nedeni zorunludur.</div><button type="button" id="redModalAc" class="btn btn-outline-danger w-100">Kaydı Reddet</button></form></div>
+                }
+                @if (talepSahibi || yonetebilir)
+                {
+                    <div class="col-lg-3"><form asp-action="IptalEt" asp-route-id="@Model.Id" method="post" id="iptalFormu"><input type="hidden" name="rowVersion" value="@rowVersion" /><button type="button" class="btn btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#iptalModal">Kaydı İptal Et</button></form></div>
+                }
+            </div>
+        </div></div>
+    }
+</div>
+
+@if (bekliyor && yonetebilir)
+{
+    <div class="modal fade" id="onayModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Mesai Kaydını Onayla</h2><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div><div class="modal-body">Bu mesai kaydını onaylamak istediğinize emin misiniz?<div class="alert alert-light border mt-3 mb-0">@Model.Personel.AdSoyad · @Model.Tarih.ToString("dd.MM.yyyy") · @Model.MesaiTuru</div></div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Vazgeç</button><button class="btn btn-success modal-islem" type="button" data-form="onayFormu">Onayla</button></div></div></div></div>
+    <div class="modal fade" id="redModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Mesai Kaydını Reddet</h2><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div><div class="modal-body">Kayıt reddedilecek ve red nedeni saklanacaktır.<div id="redOnizleme" class="alert alert-danger mt-3 mb-0"></div></div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Vazgeç</button><button class="btn btn-danger modal-islem" type="button" data-form="redFormu">Reddet</button></div></div></div></div>
+}
+@if (bekliyor && (talepSahibi || yonetebilir))
+{
+    <div class="modal fade" id="iptalModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5">Mesai Kaydını İptal Et</h2><button class="btn-close" type="button" data-bs-dismiss="modal"></button></div><div class="modal-body">Bu bekleyen mesai kaydını iptal etmek istediğinize emin misiniz?</div><div class="modal-footer"><button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Vazgeç</button><button class="btn btn-outline-danger modal-islem" type="button" data-form="iptalFormu">İptal Et</button></div></div></div></div>
+}
+
+@section Scripts {
+    <script>
+        (() => {
+            const redButton = document.getElementById("redModalAc");
+            redButton?.addEventListener("click", () => {
+                const input = document.getElementById("redNedeni");
+                const warning = document.getElementById("redUyari");
+                const value = input.value.trim();
+                warning.classList.toggle("d-none", value.length > 0);
+                if (!value) { input.focus(); return; }
+                document.getElementById("redOnizleme").textContent = value;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("redModal")).show();
+            });
+            let busy = false;
+            document.querySelectorAll(".modal-islem").forEach(button => button.addEventListener("click", () => {
+                if (busy) return;
+                const form = document.getElementById(button.dataset.form);
+                if (!form) return;
+                busy = true;
+                button.disabled = true;
+                button.textContent = "İşleniyor...";
+                form.submit();
+            }));
+        })();
+    </script>
+}

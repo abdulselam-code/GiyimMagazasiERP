@@ -54,6 +54,14 @@ public class DashboardViewModel
     public int OnayBekleyenKasaKapanisiSayisi { get; set; }
     public decimal BugunkuKasaFarki { get; set; }
     public string BugunkuKasaKapanisDurumu { get; set; } = "Kapanış yapılmadı";
+    public int OnayBekleyenMesaiSayisi { get; set; }
+    public decimal BuAyOnayliFazlaMesaiSaati { get; set; }
+    public int BenimBekleyenMesaiSayisi { get; set; }
+    public decimal BenimBuAyOnayliFazlaMesaiSaati { get; set; }
+    public int OnayBekleyenDepoSiparisSayisi { get; set; }
+    public int BenimOnayBekleyenDepoSiparisSayisi { get; set; }
+    public int TeslimBekleyenDepoSiparisSayisi { get; set; }
+    public int GoruntulenebilirDepoSiparisSayisi { get; set; }
 
     public int BugunkuStokGirisAdedi { get; set; }
     public int BugunkuStokCikisAdedi { get; set; }
