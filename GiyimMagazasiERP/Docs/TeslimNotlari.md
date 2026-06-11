@@ -82,7 +82,8 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 - Yıllık izin hakkı ve devreden izin saklanır; kullanılan ve kalan izin onaylı yıllık izinlerden hesaplanır.
 - Kalan hakkı aşan yıllık izin talepleri oluşturma ve onay aşamalarında engellenir.
 - Onay, red ve iptal işlemleri özet gösteren Bootstrap modallarıyla güvenli biçimde tamamlanır.
-- Gelecek aşamada vardiya, mesai ve puantaj yönetimi eklenebilir.
+- Personel izin kayıtları mevcut Mesai / Vardiya ve Puantaj modüllerinde
+  çalışma süresi hesaplarına güvenli biçimde dahil edilir.
 
 ## Kasa Kapanışı / Gün Sonu Mutabakatı
 

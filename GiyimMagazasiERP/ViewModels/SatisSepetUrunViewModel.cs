@@ -4,7 +4,7 @@ namespace GiyimMagazasiERP.ViewModels;
 
 public class SatisSepetUrunViewModel
 {
-    [Required]
+    [Required(ErrorMessage = "Ürün seçilmelidir.")]
     public int UrunId { get; set; }
 
     public string? UrunAdi { get; set; }

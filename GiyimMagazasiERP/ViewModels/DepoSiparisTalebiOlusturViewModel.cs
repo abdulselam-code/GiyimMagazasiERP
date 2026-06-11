@@ -21,7 +21,8 @@ public class DepoSiparisTalebiOlusturViewModel
     [Required(ErrorMessage = "Tedarik tercihi seçilmelidir.")]
     public string TedarikTercihi { get; set; } = TercihDengeli;
 
-    [MaxLength(500)] public string? Aciklama { get; set; }
+    [MaxLength(500, ErrorMessage = "Açıklama en fazla 500 karakter olabilir.")]
+    public string? Aciklama { get; set; }
     public List<DepoSiparisTalepKalemiViewModel> Kalemler { get; set; } =
         new() { new DepoSiparisTalepKalemiViewModel() };
 }

@@ -82,9 +82,17 @@ karşılaştırma ekranı için hızlı/uygun maliyetli alternatifler hazırlar.
 
 1. `appsettings.json` içindeki `DefaultConnection` bağlantısını SQL Server ortamınıza göre düzenleyin.
 2. SQL Server üzerinde `GiyimMagazasiERP` veritabanını oluşturun.
-3. `GiyimMagazasiERP/Database/Updates` klasöründeki scriptleri numara sırasıyla çalıştırın.
-4. Demo veriler için en son `015_seed_demo_users_products_customers.sql` scriptini çalıştırın.
-5. Visual Studio ile çözümü açın, NuGet paketlerini geri yükleyin ve projeyi çalıştırın.
+3. Önce temel veritabanı scriptini çalıştırın.
+4. `GiyimMagazasiERP/Database/Updates` klasöründeki scriptleri dosya adı
+   numarasına göre artan sırayla çalıştırın. Demo verileri hazırlayan `015`
+   scriptinden sonra da `016-023` güncellemelerine sırayla devam edin.
+5. Son modüller için sıra özellikle şöyledir:
+   `019_create_personel_mesai_kayitlari.sql`,
+   `020_fix_personel_mesai_fazla_mesai.sql`,
+   `021_create_depo_siparis_talepleri.sql`,
+   `022_create_urun_tedarikcileri.sql`,
+   `023_seed_alternatif_urun_tedarikcileri.sql`.
+6. Visual Studio ile çözümü açın, NuGet paketlerini geri yükleyin ve projeyi çalıştırın.
 
 ## Demo Kullanıcıları
 

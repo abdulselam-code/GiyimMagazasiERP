@@ -4,7 +4,7 @@ namespace GiyimMagazasiERP.ViewModels;
 
 public class KasaKapanisiOlusturViewModel
 {
-    [Required]
+    [Required(ErrorMessage = "Kapanış tarihi zorunludur.")]
     [DataType(DataType.Date)]
     public DateTime Tarih { get; set; } = DateTime.Today;
 
@@ -44,7 +44,7 @@ public class KasaKapanisiOlusturViewModel
         ErrorMessage = "Sayılan havale alanına geçerli bir tutar giriniz.")]
     public decimal SayilanHavale { get; set; }
 
-    [MaxLength(500)]
+    [MaxLength(500, ErrorMessage = "Açıklama en fazla 500 karakter olabilir.")]
     public string? Aciklama { get; set; }
 
     public int SatisSayisi { get; set; }
