@@ -1,0 +1,314 @@
+@model GiyimMagazasiERP.ViewModels.PersonelIzniOlusturViewModel
+@using System.Text.Json
+@using GiyimMagazasiERP.ViewModels
+
+@{
+    ViewData["Title"] = "İzin Talebi Oluştur";
+    var yoneticiModu = ViewData["YoneticiModu"] as bool? ?? false;
+    var kendiBakiyesi =
+        ViewData["IzinBakiyesi"] as PersonelIzinBakiyesiViewModel;
+    var personelBakiyeleri =
+        ViewData["IzinBakiyeleri"] as List<PersonelIzinBakiyesiViewModel>
+        ?? new List<PersonelIzinBakiyesiViewModel>();
+    var bakiyeJson = JsonSerializer.Serialize(personelBakiyeleri);
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İzin Talebi Oluştur</h1>
+            <p class="text-muted mb-0">
+                İzin tarihlerini ve izin türünü belirleyerek onay sürecini başlatın.
+            </p>
+        </div>
+        <a asp-action="BenimIzinlerim" class="btn btn-outline-secondary">
+            İzinlerime Dön
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        Bu işlem izin talebi oluşturur. Talep onaylanmadan personel izinli sayılmaz.
+    </div>
+
+    <form asp-action="Create" method="post" id="izinTalepFormu">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h5 fw-bold mb-3">Talep Bilgileri</h2>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                @if (yoneticiModu)
+                                {
+                                    <label asp-for="PersonelId" class="form-label"></label>
+                                    <select asp-for="PersonelId"
+                                            asp-items="ViewBag.Personeller"
+                                            class="form-select"
+                                            id="personelSecimi">
+                                        <option value="">Personel Seçiniz</option>
+                                    </select>
+                                    <span asp-validation-for="PersonelId" class="text-danger"></span>
+                                }
+                                else
+                                {
+                                    <input type="hidden" asp-for="PersonelId" />
+                                    <label class="form-label">Personel</label>
+                                    <div class="border rounded p-3 bg-body-tertiary">
+                                        <strong>@ViewData["KendiPersonelAdi"]</strong>
+                                        @if (ViewData["KendiPersonelDetayi"] is not null)
+                                        {
+                                            <div class="small text-muted">@ViewData["KendiPersonelDetayi"]</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="IzinTuru" class="form-label"></label>
+                                <select asp-for="IzinTuru"
+                                        asp-items="ViewBag.IzinTurleri"
+                                        class="form-select"
+                                        id="izinTuru">
+                                    <option value="">İzin Türü Seçiniz</option>
+                                </select>
+                                <span asp-validation-for="IzinTuru" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label asp-for="BaslangicTarihi" class="form-label"></label>
+                                <input asp-for="BaslangicTarihi"
+                                       type="date"
+                                       class="form-control"
+                                       id="baslangicTarihi" />
+                                <span asp-validation-for="BaslangicTarihi" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label asp-for="BitisTarihi" class="form-label"></label>
+                                <input asp-for="BitisTarihi"
+                                       type="date"
+                                       class="form-control"
+                                       id="bitisTarihi" />
+                                <span asp-validation-for="BitisTarihi" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Aciklama" class="form-label"></label>
+                                <textarea asp-for="Aciklama"
+                                          class="form-control"
+                                          rows="5"
+                                          maxlength="500"
+                                          placeholder="İzin talebine ilişkin açıklama veya not"></textarea>
+                                <span asp-validation-for="Aciklama" class="text-danger"></span>
+                                <div class="form-text">En fazla 500 karakter.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2 class="h5 fw-bold mb-0">İzin Bakiyesi</h2>
+                            <span id="bakiyeYili" class="badge text-bg-secondary">
+                                @(kendiBakiyesi?.Yil ?? DateTime.Today.Year)
+                            </span>
+                        </div>
+                        <div id="bakiyeBosUyari"
+                             class="alert alert-info py-2 @(yoneticiModu ? "" : "d-none")">
+                            Bakiye bilgisi için personel seçiniz.
+                        </div>
+                        <div id="bakiyeBilgileri" class="@(yoneticiModu ? "d-none" : "")">
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <span class="text-muted">Yıllık Hak</span>
+                                <strong id="yillikIzinHakki">
+                                    @((kendiBakiyesi?.YillikIzinHakki ?? 0).ToString("N2")) gün
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <span class="text-muted">Devreden</span>
+                                <strong id="devredenIzinGunu">
+                                    @((kendiBakiyesi?.DevredenIzinGunu ?? 0).ToString("N2")) gün
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between border-bottom py-2">
+                                <span class="text-muted">Kullanılan</span>
+                                <strong id="kullanilanIzinGunu">
+                                    @((kendiBakiyesi?.KullanilanIzinGunu ?? 0).ToString("N2")) gün
+                                </strong>
+                            </div>
+                            <div class="d-flex justify-content-between pt-3">
+                                <span class="fw-semibold">Kalan Yıllık İzin</span>
+                                <strong id="kalanIzinGunu" class="fs-5">
+                                    @((kendiBakiyesi?.KalanIzinGunu ?? 0).ToString("N2")) gün
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h5 fw-bold mb-3">İzin Özeti</h2>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Başlangıç</span>
+                            <strong id="ozetBaslangic">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span class="text-muted">Bitiş</span>
+                            <strong id="ozetBitis">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-3">
+                            <span class="fw-semibold">Toplam Gün</span>
+                            <strong id="gunSayisi" class="fs-4 text-primary">1</strong>
+                        </div>
+
+                        <div id="tarihUyarisi" class="alert alert-warning py-2 d-none">
+                            Bitiş tarihi başlangıç tarihinden önce olamaz.
+                        </div>
+
+                        <div id="bakiyeUyarisi" class="alert alert-danger py-2 d-none">
+                            Talep edilen yıllık izin günü kalan izin hakkını aşamaz.
+                        </div>
+
+                        <div id="izinTuruBilgisi" class="alert alert-info py-2 d-none">
+                            Bu izin türü yıllık izin bakiyesinden düşülmez.
+                        </div>
+
+                        <button type="submit"
+                                id="talepOlusturButton"
+                                class="btn btn-primary w-100">
+                            İzin Talebi Oluştur
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script type="application/json" id="izinBakiyeleriJson">@Html.Raw(bakiyeJson)</script>
+    <script>
+        (() => {
+            const baslangic = document.getElementById("baslangicTarihi");
+            const bitis = document.getElementById("bitisTarihi");
+            const izinTuru = document.getElementById("izinTuru");
+            const personelSecimi = document.getElementById("personelSecimi");
+            const gunSayisi = document.getElementById("gunSayisi");
+            const ozetBaslangic = document.getElementById("ozetBaslangic");
+            const ozetBitis = document.getElementById("ozetBitis");
+            const uyari = document.getElementById("tarihUyarisi");
+            const bakiyeUyarisi = document.getElementById("bakiyeUyarisi");
+            const izinTuruBilgisi = document.getElementById("izinTuruBilgisi");
+            const submitButton = document.getElementById("talepOlusturButton");
+            const bakiyeBilgileri = document.getElementById("bakiyeBilgileri");
+            const bakiyeBosUyari = document.getElementById("bakiyeBosUyari");
+            const bakiyeYili = document.getElementById("bakiyeYili");
+            const yillikHak = document.getElementById("yillikIzinHakki");
+            const devreden = document.getElementById("devredenIzinGunu");
+            const kullanilan = document.getElementById("kullanilanIzinGunu");
+            const kalan = document.getElementById("kalanIzinGunu");
+            const bakiyeVerileri = JSON.parse(
+                document.getElementById("izinBakiyeleriJson").textContent || "[]"
+            );
+            let seciliKalanIzin = @(kendiBakiyesi?.KalanIzinGunu.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "0");
+
+            function tarihMetni(deger) {
+                if (!deger) return "-";
+                return new Intl.DateTimeFormat("tr-TR").format(
+                    new Date(deger + "T00:00:00")
+                );
+            }
+
+            function sayiMetni(deger) {
+                return new Intl.NumberFormat("tr-TR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(deger) + " gün";
+            }
+
+            function bakiyeRenginiAyarla(deger) {
+                kalan.classList.remove("text-success", "text-warning", "text-danger");
+                kalan.classList.add(
+                    deger > 5 ? "text-success" : deger > 0 ? "text-warning" : "text-danger"
+                );
+            }
+
+            function bakiyeyiGuncelle() {
+                if (!personelSecimi) {
+                    bakiyeRenginiAyarla(seciliKalanIzin);
+                    return;
+                }
+
+                const personelId = Number(personelSecimi.value);
+                const bakiye = bakiyeVerileri.find(x => x.PersonelId === personelId);
+
+                bakiyeBosUyari.classList.toggle("d-none", Boolean(bakiye));
+                bakiyeBilgileri.classList.toggle("d-none", !bakiye);
+
+                if (!bakiye) {
+                    seciliKalanIzin = 0;
+                    return;
+                }
+
+                seciliKalanIzin = bakiye.KalanIzinGunu;
+                bakiyeYili.textContent = bakiye.Yil;
+                yillikHak.textContent = sayiMetni(bakiye.YillikIzinHakki);
+                devreden.textContent = sayiMetni(bakiye.DevredenIzinGunu);
+                kullanilan.textContent = sayiMetni(bakiye.KullanilanIzinGunu);
+                kalan.textContent = sayiMetni(bakiye.KalanIzinGunu);
+                bakiyeRenginiAyarla(bakiye.KalanIzinGunu);
+            }
+
+            function hesapla() {
+                ozetBaslangic.textContent = tarihMetni(baslangic.value);
+                ozetBitis.textContent = tarihMetni(bitis.value);
+                const yillikIzinSecili = izinTuru.value === "Yıllık İzin";
+                const digerIzinSecili =
+                    izinTuru.value.length > 0 &&
+                    !yillikIzinSecili;
+                izinTuruBilgisi.classList.toggle("d-none", !digerIzinSecili);
+
+                if (!baslangic.value || !bitis.value) {
+                    gunSayisi.textContent = "0";
+                    uyari.classList.add("d-none");
+                    bakiyeUyarisi.classList.add("d-none");
+                    return;
+                }
+
+                const ilk = new Date(baslangic.value + "T00:00:00");
+                const son = new Date(bitis.value + "T00:00:00");
+                const fark = Math.floor((son - ilk) / 86400000) + 1;
+
+                gunSayisi.textContent = fark > 0 ? fark : "0";
+                uyari.classList.toggle("d-none", fark > 0);
+
+                const bakiyeAsildi =
+                    yillikIzinSecili &&
+                    fark > 0 &&
+                    fark > seciliKalanIzin;
+                bakiyeUyarisi.classList.toggle("d-none", !bakiyeAsildi);
+                submitButton.disabled = fark <= 0 || bakiyeAsildi;
+            }
+
+            baslangic.addEventListener("change", hesapla);
+            bitis.addEventListener("change", hesapla);
+            izinTuru.addEventListener("change", hesapla);
+            personelSecimi?.addEventListener("change", () => {
+                bakiyeyiGuncelle();
+                hesapla();
+            });
+            bakiyeyiGuncelle();
+            hesapla();
+        })();
+    </script>
+}

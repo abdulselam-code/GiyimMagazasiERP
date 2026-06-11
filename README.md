@@ -25,6 +25,7 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 - Ürün, kategori ve alt kategori yönetimi
 - Tedarikçi ve tedarikçi-alt kategori yönetimi
 - Müşteri ve personel yönetimi
+- Personel izin talebi, onay/red ve yıllık izin bakiyesi yönetimi
 - Tarih filtreli raporlar
 - Kritik stok takibi
 
@@ -47,6 +48,7 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 5. İade belgesi uygulama içinden görüntülenir ve yazdırılır.
 6. Finans ekranında satış gelirleri, giderler ve satış iadeleri izlenir.
 7. Kritik stok ürünleri Dashboard ve ürün listesi üzerinden takip edilir.
+8. Personel izin talepleri rol bazlı olarak oluşturulur, profesyonel onay ekranlarıyla yönetilir ve yıllık izin bakiyesine göre kontrol edilir.
 
 ## Kurulum
 

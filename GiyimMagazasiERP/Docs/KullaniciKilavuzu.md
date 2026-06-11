@@ -80,3 +80,25 @@ Demo ortamında şu kullanıcı adları bulunur:
 
 Demo parola proje teslim notunda belirtilen parola politikasıyla yönetilir.
 Gerçek kullanıma geçmeden önce tüm demo hesaplarının parolaları değiştirilmelidir.
+
+## Personel İzinleri
+
+Çalışanlar kullanıcı menüsündeki **Benim İzinlerim** bağlantısından kendi izin
+taleplerini görüntüleyebilir ve yeni talep oluşturabilir. Başlangıç tarihi,
+bitiş tarihi ve izin türü seçildiğinde talep onay sürecine gönderilir.
+Onaylanmadan personel izinli kabul edilmez.
+
+Admin, Yonetici ve InsanKaynaklari rolleri **Personel İzinleri** ekranından tüm
+talepleri filtreleyebilir, detaylarını inceleyebilir, onaylayabilir veya red
+nedeni belirterek reddedebilir. Talep sahibi yalnızca onay bekleyen kendi
+talebini iptal edebilir. Aynı personele ait çakışan bekleyen veya onaylı izin
+aralıkları sistem tarafından engellenir.
+
+İzin ekranlarında içinde bulunulan yıla ait yıllık izin hakkı, devreden izin,
+kullanılan yıllık izin ve kalan izin bilgileri gösterilir. Yalnızca onaylanmış
+**Yıllık İzin** kayıtları bakiyeden düşer; mazeret, hastalık, ücretsiz, doğum ve
+diğer izin türleri yıllık izin bakiyesini etkilemez. Kalan hakkı aşan yıllık izin
+talebi oluşturulamaz ve bakiye onay sırasında yeniden kontrol edilir.
+
+Onay, red ve iptal işlemleri işlem özeti gösteren Bootstrap pencereleriyle
+tamamlanır. Red işlemi için neden yazılması zorunludur.

@@ -1,0 +1,434 @@
+@model GiyimMagazasiERP.Models.PersonelIzni
+@using GiyimMagazasiERP.Models
+@using GiyimMagazasiERP.ViewModels
+
+@{
+    ViewData["Title"] = "İzin Talebi Detayı";
+    var yonetebilir =
+        User.IsInRole("Admin") ||
+        User.IsInRole("Yonetici") ||
+        User.IsInRole("InsanKaynaklari");
+    var talepSahibi = ViewData["TalepSahibiMi"] as bool? ?? false;
+    var bekliyor = Model.Durum == PersonelIzni.DurumOnayBekliyor;
+    var rowVersion = Convert.ToBase64String(Model.RowVersion);
+    var bakiye =
+        ViewData["IzinBakiyesi"] as PersonelIzinBakiyesiViewModel;
+
+    string DurumMetni(string durum) => durum switch
+    {
+        PersonelIzni.DurumOnayBekliyor => "Onay Bekliyor",
+        PersonelIzni.DurumOnaylandi => "Onaylandı",
+        PersonelIzni.DurumReddedildi => "Reddedildi",
+        PersonelIzni.DurumIptalEdildi => "İptal Edildi",
+        _ => durum
+    };
+
+    string DurumRengi(string durum) => durum switch
+    {
+        PersonelIzni.DurumOnayBekliyor => "warning",
+        PersonelIzni.DurumOnaylandi => "success",
+        PersonelIzni.DurumReddedildi => "danger",
+        PersonelIzni.DurumIptalEdildi => "secondary",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">İzin Talebi Detayı</h1>
+            <p class="text-muted mb-0">Talep #@Model.Id</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="@(yonetebilir ? "Index" : "BenimIzinlerim")"
+               class="btn btn-outline-secondary">
+                Listeye Dön
+            </a>
+            <a asp-action="Create" class="btn btn-primary">Yeni İzin Talebi</a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="text-muted small">PERSONEL İZİN TALEBİ</div>
+                    <h2 class="h4 fw-bold mb-1">@Model.Personel.AdSoyad</h2>
+                    <div class="text-muted">@Model.Personel.Pozisyon / @Model.Personel.Departman</div>
+                </div>
+                <span class="badge text-bg-@DurumRengi(Model.Durum) fs-6 px-3 py-2">
+                    @DurumMetni(Model.Durum)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold mb-3">İzin Bilgileri</h2>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">İzin Türü</div>
+                            <strong>@Model.IzinTuru</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Başlangıç</div>
+                            <strong>@Model.BaslangicTarihi.ToString("dd.MM.yyyy")</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Bitiş</div>
+                            <strong>@Model.BitisTarihi.ToString("dd.MM.yyyy")</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Toplam Süre</div>
+                            <strong>@Model.GunSayisi gün</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-muted small">Talep Eden Kullanıcı</div>
+                            <strong>@(Model.Kullanici.AdSoyad ?? Model.Kullanici.KullaniciAdi)</strong>
+                        </div>
+                        <div class="col-12">
+                            <div class="text-muted small mb-1">Açıklama</div>
+                            <div class="border rounded p-3 bg-body-tertiary">
+                                @(string.IsNullOrWhiteSpace(Model.Aciklama) ? "Açıklama girilmemiş." : Model.Aciklama)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-bold mb-3">Süreç Bilgileri</h2>
+                    <dl class="mb-0">
+                        <dt class="text-muted fw-normal">Oluşturma Tarihi</dt>
+                        <dd class="fw-semibold">@Model.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</dd>
+
+                        <dt class="text-muted fw-normal">Onaylayan / Reddeden</dt>
+                        <dd class="fw-semibold">
+                            @(Model.OnaylayanKullanici?.AdSoyad ??
+                              Model.OnaylayanKullanici?.KullaniciAdi ??
+                              "Henüz işlem yok")
+                        </dd>
+
+                        <dt class="text-muted fw-normal">İşlem Tarihi</dt>
+                        <dd class="fw-semibold">
+                            @(Model.OnayTarihi?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz işlem yok")
+                        </dd>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.RedNedeni))
+                        {
+                            <dt class="text-muted fw-normal">Red Nedeni</dt>
+                            <dd class="text-danger fw-semibold">@Model.RedNedeni</dd>
+                        }
+
+                        @if (Model.IptalTarihi.HasValue)
+                        {
+                            <dt class="text-muted fw-normal">İptal Tarihi</dt>
+                            <dd class="fw-semibold">@Model.IptalTarihi.Value.ToString("dd.MM.yyyy HH:mm")</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (bakiye is not null)
+    {
+        var bakiyeRengi = bakiye.KalanIzinGunu > 5
+            ? "success"
+            : bakiye.KalanIzinGunu > 0
+                ? "warning"
+                : "danger";
+
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">İzin Bakiyesi</h2>
+                        <p class="text-muted mb-0">@bakiye.Yil yılı yıllık izin durumu</p>
+                    </div>
+                    <span class="badge text-bg-@bakiyeRengi fs-6">
+                        @bakiye.KalanIzinGunu.ToString("N2") gün kaldı
+                    </span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Yıllık İzin Hakkı</div>
+                            <strong class="fs-5">@bakiye.YillikIzinHakki.ToString("N2") gün</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Devreden İzin</div>
+                            <strong class="fs-5">@bakiye.DevredenIzinGunu.ToString("N2") gün</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border rounded p-3 h-100">
+                            <div class="text-muted small">Kullanılan Yıllık İzin</div>
+                            <strong class="fs-5">@bakiye.KullanilanIzinGunu.ToString("N2") gün</strong>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="border border-@bakiyeRengi rounded p-3 h-100">
+                            <div class="text-muted small">Kalan Yıllık İzin</div>
+                            <strong class="fs-5 text-@bakiyeRengi">
+                                @bakiye.KalanIzinGunu.ToString("N2") gün
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-light border mt-3 mb-0">
+                    @if (Model.IzinTuru == "Yıllık İzin")
+                    {
+                        <span>
+                            Bu talep onaylandığında yıllık izin bakiyesinden
+                            <strong>@Model.GunSayisi gün</strong> düşülür.
+                        </span>
+                    }
+                    else
+                    {
+                        <span>Bu izin türü yıllık izin hakkından düşülmez.</span>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (bekliyor && (yonetebilir || talepSahibi))
+    {
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h2 class="h5 fw-bold mb-1">Talep İşlemleri</h2>
+                <p class="text-muted mb-3">
+                    İşlem tamamlandıktan sonra bu talep yeniden işleme alınamaz.
+                </p>
+
+                <div class="row g-3">
+                    @if (yonetebilir)
+                    {
+                        <div class="col-lg-4">
+                            <form asp-action="Onayla"
+                                  asp-route-id="@Model.Id"
+                                  method="post"
+                                  id="onayFormu">
+                                <input type="hidden" name="rowVersion" value="@rowVersion" />
+                                <button type="button"
+                                        class="btn btn-success w-100"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#onayModal">
+                                    Talebi Onayla
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-5">
+                            <form asp-action="Reddet"
+                                  asp-route-id="@Model.Id"
+                                  method="post"
+                                  id="redFormu">
+                                <input type="hidden" name="rowVersion" value="@rowVersion" />
+                                <label for="redNedeni" class="form-label">Red Nedeni</label>
+                                <textarea id="redNedeni"
+                                          name="redNedeni"
+                                          class="form-control mb-2"
+                                          rows="3"
+                                          maxlength="500"
+                                          required
+                                          placeholder="Reddetme nedenini yazınız"></textarea>
+                                <div id="redNedeniUyarisi"
+                                     class="text-danger small mb-2 d-none">
+                                    Red nedeni zorunludur.
+                                </div>
+                                <button type="button"
+                                        id="redModalAcButton"
+                                        class="btn btn-outline-danger w-100">
+                                    Talebi Reddet
+                                </button>
+                            </form>
+                        </div>
+                    }
+
+                    @if (talepSahibi || yonetebilir)
+                    {
+                        <div class="col-lg-3">
+                            <form asp-action="IptalEt"
+                                  asp-route-id="@Model.Id"
+                                  method="post"
+                                  id="iptalFormu">
+                                <input type="hidden" name="rowVersion" value="@rowVersion" />
+                                <label class="form-label d-block">&nbsp;</label>
+                                <button type="button"
+                                        class="btn btn-outline-secondary w-100"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#iptalModal">
+                                    Talebi İptal Et
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (bekliyor && yonetebilir)
+{
+    <div class="modal fade" id="onayModal" tabindex="-1" aria-labelledby="onayModalBaslik" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="onayModalBaslik">İzin Talebini Onayla</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu izin talebini onaylamak istediğinize emin misiniz?</p>
+                    <p class="text-muted small">Onaylandıktan sonra bu talep tekrar işleme alınamaz.</p>
+                    <div class="border rounded p-3 bg-body-tertiary">
+                        <div><strong>Personel:</strong> @Model.Personel.AdSoyad</div>
+                        <div><strong>İzin türü:</strong> @Model.IzinTuru</div>
+                        <div>
+                            <strong>Tarih:</strong>
+                            @Model.BaslangicTarihi.ToString("dd.MM.yyyy") -
+                            @Model.BitisTarihi.ToString("dd.MM.yyyy")
+                        </div>
+                        <div><strong>Toplam:</strong> @Model.GunSayisi gün</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button"
+                            class="btn btn-success modal-islem-button"
+                            data-form-id="onayFormu">
+                        Talebi Onayla
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="redModal" tabindex="-1" aria-labelledby="redModalBaslik" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="redModalBaslik">İzin Talebini Reddet</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu izin talebini reddetmek istediğinize emin misiniz?</p>
+                    <p class="text-muted small">Red nedeni kayıt altına alınacaktır.</p>
+                    <div class="border rounded p-3 bg-body-tertiary mb-3">
+                        <div><strong>Personel:</strong> @Model.Personel.AdSoyad</div>
+                        <div><strong>İzin türü:</strong> @Model.IzinTuru</div>
+                        <div>
+                            <strong>Tarih:</strong>
+                            @Model.BaslangicTarihi.ToString("dd.MM.yyyy") -
+                            @Model.BitisTarihi.ToString("dd.MM.yyyy")
+                        </div>
+                        <div><strong>Toplam:</strong> @Model.GunSayisi gün</div>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Red Nedeni</div>
+                        <div id="redNedeniOnizleme" class="fw-semibold text-danger"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button"
+                            class="btn btn-danger modal-islem-button"
+                            data-form-id="redFormu">
+                        Talebi Reddet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (bekliyor && (talepSahibi || yonetebilir))
+{
+    <div class="modal fade" id="iptalModal" tabindex="-1" aria-labelledby="iptalModalBaslik" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="iptalModalBaslik">İzin Talebini İptal Et</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu izin talebini iptal etmek istediğinize emin misiniz?</p>
+                    <p class="text-muted small mb-0">İptal edilen talep tekrar işleme alınamaz.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                    <button type="button"
+                            class="btn btn-outline-danger modal-islem-button"
+                            data-form-id="iptalFormu">
+                        Talebi İptal Et
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        (() => {
+            let islemDevamEdiyor = false;
+            const redNedeni = document.getElementById("redNedeni");
+            const redUyarisi = document.getElementById("redNedeniUyarisi");
+            const redModalAcButton = document.getElementById("redModalAcButton");
+
+            redModalAcButton?.addEventListener("click", () => {
+                const neden = redNedeni.value.trim();
+                const gecersiz = neden.length === 0;
+                redUyarisi.classList.toggle("d-none", !gecersiz);
+
+                if (gecersiz) {
+                    redNedeni.focus();
+                    return;
+                }
+
+                document.getElementById("redNedeniOnizleme").textContent = neden;
+                bootstrap.Modal.getOrCreateInstance(
+                    document.getElementById("redModal")
+                ).show();
+            });
+
+            redNedeni?.addEventListener("input", () => {
+                if (redNedeni.value.trim()) {
+                    redUyarisi.classList.add("d-none");
+                }
+            });
+
+            document.querySelectorAll(".modal-islem-button").forEach(button => {
+                button.addEventListener("click", () => {
+                    if (islemDevamEdiyor) return;
+
+                    const form = document.getElementById(button.dataset.formId);
+                    if (!form) return;
+
+                    islemDevamEdiyor = true;
+                    button.disabled = true;
+                    button.textContent = "İşleniyor...";
+                    form.submit();
+                });
+            });
+        })();
+    </script>
+}

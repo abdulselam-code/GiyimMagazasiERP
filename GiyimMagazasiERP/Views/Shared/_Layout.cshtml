@@ -23,7 +23,8 @@
         aktifController == "Personeller" ||
         aktifController == "Kategoriler" ||
         aktifController == "AltKategoriler" ||
-        aktifController == "Tedarikciler";
+        aktifController == "Tedarikciler" ||
+        aktifController == "PersonelIzinleri";
 
     var hareketlerAktif =
     aktifController == "Satislar" ||
@@ -116,6 +117,20 @@
                                 </li>
                             }
 
+                            @if (kasiyer || personel || depo || muhasebe)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link erp-menu-link @(
+                                        aktifController == "PersonelIzinleri"
+                                            ? "active fw-semibold"
+                                            : "")"
+                                       asp-controller="PersonelIzinleri"
+                                       asp-action="BenimIzinlerim">
+                                        Benim İzinlerim
+                                    </a>
+                                </li>
+                            }
+
                             @if (admin || yonetici || depo || ik || muhasebe)
                             {
                                 <li class="nav-item dropdown">
@@ -195,6 +210,14 @@
                                                    asp-controller="Personeller"
                                                    asp-action="Index">
                                                     Personeller
+                                                </a>
+                                            </li>
+
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "PersonelIzinleri" ? "active" : "")"
+                                                   asp-controller="PersonelIzinleri"
+                                                   asp-action="Index">
+                                                    Personel İzinleri
                                                 </a>
                                             </li>
                                         }
@@ -374,6 +397,30 @@
                                         <span class="dropdown-item-text text-light small">
                                             Oturum açık
                                         </span>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider" />
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item @(
+                                            aktifController == "PersonelIzinleri" &&
+                                            aktifAction == "BenimIzinlerim"
+                                                ? "active"
+                                                : "")"
+                                           asp-controller="PersonelIzinleri"
+                                           asp-action="BenimIzinlerim">
+                                            Benim İzinlerim
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="PersonelIzinleri"
+                                           asp-action="Create">
+                                            İzin Talebi Oluştur
+                                        </a>
                                     </li>
 
                                     <li>

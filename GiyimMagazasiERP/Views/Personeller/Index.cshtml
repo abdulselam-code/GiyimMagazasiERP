@@ -6,6 +6,7 @@
     var oncekiSayfa = Model.Page - 1;
     var sonrakiSayfa = Model.Page + 1;
     var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+    var durum = ViewData["Durum"]?.ToString() ?? "Aktif";
 }
 
 <div class="container py-4">
@@ -26,7 +27,7 @@
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
             <form asp-action="Index" method="get" class="row g-3 align-items-end">
-                <div class="col-lg-7">
+                <div class="col-lg-5">
                     <label for="arama" class="form-label">Personel Ara</label>
                     <input type="text"
                            id="arama"
@@ -34,6 +35,18 @@
                            value="@Model.Arama"
                            class="form-control"
                            placeholder="Ad soyad, telefon, email, pozisyon veya departman ara" />
+                </div>
+
+                <div class="col-sm-6 col-lg-2">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select id="durum"
+                            name="durum"
+                            class="form-select"
+                            onchange="this.form.submit()">
+                        <option value="Aktif" selected="@(durum == "Aktif")">Aktif</option>
+                        <option value="Pasif" selected="@(durum == "Pasif")">Pasif</option>
+                        <option value="Tumu" selected="@(durum == "Tumu")">Tümü</option>
+                    </select>
                 </div>
 
                 <div class="col-sm-6 col-lg-2">
@@ -109,13 +122,14 @@
             @if (!string.IsNullOrWhiteSpace(Model.Arama))
             {
                 <span>
-                    Arama sonucu <strong>@Model.TotalCount</strong> kayıt bulundu.
+                    Arama ve durum filtresine uygun <strong>@Model.TotalCount</strong> kayıt bulundu.
                 </span>
             }
             else
             {
                 <span>
-                    Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.
+                    <strong>@(durum == "Tumu" ? "Tüm" : durum)</strong> personeller:
+                    <strong>@Model.TotalCount</strong> kayıt bulundu.
                 </span>
             }
         </div>
@@ -226,7 +240,8 @@
                    asp-action="Index"
                    asp-route-page="@oncekiSayfa"
                    asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
+                   asp-route-arama="@Model.Arama"
+                   asp-route-durum="@durum">
                     Önceki
                 </a>
             </li>
@@ -238,7 +253,8 @@
                        asp-action="Index"
                        asp-route-page="@sayfaNo"
                        asp-route-pageSize="@Model.PageSize"
-                       asp-route-arama="@Model.Arama">
+                       asp-route-arama="@Model.Arama"
+                       asp-route-durum="@durum">
                         @sayfaNo
                     </a>
                 </li>
@@ -249,7 +265,8 @@
                    asp-action="Index"
                    asp-route-page="@sonrakiSayfa"
                    asp-route-pageSize="@Model.PageSize"
-                   asp-route-arama="@Model.Arama">
+                   asp-route-arama="@Model.Arama"
+                   asp-route-durum="@durum">
                     Sonraki
                 </a>
             </li>

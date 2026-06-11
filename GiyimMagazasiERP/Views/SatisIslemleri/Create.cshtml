@@ -6,6 +6,8 @@
     ViewData["Title"] = "Satış Yap";
 
     var kasiyer = User.IsInRole("Kasiyer");
+    var personel = User.IsInRole("Personel");
+    var dogrudanToptanYetkili = User.IsInRole("Admin") || User.IsInRole("Yonetici");
 
     var musterilerJson = JsonSerializer.Serialize(ViewData["MusterilerJson"]);
     var urunlerJson = JsonSerializer.Serialize(ViewData["UrunlerJson"]);
@@ -24,7 +26,16 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold mb-1">Satış Yap</h1>
-            <p class="text-muted mb-0">Perakende veya toptan satış oluşturabilirsiniz.</p>
+            <p class="text-muted mb-0">
+                @if (dogrudanToptanYetkili)
+                {
+                    <text>Perakende satış veya yetkili doğrudan toptan satış oluşturabilirsiniz.</text>
+                }
+                else
+                {
+                    <text>Perakende satış oluşturabilir, standart toptan işlemler için talep sürecini kullanabilirsiniz.</text>
+                }
+            </p>
         </div>
 
         <span class="badge text-bg-primary px-3 py-2">KDV Dahil</span>
@@ -52,19 +63,44 @@
                 <span>Bireysel veya hızlı kasa satışı</span>
             </button>
 
-            @if (!kasiyer)
+            @if (dogrudanToptanYetkili)
             {
                 <button type="button" class="sales-type-tab" data-type="Toptan">
-                    <strong>Toptan Satış</strong>
-                    <span>Kurumsal veya toplu satış; müşteri zorunludur</span>
+                    <strong>Yönetici Doğrudan Toptan Satış</strong>
+                    <span>Yetkili kullanıcılar için onaysız toptan satış</span>
                 </button>
             }
         </div>
 
-        @if (kasiyer)
+        @if (dogrudanToptanYetkili)
         {
-            <div class="alert alert-info py-2 mb-4">
-                Kasiyer rolü yalnızca perakende satış yapabilir.
+            <div id="dogrudanToptanUyarisi"
+                 class="alert alert-warning mb-4"
+                 style="display:none;">
+                <strong>Yetkili doğrudan işlem:</strong>
+                Bu işlem onay sürecine girmeden doğrudan satış oluşturur.
+                Standart toptan işlemler için
+                <a asp-controller="ToptanSatisTalepleri"
+                   asp-action="Create"
+                   class="alert-link">
+                    Toptan Satış Talebi
+                </a>
+                ekranını kullanın.
+            </div>
+        }
+        else if (kasiyer || personel)
+        {
+            <div class="alert alert-info mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <strong>Doğrudan toptan satış yetkiniz bulunmuyor.</strong>
+                    Standart toptan işlemler talep ve onay sürecinden ilerler.
+                </div>
+
+                <a asp-controller="ToptanSatisTalepleri"
+                   asp-action="Create"
+                   class="btn btn-sm btn-primary">
+                    Toptan Satış Talebi Oluştur
+                </a>
             </div>
         }
 
@@ -332,6 +368,7 @@
         
 
         const satisTuruInput = document.getElementById("satisTuruInput");
+        const dogrudanToptanYetkili = @dogrudanToptanYetkili.ToString().ToLowerInvariant();
         const satisTuruButonlari = document.querySelectorAll(".sales-type-tab");
         const musteriSecimi = document.getElementById("musteriSecimi");
         const personelSecimi = document.getElementById("personelSecimi");
@@ -347,6 +384,7 @@
         const sepetUyariAlani = document.getElementById("sepetUyariAlani");
         const urunBilgiAlani = document.getElementById("urunBilgiAlani");
         const toptanAciklamaAlani = document.getElementById("toptanAciklamaAlani");
+        const dogrudanToptanUyarisi = document.getElementById("dogrudanToptanUyarisi");
 
         const ozetSatisTuru = document.getElementById("ozetSatisTuru");
         const ozetUrunSayisi = document.getElementById("ozetUrunSayisi");
@@ -451,8 +489,14 @@
         }
         }
         function satisTuruAyarla(tur) {
+        if (tur === "Toptan" && !dogrudanToptanYetkili) {
+        tur = "Perakende";
+        }
+
         satisTuruInput.value = tur;
-        ozetSatisTuru.textContent = tur;
+        ozetSatisTuru.textContent = tur === "Toptan"
+        ? "Yönetici Doğrudan Toptan Satış"
+        : "Perakende";
 
         personelListesiniFiltrele(tur);
 
@@ -465,11 +509,17 @@
         musteriAciklama.textContent =
         "Toptan satış için kayıtlı müşteri seçilmelidir.";
         toptanAciklamaAlani.style.display = "";
+        if (dogrudanToptanUyarisi) {
+        dogrudanToptanUyarisi.style.display = "";
+        }
         } else {
         musteriSecimi.required = false;
         musteriAciklama.textContent =
         "Müşteri seçilirse sadakat indirimi uygulanır.";
         toptanAciklamaAlani.style.display = "none";
+        if (dogrudanToptanUyarisi) {
+        dogrudanToptanUyarisi.style.display = "none";
+        }
         }
 
         sepetiGuncelle();
@@ -662,6 +712,13 @@
         musteriSecimi.addEventListener("change", sepetiGuncelle);
 
         satisFormu.addEventListener("submit", function (event) {
+        if (satisTuruInput.value === "Toptan" && !dogrudanToptanYetkili) {
+        event.preventDefault();
+        satisTuruAyarla("Perakende");
+        uyariGoster("Doğrudan toptan satış yalnızca Admin veya Yönetici tarafından yapılabilir. Toptan Satış Talebi ekranını kullanınız.");
+        return;
+        }
+
         if (satisTuruInput.value === "Toptan" && !musteriSecimi.value) {
         event.preventDefault();
         uyariGoster("Toptan satış için müşteri seçilmelidir.");
@@ -680,7 +737,7 @@
         }
         });
 
-        if ("@kasiyer".toLowerCase() === "true") {
+        if (!dogrudanToptanYetkili) {
         satisTuruInput.value = "Perakende";
         }
         satisTuruAyarla(satisTuruInput.value || "Perakende");

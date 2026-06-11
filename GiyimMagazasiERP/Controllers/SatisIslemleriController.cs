@@ -9,33 +9,23 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GiyimMagazasiERP.Controllers;
 
-[Authorize(Roles = "Admin,Yonetici,Kasiyer")]
+[Authorize(Roles = "Admin,Yonetici,Kasiyer,Personel")]
 public class SatisIslemleriController : Controller
 {
     private readonly AppDbContext _context;
 
     private static readonly string[] SatisPersoneliPozisyonlari =
-{
-    "Kasiyer",
-    "Satış Danışmanı",
-    "Satis Danismani",
-    "Mağaza Müdürü",
-    "Magaza Muduru",
-    "Yönetici",
-    "Yonetici",
-    "Admin"
-};
+    {
+        "Kasiyer",
+        "Satış Danışmanı",
+        "Satis Danismani"
+    };
 
     private static readonly string[] ToptanSatisPersoneliPozisyonlari =
     {
-    "Satış Danışmanı",
-    "Satis Danismani",
-    "Mağaza Müdürü",
-    "Magaza Muduru",
-    "Yönetici",
-    "Yonetici",
-    "Admin"
-};
+        "Satış Danışmanı",
+        "Satis Danismani"
+    };
 
     public SatisIslemleriController(AppDbContext context)
     {
@@ -62,9 +52,11 @@ public class SatisIslemleriController : Controller
         model.SepetUrunleri ??= new List<SatisSepetUrunViewModel>();
         model.SatisTuru = model.SatisTuru == "Toptan" ? "Toptan" : "Perakende";
 
-        if (User.IsInRole("Kasiyer") && model.SatisTuru == "Toptan")
+        if (model.SatisTuru == "Toptan" && !DogrudanToptanSatisYetkisiVarMi())
         {
-            ModelState.AddModelError(nameof(model.SatisTuru), "Kasiyer rolü toptan satış yapamaz.");
+            ModelState.AddModelError(
+                nameof(model.SatisTuru),
+                "Doğrudan toptan satış yalnızca Admin veya Yönetici tarafından yapılabilir. Standart toptan işlemler için Toptan Satış Talebi oluşturunuz.");
         }
 
         if (model.SatisTuru == "Toptan" && !model.MusteriId.HasValue)
@@ -348,7 +340,7 @@ public class SatisIslemleriController : Controller
         if (satis is null)
             return NotFound();
 
-        if (User.IsInRole("Kasiyer"))
+        if (User.IsInRole("Kasiyer") || User.IsInRole("Personel"))
         {
             var personel = await OtomatikPersonelBul();
 
@@ -365,6 +357,12 @@ public class SatisIslemleriController : Controller
             personel.Pozisyon,
             StringComparer.OrdinalIgnoreCase);
     }
+
+    private bool DogrudanToptanSatisYetkisiVarMi()
+    {
+        return User.IsInRole("Admin") || User.IsInRole("Yonetici");
+    }
+
     private async Task<int?> SatisPersonelIdBelirle(int? secilenPersonelId)
     {
         if (User.IsInRole("Admin") || User.IsInRole("Yonetici"))
@@ -443,12 +441,13 @@ public class SatisIslemleriController : Controller
         ViewData["MusterilerJson"] = musteriler;
 
         var satisPersonelleri = await _context.Personeller
-   .AsNoTracking()
-   .Where(x =>
-       x.AktifMi &&
-       SatisPersoneliPozisyonlari.Contains(x.Pozisyon))
-   .OrderBy(x => x.AdSoyad)
-   .ToListAsync();
+            .AsNoTracking()
+            .Where(x =>
+                x.AktifMi &&
+                SatisPersoneliPozisyonlari.Contains(x.Pozisyon))
+            .OrderBy(x => x.Pozisyon == "Kasiyer" ? 0 : 1)
+            .ThenBy(x => x.AdSoyad)
+            .ToListAsync();
 
         var personelSecenekleri = satisPersonelleri
             .Select(x => new
@@ -474,11 +473,13 @@ public class SatisIslemleriController : Controller
             ? otomatikPersonel.AdSoyad + " - " + otomatikPersonel.Pozisyon
             : "Uygun personel bulunamadı";
 
-        ViewData["PersonelOtomatikMi"] = User.IsInRole("Kasiyer");
+        var personelOtomatikMi = !DogrudanToptanSatisYetkisiVarMi();
 
-        ViewData["PersonelEslesmeVarMi"] = !User.IsInRole("Kasiyer") || otomatikPersonel is not null;
+        ViewData["PersonelOtomatikMi"] = personelOtomatikMi;
 
-        ViewData["PersonelHataMesaji"] = otomatikPersonel is null && User.IsInRole("Kasiyer")
+        ViewData["PersonelEslesmeVarMi"] = !personelOtomatikMi || otomatikPersonel is not null;
+
+        ViewData["PersonelHataMesaji"] = otomatikPersonel is null && personelOtomatikMi
             ? "Bu kullanıcıya bağlı satış personeli bulunamadı. Lütfen kullanıcı-personel eşleştirmesini kontrol edin."
             : null;
 

@@ -1,0 +1,291 @@
+@model GiyimMagazasiERP.ViewModels.PersonelIzniListeViewModel
+@using GiyimMagazasiERP.Models
+
+@{
+    ViewData["Title"] = "Personel İzinleri";
+    var siraNo = ((Model.Page - 1) * Model.PageSize) + 1;
+
+    string DurumMetni(string durum) => durum switch
+    {
+        PersonelIzni.DurumOnayBekliyor => "Onay Bekliyor",
+        PersonelIzni.DurumOnaylandi => "Onaylandı",
+        PersonelIzni.DurumReddedildi => "Reddedildi",
+        PersonelIzni.DurumIptalEdildi => "İptal Edildi",
+        _ => durum
+    };
+
+    string DurumRengi(string durum) => durum switch
+    {
+        PersonelIzni.DurumOnayBekliyor => "warning",
+        PersonelIzni.DurumOnaylandi => "success",
+        PersonelIzni.DurumReddedildi => "danger",
+        PersonelIzni.DurumIptalEdildi => "secondary",
+        _ => "secondary"
+    };
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Personel İzinleri</h1>
+            <p class="text-muted mb-0">
+                Personel izin taleplerini görüntüleyin, filtreleyin ve onay süreçlerini yönetin.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="BenimIzinlerim" class="btn btn-outline-secondary">
+                Benim İzinlerim
+            </a>
+            <a asp-action="Create" class="btn btn-primary">
+                Yeni İzin Talebi
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Basari"] is not null)
+    {
+        <div class="alert alert-success">@TempData["Basari"]</div>
+    }
+    @if (TempData["Hata"] is not null)
+    {
+        <div class="alert alert-danger">@TempData["Hata"]</div>
+    }
+    @if (!Model.PersonelEslesmesiVarMi)
+    {
+        <div class="alert alert-warning">
+            Bu kullanıcıya bağlı personel kaydı bulunamadı. Kendi izin kayıtlarınızı görüntüleyebilmek için kullanıcı-personel eşleştirmesi yapılmalıdır.
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 border-start border-4 border-primary shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Bu Yıl Toplam Yıllık İzin Hakkı</div>
+                    <strong class="fs-4 text-primary">@Model.ToplamYillikIzinHakki.ToString("N2") gün</strong>
+                    <div class="small text-muted mt-2">Yıllık hak ve devreden izin toplamı.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 border-start border-4 border-info shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Kullanılan Yıllık İzin</div>
+                    <strong class="fs-4 text-info">@Model.ToplamKullanilanIzinGunu.ToString("N2") gün</strong>
+                    <div class="small text-muted mt-2">Sadece onaylanmış yıllık izinler düşülür.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 border-start border-4 border-success shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Kalan Yıllık İzin</div>
+                    <strong class="fs-4 text-success">@Model.ToplamKalanIzinGunu.ToString("N2") gün</strong>
+                    <div class="small text-muted mt-2">Toplam yıllık haktan kullanılan izin düşülür.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 border-start border-4 border-secondary shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Diğer Onaylı İzinler</div>
+                    <strong class="fs-4 text-secondary">@Model.DigerOnayliIzinGunu.ToString("N2") gün</strong>
+                    <div class="small text-muted mt-2">Hastalık, mazeret, ücretsiz vb. izinler.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 border-start border-4 border-warning shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Onay Bekleyen Talep</div>
+                    <strong class="fs-4 text-warning">@Model.OnayBekleyenIzinSayisi</strong>
+                    <div class="small text-muted mt-2">İşlem bekleyen tüm izin talepleri.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-xl-3 col-md-6">
+                    <label for="arama" class="form-label">Arama</label>
+                    <input id="arama"
+                           name="arama"
+                           value="@Model.Arama"
+                           class="form-control"
+                           placeholder="Personel, kullanıcı veya açıklama" />
+                </div>
+
+                <div class="col-xl-2 col-md-6">
+                    <label for="durum" class="form-label">Durum</label>
+                    <select id="durum" name="durum" class="form-select">
+                        <option value="Tumu" selected="@(Model.Durum == "Tumu")">Tümü</option>
+                        <option value="@PersonelIzni.DurumOnayBekliyor" selected="@(Model.Durum == PersonelIzni.DurumOnayBekliyor)">Onay Bekliyor</option>
+                        <option value="@PersonelIzni.DurumOnaylandi" selected="@(Model.Durum == PersonelIzni.DurumOnaylandi)">Onaylandı</option>
+                        <option value="@PersonelIzni.DurumReddedildi" selected="@(Model.Durum == PersonelIzni.DurumReddedildi)">Reddedildi</option>
+                        <option value="@PersonelIzni.DurumIptalEdildi" selected="@(Model.Durum == PersonelIzni.DurumIptalEdildi)">İptal Edildi</option>
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-md-6">
+                    <label for="izinTuru" class="form-label">İzin Türü</label>
+                    <select id="izinTuru" name="izinTuru" class="form-select">
+                        <option value="Tumu">Tümü</option>
+                        @foreach (var tur in PersonelIzni.IzinTurleri)
+                        {
+                            <option value="@tur" selected="@(Model.IzinTuru == tur)">@tur</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-xl-2 col-md-6">
+                    <label for="baslangicTarihi" class="form-label">Başlangıç</label>
+                    <input id="baslangicTarihi"
+                           type="date"
+                           name="baslangicTarihi"
+                           value="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-xl-2 col-md-6">
+                    <label for="bitisTarihi" class="form-label">Bitiş</label>
+                    <input id="bitisTarihi"
+                           type="date"
+                           name="bitisTarihi"
+                           value="@Model.BitisTarihi?.ToString("yyyy-MM-dd")"
+                           class="form-control" />
+                </div>
+
+                <div class="col-xl-1 col-md-6">
+                    <label for="pageSize" class="form-label">Kayıt</label>
+                    <select id="pageSize" name="pageSize" class="form-select">
+                        @foreach (var adet in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@adet" selected="@(Model.PageSize == adet)">@adet</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrele</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                <span class="text-muted">Toplam <strong>@Model.TotalCount</strong> kayıt bulundu.</span>
+                <span class="text-muted">Sayfa @Model.Page / @Model.TotalPages</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Personel</th>
+                            <th>İzin Türü</th>
+                            <th>Tarih Aralığı</th>
+                            <th>Gün</th>
+                            <th>Durum</th>
+                            <th>Talep Eden</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Items.Any())
+                        {
+                            @foreach (var izin in Model.Items)
+                            {
+                                <tr>
+                                    <td>@siraNo</td>
+                                    <td>
+                                        <strong>@izin.Personel.AdSoyad</strong>
+                                        <div class="small text-muted">@izin.Personel.Pozisyon</div>
+                                    </td>
+                                    <td>@izin.IzinTuru</td>
+                                    <td>
+                                        @izin.BaslangicTarihi.ToString("dd.MM.yyyy")
+                                        -
+                                        @izin.BitisTarihi.ToString("dd.MM.yyyy")
+                                    </td>
+                                    <td>@izin.GunSayisi</td>
+                                    <td>
+                                        <span class="badge text-bg-@DurumRengi(izin.Durum)">
+                                            @DurumMetni(izin.Durum)
+                                        </span>
+                                    </td>
+                                    <td>@(izin.Kullanici.AdSoyad ?? izin.Kullanici.KullaniciAdi)</td>
+                                    <td>@izin.OlusturmaTarihi.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <a asp-action="Details"
+                                           asp-route-id="@izin.Id"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Detay
+                                        </a>
+                                    </td>
+                                </tr>
+                                siraNo++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    Arama kriterlerine uygun izin talebi bulunamadı.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="mt-4" aria-label="İzin talepleri sayfaları">
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item @(!Model.OncekiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-route-page="@(Model.Page - 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@Model.Durum"
+                               asp-route-izinTuru="@Model.IzinTuru"
+                               asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                               asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">Önceki</a>
+                        </li>
+                        @for (var sayfa = Math.Max(1, Model.Page - 2); sayfa <= Math.Min(Model.TotalPages, Model.Page + 2); sayfa++)
+                        {
+                            <li class="page-item @(sayfa == Model.Page ? "active" : "")">
+                                <a class="page-link"
+                                   asp-route-page="@sayfa"
+                                   asp-route-pageSize="@Model.PageSize"
+                                   asp-route-arama="@Model.Arama"
+                                   asp-route-durum="@Model.Durum"
+                                   asp-route-izinTuru="@Model.IzinTuru"
+                                   asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                                   asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">@sayfa</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.SonrakiSayfaVarMi ? "disabled" : "")">
+                            <a class="page-link"
+                               asp-route-page="@(Model.Page + 1)"
+                               asp-route-pageSize="@Model.PageSize"
+                               asp-route-arama="@Model.Arama"
+                               asp-route-durum="@Model.Durum"
+                               asp-route-izinTuru="@Model.IzinTuru"
+                               asp-route-baslangicTarihi="@Model.BaslangicTarihi?.ToString("yyyy-MM-dd")"
+                               asp-route-bitisTarihi="@Model.BitisTarihi?.ToString("yyyy-MM-dd")">Sonraki</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>

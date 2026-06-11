@@ -96,3 +96,27 @@
 - [ ] Mevcut satış/fatura/iade kayıtları korunmuş.
 - [ ] Rol bazlı AccessDenied davranışı korunmuş.
 - [ ] Proje hatasız build alıyor.
+
+## Personel İzinleri Testleri
+
+- [ ] `016_create_personel_izinleri.sql` tekrar çalıştırıldığında hata vermiyor.
+- [ ] `017_create_personel_izin_bakiyeleri.sql` tekrar çalıştırıldığında hata vermiyor.
+- [ ] Aktif personeller için içinde bulunulan yıl adına varsayılan bakiye oluşuyor.
+- [ ] Admin, Yonetici ve InsanKaynaklari tüm izin taleplerini görebiliyor.
+- [ ] Kasiyer, Personel, Depo ve Muhasebe yalnızca kendi izinlerini görebiliyor.
+- [ ] Normal kullanıcı başka personel adına izin talebi oluşturamıyor.
+- [ ] Yetkili kullanıcı aktif personel adına izin talebi oluşturabiliyor.
+- [ ] Bitiş tarihi başlangıç tarihinden önce olan talep engelleniyor.
+- [ ] Bekleyen veya onaylı izinle çakışan yeni talep engelleniyor.
+- [ ] Onay sırasında çakışma kontrolü yeniden çalışıyor.
+- [ ] Red nedeni boş bırakıldığında işlem engelleniyor.
+- [ ] Yalnızca onay bekleyen talep onaylanabiliyor, reddedilebiliyor veya iptal edilebiliyor.
+- [ ] Talep sahibi başka personelin izin detayına erişemiyor.
+- [ ] RowVersion çakışmasında kullanıcıya açıklayıcı uyarı gösteriliyor.
+- [ ] Dashboard ve menü bağlantıları role göre doğru sayfalara gidiyor.
+- [ ] Yıllık izin hakkı, kullanılan izin ve kalan izin kartları doğru görünüyor.
+- [ ] Kalan hakkı aşan yıllık izin talebi oluşturma aşamasında engelleniyor.
+- [ ] Mazeret ve hastalık izinleri yıllık izin bakiyesinden düşmüyor.
+- [ ] Yıllık izin onaylanırken bakiye yeniden kontrol ediliyor.
+- [ ] Onay, red ve iptal işlemleri Bootstrap modal üzerinden tamamlanıyor.
+- [ ] Red nedeni boşken red modalı açılmıyor ve işlem gönderilmiyor.

@@ -17,9 +17,14 @@ public class PersonellerController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index(string? arama, int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Index(
+        string? arama,
+        string durum = "Aktif",
+        int page = 1,
+        int pageSize = 10)
     {
         var izinliPageSizeDegerleri = new[] { 5, 10, 25, 50, 100 };
+        var izinliDurumDegerleri = new[] { "Aktif", "Pasif", "Tumu" };
 
         if (page < 1)
             page = 1;
@@ -27,7 +32,17 @@ public class PersonellerController : Controller
         if (!izinliPageSizeDegerleri.Contains(pageSize))
             pageSize = 10;
 
-        var query = _context.Personeller.AsQueryable();
+        if (!izinliDurumDegerleri.Contains(durum))
+            durum = "Aktif";
+
+        var query = _context.Personeller
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (durum == "Aktif")
+            query = query.Where(x => x.AktifMi);
+        else if (durum == "Pasif")
+            query = query.Where(x => !x.AktifMi);
 
         if (!string.IsNullOrWhiteSpace(arama))
         {
@@ -35,8 +50,8 @@ public class PersonellerController : Controller
 
             query = query.Where(x =>
                 x.AdSoyad.Contains(arama) ||
-                x.Telefon.Contains(arama) ||
-                x.Email.Contains(arama) ||
+                (x.Telefon != null && x.Telefon.Contains(arama)) ||
+                (x.Email != null && x.Email.Contains(arama)) ||
                 x.Pozisyon.Contains(arama) ||
                 x.Departman.Contains(arama));
         }
@@ -63,6 +78,7 @@ public class PersonellerController : Controller
             TotalPages = totalPages
         };
 
+        ViewData["Durum"] = durum;
         return View(model);
     }
 

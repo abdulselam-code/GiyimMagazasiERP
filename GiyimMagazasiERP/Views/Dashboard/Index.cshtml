@@ -901,18 +901,20 @@
     else if (insanKaynaklari)
     {
         <section class="row g-3 mb-4">
-            @foreach (var kart in new[]
-            {
-                ("Toplam Personel", Model.ToplamPersonel.ToString()),
-                ("Aktif Personel", Model.AktifPersonel.ToString()),
-                ("Ortalama Maaş", Tl(Model.OrtalamaMaas)),
-                ("En Yüksek Maaş", Tl(Model.EnYuksekMaas)),
-                ("En Düşük Maaş", Tl(Model.EnDusukMaas))
-            })
-            {
-                <div class="col-sm-6 col-xl">
-                    <a asp-controller="Personeller" asp-action="Index"
-                       class="dashboard-metric-link">
+           @foreach (var kart in new[]
+           {
+               ("Aktif Personel", Model.AktifPersonel.ToString(), "Aktif"),
+               ("Kayıtlı Personel", Model.ToplamPersonel.ToString(), "Tumu"),
+               ("Ortalama Maaş", Tl(Model.OrtalamaMaas), "Aktif"),
+               ("En Yüksek Maaş", Tl(Model.EnYuksekMaas), "Aktif"),
+               ("En Düşük Maaş", Tl(Model.EnDusukMaas), "Aktif")
+           })
+           {
+               <div class="col-sm-6 col-xl">
+                   <a asp-controller="Personeller"
+                      asp-action="Index"
+                      asp-route-durum="@kart.Item3"
+                      class="dashboard-metric-link">
                         <div class="dashboard-metric">
                             <span>@kart.Item1</span>
                             <strong>@kart.Item2</strong>

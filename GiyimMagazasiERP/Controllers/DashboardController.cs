@@ -419,6 +419,7 @@ public class DashboardController : Controller
 
         model.PersonelOzeti = await _context.Personeller
             .AsNoTracking()
+            .Where(x => x.AktifMi)
             .OrderByDescending(x => x.IseBaslamaTarihi)
             .Take(8)
             .Select(x => new DashboardPersonelOzetViewModel
@@ -765,6 +766,7 @@ public class DashboardController : Controller
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
                 Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary"),
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("SQL Panel", "SqlYonetici", "Index", "dark"),
                 Link("DB Panel", "VeritabaniYonetici", "Index", "dark")
@@ -783,7 +785,8 @@ public class DashboardController : Controller
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("Faturalar", "Faturalar", "Index", "info"),
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
-                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary")
+                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Personel İzinleri", "PersonelIzinleri", "Index", "secondary")
             };
         }
 
@@ -796,7 +799,9 @@ public class DashboardController : Controller
                 Link("Kendi Faturalarım", "Faturalar"),
                 Link("Benim İade Taleplerim", "IadeDegisimTalepleri", "BenimTaleplerim", "warning"),
                 Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
-                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary")
+                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary"),
+                Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };
         }
 
@@ -806,7 +811,9 @@ public class DashboardController : Controller
             {
                 Link("Benim İade Taleplerim", "IadeDegisimTalepleri", "BenimTaleplerim", "warning"),
                 Link("Benim Toptan Taleplerim", "ToptanSatisTalepleri", "BenimTaleplerim", "primary"),
-                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary")
+                Link("Toptan Talep Oluştur", "ToptanSatisTalepleri", "Create", "secondary"),
+                Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };
         }
 
@@ -818,7 +825,9 @@ public class DashboardController : Controller
                 Link("Kategoriler", "Kategoriler"),
                 Link("Tedarikçiler", "Tedarikciler"),
                 Link("Stok Hareketleri", "StokHareketleri", "Index", "warning"),
-                Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary")
+                Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
+                Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };
         }
 
@@ -832,7 +841,9 @@ public class DashboardController : Controller
                 Link("Raporlar", "Raporlar", "Index", "info"),
                 Link("İade Talepleri", "IadeDegisimTalepleri", "Index", "warning"),
                 Link("İade Belgeleri", "IadeDegisimTalepleri", "IadeBelgeleri", "secondary"),
-                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary")
+                Link("Toptan Talepler", "ToptanSatisTalepleri", "Index", "primary"),
+                Link("Benim İzinlerim", "PersonelIzinleri", "BenimIzinlerim", "info"),
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };
         }
 
@@ -840,7 +851,9 @@ public class DashboardController : Controller
         {
             return new()
             {
-                Link("Personeller", "Personeller")
+                Link("Personeller", "Personeller"),
+                Link("Personel İzinleri", "PersonelIzinleri", "Index", "primary"),
+                Link("İzin Talebi Oluştur", "PersonelIzinleri", "Create", "secondary")
             };
         }
 

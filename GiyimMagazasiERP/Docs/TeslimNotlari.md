@@ -74,3 +74,13 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
 - Barkod okuyucu entegrasyonu
 - E-posta/SMS bildirimleri
 - Veritabanı yedekleme ekranı
+
+## Personel İzin Yönetimi
+
+- Personel izin talebi oluşturma, kişisel takip, yönetici/İK onay ve red süreci eklendi.
+- Tarih aralığı, aktif personel, rol yetkisi ve çakışan izin kontrolleri sunucu tarafında uygulanır.
+- Eşzamanlı onay işlemleri RowVersion ile korunur.
+- Yıllık izin hakkı ve devreden izin saklanır; kullanılan ve kalan izin onaylı yıllık izinlerden hesaplanır.
+- Kalan hakkı aşan yıllık izin talepleri oluşturma ve onay aşamalarında engellenir.
+- Onay, red ve iptal işlemleri özet gösteren Bootstrap modallarıyla güvenli biçimde tamamlanır.
+- Gelecek aşamada vardiya, mesai ve puantaj yönetimi eklenebilir.

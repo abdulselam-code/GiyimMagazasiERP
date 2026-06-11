@@ -43,6 +43,10 @@ public class AppDbContext : DbContext
 
     public DbSet<IadeDegisimYeniUrunDetayi> IadeDegisimYeniUrunDetaylari
         => Set<IadeDegisimYeniUrunDetayi>();
+    public DbSet<PersonelIzni> PersonelIzinleri => Set<PersonelIzni>();
+    public DbSet<PersonelIzinBakiyesi> PersonelIzinBakiyeleri
+        => Set<PersonelIzinBakiyesi>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -618,6 +622,75 @@ modelBuilder.Entity<IadeDegisimYeniUrunDetayi>(entity =>
         .WithMany()
         .HasForeignKey(x => x.YeniUrunId)
         .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PersonelIzni>(entity =>
+        {
+            entity.ToTable("PersonelIzinleri");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.IzinTuru)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(x => x.Aciklama)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.Durum)
+                .HasMaxLength(30)
+                .IsRequired();
+
+            entity.Property(x => x.RedNedeni)
+                .HasMaxLength(500);
+
+            entity.Property(x => x.RowVersion)
+                .IsRowVersion();
+
+            entity.HasIndex(x => x.PersonelId);
+            entity.HasIndex(x => x.KullaniciId);
+            entity.HasIndex(x => x.Durum);
+            entity.HasIndex(x => new { x.BaslangicTarihi, x.BitisTarihi });
+            entity.HasIndex(x => x.OlusturmaTarihi);
+
+            entity.HasOne(x => x.Personel)
+                .WithMany()
+                .HasForeignKey(x => x.PersonelId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.Kullanici)
+                .WithMany()
+                .HasForeignKey(x => x.KullaniciId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.OnaylayanKullanici)
+                .WithMany()
+                .HasForeignKey(x => x.OnaylayanKullaniciId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PersonelIzinBakiyesi>(entity =>
+        {
+            entity.ToTable("PersonelIzinBakiyeleri");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.YillikIzinHakki)
+                .HasPrecision(5, 2);
+
+            entity.Property(x => x.DevredenIzinGunu)
+                .HasPrecision(5, 2);
+
+            entity.Property(x => x.RowVersion)
+                .IsRowVersion();
+
+            entity.HasIndex(x => new { x.PersonelId, x.Yil })
+                .IsUnique();
+            entity.HasIndex(x => x.PersonelId);
+            entity.HasIndex(x => x.Yil);
+
+            entity.HasOne(x => x.Personel)
+                .WithMany()
+                .HasForeignKey(x => x.PersonelId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
