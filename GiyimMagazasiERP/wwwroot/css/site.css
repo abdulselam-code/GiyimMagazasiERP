@@ -1109,3 +1109,335 @@ body {
         width: 100%;
     }
 }
+
+/* Proje Yonetimi */
+.project-management-page {
+    max-width: 1440px;
+    color: #172033;
+}
+
+.project-management-page > .d-flex:first-child {
+    margin-bottom: 1rem !important;
+}
+
+.project-management-page > .d-flex:first-child h1 {
+    font-size: 1.75rem;
+}
+
+.project-management-page > .d-flex:first-child p {
+    font-size: 0.95rem;
+}
+
+.project-management-page .card {
+    border-radius: 8px;
+}
+
+.project-management-page .card-body {
+    padding: 1.25rem;
+}
+
+.project-management-page .table {
+    font-size: 0.9rem;
+}
+
+.project-management-page .table > :not(caption) > * > * {
+    padding: 0.7rem 0.75rem;
+}
+
+.project-management-page .progress {
+    height: 18px;
+    min-width: 100px;
+    background: #e8edf3;
+}
+
+.project-management-page .progress-bar {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.project-page-heading {
+    margin-bottom: 18px;
+}
+
+.project-page-heading h1 {
+    margin: 0 0 4px;
+    font-size: 1.75rem;
+    font-weight: 750;
+}
+
+.project-page-heading p {
+    margin: 0;
+    color: #64748b;
+}
+
+.project-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+}
+
+.project-panel {
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.project-panel-title {
+    margin: 0 0 16px;
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.project-stat-card {
+    height: 100%;
+    min-height: 92px;
+    padding: 16px 18px;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.project-stat-card span {
+    display: block;
+    margin-bottom: 7px;
+    color: #64748b;
+    font-size: .84rem;
+}
+
+.project-stat-card strong {
+    display: block;
+    font-size: 1.25rem;
+}
+
+.project-stat-card.accent-success { border-left-color: #198754; }
+.project-stat-card.accent-danger { border-left-color: #dc3545; }
+.project-stat-card.accent-warning { border-left-color: #f59e0b; }
+
+.project-table thead th {
+    padding: 12px;
+    border: 0;
+    background: #20252b;
+    color: #fff;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+.project-table tbody td {
+    padding: 12px;
+}
+
+.project-progress-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) 54px;
+    align-items: center;
+    gap: 10px;
+}
+
+.project-progress-row strong {
+    color: #334155;
+    font-size: .8rem;
+    text-align: right;
+}
+
+.project-main-progress {
+    height: 22px !important;
+}
+
+.project-info-box {
+    height: 100%;
+    padding: 18px;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #2563eb;
+    border-radius: 8px;
+    background: #eff6ff;
+}
+
+.project-info-box.neutral {
+    border-left-color: #64748b;
+    background: #f8fafc;
+}
+
+.project-info-box p {
+    margin: 6px 0 0;
+    color: #475569;
+}
+
+.project-critical-path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-critical-path span {
+    padding: 7px 10px;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    background: #fff1f2;
+    color: #991b1b;
+    font-size: .86rem;
+    font-weight: 700;
+}
+
+.project-critical-path b {
+    color: #94a3b8;
+}
+
+.project-critical-row > td {
+    background: #fff5f5 !important;
+}
+
+.project-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 16px;
+    color: #475569;
+    font-size: .86rem;
+}
+
+.project-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.project-legend i {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.project-gantt-scroll {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+}
+
+.project-gantt-header,
+.project-gantt-row {
+    display: grid;
+    grid-template-columns: 280px minmax(800px, 1fr);
+}
+
+.project-gantt-header {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    min-height: 54px;
+    background: #f8fafc;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.project-gantt-row {
+    min-height: 64px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.project-gantt-row:last-child {
+    border-bottom: 0;
+}
+
+.project-gantt-label {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 14px;
+    border-right: 1px solid #cbd5e1;
+    background: #fff;
+}
+
+.project-gantt-header .project-gantt-label {
+    z-index: 5;
+    background: #f1f5f9;
+    font-weight: 750;
+}
+
+.project-gantt-label small {
+    margin-top: 3px;
+    color: #64748b;
+}
+
+.project-gantt-timeline {
+    position: relative;
+    min-width: 800px;
+}
+
+.project-gantt-header .project-gantt-timeline span {
+    position: absolute;
+    top: 18px;
+    transform: translateX(-50%);
+    color: #475569;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.project-gantt-track {
+    background: repeating-linear-gradient(90deg, #fff 0, #fff 15.9%, #edf2f7 16%, #edf2f7 16.2%);
+}
+
+.project-gantt-bar {
+    position: absolute;
+    top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 34px;
+    overflow: hidden;
+    border-radius: 5px;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, .16);
+}
+
+.project-gantt-bar span {
+    padding: 0 6px;
+    font-size: .72rem;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.project-gantt-bar.tamam { background: #198754; }
+.project-gantt-bar.devam { background: #2563eb; }
+.project-gantt-bar.kritik { background: #dc3545; }
+.project-gantt-bar.test { background: #d97706; }
+
+.project-report-grid .card,
+.project-management-page .row > div > .card {
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .project-management-page {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .project-management-page > .d-flex:first-child h1 {
+        font-size: 1.45rem;
+    }
+
+    .project-management-page .card-body {
+        padding: 1rem;
+    }
+
+    .project-panel {
+        padding: 14px;
+    }
+
+    .project-menu .btn {
+        flex: 1 1 auto;
+    }
+}

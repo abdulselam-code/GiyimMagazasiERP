@@ -1,0 +1,22 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+}
+<div class="project-menu mb-4">
+    @foreach (var item in new[]
+    {
+        ("Index", "Genel Bakış"),
+        ("EkipRaporu", "Ekip"),
+        ("GanttGorev", "Görev Gantt"),
+        ("GanttEkip", "Ekip Gantt"),
+        ("KritikYol", "Kritik Yol"),
+        ("Raporlar", "Raporlar"),
+        ("Butce", "Bütçe"),
+        ("VeritabaniDokumani", "Veri Tabanı")
+    })
+    {
+        <a asp-action="@item.Item1"
+           class="btn btn-sm @(action == item.Item1 ? "btn-primary" : "btn-outline-secondary")">
+            @item.Item2
+        </a>
+    }
+</div>

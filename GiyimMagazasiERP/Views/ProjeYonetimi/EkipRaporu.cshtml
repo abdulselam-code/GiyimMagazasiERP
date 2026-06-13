@@ -1,0 +1,56 @@
+@model List<GiyimMagazasiERP.ViewModels.ProjeEkipRaporSatiriViewModel>
+@{
+    ViewData["Title"] = "Proje Ekip Raporu";
+    var enYogun = Model.OrderByDescending(x => x.PlanlananSaat).FirstOrDefault();
+}
+
+<div class="container py-4 project-management-page">
+    <div class="project-page-heading">
+        <h1>Ekip Raporu</h1>
+        <p>Görev dağılımı, efor ve ekip iş yükü özeti.</p>
+    </div>
+    <partial name="_ProjeMenu" />
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Toplam Ekip Üyesi</span><strong>@Model.Count</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>En Yoğun Ekip Üyesi</span><strong class="fs-6">@(enYogun?.EkipUyesi ?? "-")</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Toplam Planlanan Saat</span><strong>@Model.Sum(x => x.PlanlananSaat).ToString("N2")</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Toplam Gerçekleşen Saat</span><strong>@Model.Sum(x => x.GerceklesenSaat).ToString("N2")</strong></div></div>
+    </div>
+
+    <div class="project-panel">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 project-table">
+                <thead><tr><th>Ekip Üyesi</th><th>Rol</th><th>Atanan</th><th>Tamamlanan</th><th>Devam Eden</th><th>Planlanan</th><th>Gerçekleşen</th><th>İş Yükü</th></tr></thead>
+                <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var x in Model)
+                    {
+                        var oran = Math.Clamp(x.IsYukuYuzdesi, 0, 100);
+                        <tr>
+                            <td class="fw-semibold">@x.EkipUyesi</td>
+                            <td>@x.Rol</td>
+                            <td>@x.AtananGorev</td>
+                            <td class="text-success fw-semibold">@x.TamamlananGorev</td>
+                            <td>@x.DevamEdenGorev</td>
+                            <td>@x.PlanlananSaat.ToString("N2")</td>
+                            <td>@x.GerceklesenSaat.ToString("N2")</td>
+                            <td>
+                                <div class="project-progress-row">
+                                    <div class="progress"><div class="progress-bar bg-info" style="width:@oran.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
+                                    <strong>%@oran.ToString("N1")</strong>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">Ekip verisi bulunamadı.</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -33,6 +33,8 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 - Kasa kapanışı / gün sonu mutabakatı
 - Tarih filtreli raporlar
 - Kritik stok takibi
+- Proje yönetimi, ekip/efor raporu, Gantt şemaları ve kritik yol analizi
+- Proje geliştirme bütçesi ve veri tabanı dokümantasyonu
 
 ## Roller
 
@@ -57,6 +59,8 @@ fatura, toptan satış ve iade süreçlerini yöneten mağaza ERP sistemidir.
 9. Kasiyer gün sonu sayımını girer; beklenen ve sayılan tutarlar Yönetici/Muhasebe tarafından mutabakata alınır.
 10. Ürün kartı master data olarak ayrı yönetilir; mevcut ürünün stok tamamlaması
     Depo Sipariş Talebi üzerinden seçilen ürün tedarikçisiyle yürütülür.
+11. Proje görevleri ekip, süre, efor, bütçe ve bağımlılık bilgileriyle izlenir;
+    Gantt ve kritik yol ekranları teslim planını görünür hale getirir.
 
 ## Ürün Kartı ve Depo Sipariş Talebi
 
@@ -91,8 +95,23 @@ karşılaştırma ekranı için hızlı/uygun maliyetli alternatifler hazırlar.
    `020_fix_personel_mesai_fazla_mesai.sql`,
    `021_create_depo_siparis_talepleri.sql`,
    `022_create_urun_tedarikcileri.sql`,
-   `023_seed_alternatif_urun_tedarikcileri.sql`.
+   `023_seed_alternatif_urun_tedarikcileri.sql`,
+   `024_create_proje_yonetimi.sql`.
 6. Visual Studio ile çözümü açın, NuGet paketlerini geri yükleyin ve projeyi çalıştırın.
+
+## Proje Yönetimi ve Veri Tabanı Dokümantasyonu
+
+`/ProjeYonetimi` ekranı proje tamamlanma oranı, görev durumu, ekip iş yükü ve
+geliştirme bütçesini gösterir. Göreve ve ekip üyesine göre Gantt ekranları,
+görev bağımlılıklarından hesaplanan kritik yol/bolluk süresi ve modül bazlı
+raporlar teslim kapsamındadır.
+
+Proje çalışma takvimi **21.05.2026 - 20.06.2026** aralığıdır. Toplam takvim
+süresi başlangıç ve bitiş günleri dahil **31 gün** olarak gösterilir. Kritik yol
+analizi, bu takvim içindeki görev bağımlılıklarını ve sıfır bolluklu işleri
+işaretler.
+
+ER Diyagramı: [Docs/ER_Diyagrami.md](GiyimMagazasiERP/Docs/ER_Diyagrami.md)
 
 ## Demo Kullanıcıları
 

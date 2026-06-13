@@ -1,0 +1,66 @@
+@model GiyimMagazasiERP.ViewModels.ProjeKritikYolViewModel
+@{
+    ViewData["Title"] = "Kritik Yol";
+    var kritikGorevler = Model.Gorevler.Where(x => x.KritikMi).OrderBy(x => x.EnErkenBaslangic).ToList();
+}
+
+<div class="container py-4 project-management-page">
+    <div class="project-page-heading">
+        <h1>Kritik Yol ve Bolluk Süresi</h1>
+        <p>Görev bağımlılıklarına göre proje zaman analizi.</p>
+    </div>
+    <partial name="_ProjeMenu" />
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6"><div class="project-info-box info"><strong>Kritik yol nedir?</strong><p>Gecikmesi proje teslim tarihini doğrudan etkileyen görevler dizisidir.</p></div></div>
+        <div class="col-lg-6"><div class="project-info-box neutral"><strong>Bolluk süresi nedir?</strong><p>Bir görevin proje bitişini geciktirmeden ertelenebileceği süredir.</p></div></div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Proje Başlangıcı</span><strong>@Model.ProjeBaslangicTarihi.ToString("dd.MM.yyyy")</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Hedef Bitiş</span><strong>@Model.ProjeBitisTarihi.ToString("dd.MM.yyyy")</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Takvim Süresi</span><strong>@Model.ProjeSuresiGun.ToString("N0") gün</strong></div></div>
+        <div class="col-sm-6 col-xl-3"><div class="project-stat-card"><span>Kritik Görev</span><strong class="text-danger">@kritikGorevler.Count</strong></div></div>
+    </div>
+
+    <div class="project-panel mb-4">
+        <h2 class="project-panel-title">Kritik Görev Dizisi</h2>
+        <div class="project-critical-path">
+            @if (kritikGorevler.Any())
+            {
+                @for (var i = 0; i < kritikGorevler.Count; i++)
+                {
+                    <span>@kritikGorevler[i].GorevAdi</span>
+                    @if (i < kritikGorevler.Count - 1) { <b>→</b> }
+                }
+            }
+            else
+            {
+                <span class="text-muted">Kritik görev bulunamadı.</span>
+            }
+        </div>
+    </div>
+
+    <div class="project-panel">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 project-table">
+                <thead><tr><th>Görev</th><th>Süre</th><th>Erken Baş.</th><th>Erken Bitiş</th><th>Geç Baş.</th><th>Geç Bitiş</th><th>Bolluk</th><th>Kritik</th></tr></thead>
+                <tbody>
+                @foreach (var x in Model.Gorevler)
+                {
+                    <tr class="@(x.KritikMi ? "project-critical-row" : "")">
+                        <td class="fw-semibold">@x.GorevAdi</td>
+                        <td>@x.PlanlananSureGun.ToString("N0") gün</td>
+                        <td>@x.EnErkenBaslangic.ToString("N0")</td>
+                        <td>@x.EnErkenBitis.ToString("N0")</td>
+                        <td>@x.EnGecBaslangic.ToString("N0")</td>
+                        <td>@x.EnGecBitis.ToString("N0")</td>
+                        <td>@x.BollukSuresi.ToString("N0") gün</td>
+                        <td><span class="badge text-bg-@(x.KritikMi ? "danger" : "secondary")">@(x.KritikMi ? "Kritik" : "Hayır")</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

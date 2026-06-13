@@ -40,6 +40,7 @@
     var analizAktif =
         aktifController == "Raporlar" ||
         aktifController == "Puantaj" ||
+        aktifController == "ProjeYonetimi" ||
         aktifController == "SqlYonetici" ||
         aktifController == "VeritabaniYonetici";
 }
@@ -411,7 +412,7 @@
                                 </li>
                             }
 
-                            @if (admin || yonetici || muhasebe)
+                            @if (admin || yonetici || muhasebe || ik)
                             {
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle erp-menu-link @(analizAktif ? "active fw-semibold" : "")"
@@ -433,6 +434,17 @@
                                                    asp-controller="Raporlar"
                                                    asp-action="Index">
                                                     Raporlar
+                                                </a>
+                                            </li>
+                                        }
+
+                                        @if (admin || yonetici || muhasebe || ik)
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(aktifController == "ProjeYonetimi" ? "active" : "")"
+                                                   asp-controller="ProjeYonetimi"
+                                                   asp-action="Index">
+                                                    Proje Yönetimi
                                                 </a>
                                             </li>
                                         }

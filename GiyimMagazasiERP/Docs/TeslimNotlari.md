@@ -132,3 +132,21 @@ ve müşteri verileri kurumun gerçek verileriyle değiştirilmelidir.
   eklendi; mevcut fiyat ve indirim kayıtları korunur.
 - Seçilen tedarikçi ve tahmini maliyet bilgileri talep kaleminde saklanır; onay
   stok artırmaz, mevcut teslim alma transaction akışı korunur.
+
+## Proje Yönetimi ve Veri Tabanı Dokümantasyonu
+
+- Proje çalışma aralığı `21.05.2026 - 20.06.2026`, toplam takvim süresi
+  başlangıç ve bitiş günleri dahil 31 gündür.
+- Proje görevleri durum, öncelik, sorumlu ekip üyesi, planlanan/gerçekleşen
+  efor ve tamamlanma yüzdesiyle izlenir.
+- Proje tamamlanma oranı planlanan efor ağırlıklı olarak hesaplanır.
+- Göreve ve ekip üyesine göre iki ayrı Gantt görünümü sunulur.
+- Görev bağımlılıkları üzerinden en erken/en geç tarihler, bolluk süresi ve
+  kritik yol hesaplanır; ekranda proje takvimini aşan gerçek dışı süre
+  gösterilmez.
+- Proje geliştirme bütçesi işletme finansından ayrı gelir/gider kalemleriyle
+  raporlanır.
+- Ana veri tabanı ilişkileri uygulama içindeki dokümantasyon ekranında ve
+  `Docs/ER_Diyagrami.md` Mermaid diyagramında açıklanır.
+- Proje yönetimi tabloları `024_create_proje_yonetimi.sql` ile idempotent
+  biçimde oluşturulur ve demo teslim verileri hazırlanır.

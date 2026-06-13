@@ -1,0 +1,30 @@
+@{ ViewData["Title"] = "Veri Tabanı Dokümantasyonu"; }
+<div class="container py-4 project-management-page">
+    <h1 class="h3 fw-bold mb-1">Veri Tabanı Dokümantasyonu</h1>
+    <p class="text-muted mb-3">Ana tabloların sorumlulukları ve birbirleriyle ilişkileri.</p>
+    <partial name="_ProjeMenu" />
+    <div class="alert alert-info">Projede ayrı bir <strong>Faturalar</strong> tablosu bulunmaz. Fatura numarası, seri, tarih ve durum bilgileri <strong>Satislar</strong> tablosunda tutulur; fatura ekranları bu satış kaydını belge olarak sunar.</div>
+    <div class="row g-3">
+    @foreach(var item in new[]
+    {
+        ("Kategoriler / AltKategoriler / Urunler","Kategoriler ürünlerin ana sınıfını, AltKategoriler detay sınıfını tutar. Urunler her iki tabloya ve ana tedarikçiye bağlanır."),
+        ("UrunTedarikcileri","Urunler ile Tedarikciler arasındaki çoktan çoğa ilişkiyi maliyet, indirim, minimum sipariş ve teslim süresiyle tutar."),
+        ("Satislar / SatisDetaylari","Satislar müşteri ve satış personeline bağlı satış başlığıdır. SatisDetaylari ürün, adet, fiyat, KDV ve snapshot bilgilerini taşır."),
+        ("Fatura Yapısı","Fatura bilgileri Satislar üzerindedir. Fatura detay ve yazdırma ekranı Satislar ile SatisDetaylari verilerinden üretilir."),
+        ("IadeDegisimTalepleri","Satislar ve Musteriler ile ilişkilidir. Detayları iade edilen ürünleri taşır; tamamlanınca stok ve FinansHareketleri etkisi oluşturur."),
+        ("FinansHareketleri","Satış gelirlerini, iade çıkışlarını ve manuel gelir/gider kayıtlarını izler. Gerekli kayıtlarda SatisId ve KullaniciId bağlantısı bulunur."),
+        ("Personeller / Kullanicilar","Personel operasyonel çalışan kaydıdır. Kullanıcı hesabı PersonelId ile personele bağlanabilir; rol bazlı yetki kullanıcı üzerinden yürür."),
+        ("PersonelIzinleri / PersonelMesaiKayitlari","Personel izin ve vardiya/fazla mesai verilerini tutar. Puantaj raporu bu iki tablodan anlık hesaplanır."),
+        ("KasaKapanislari","Kasiyer personeli ve kullanıcı hesabına bağlıdır. Satış/iade toplamlarının gün sonu sayım ve mutabakat sonucunu saklar."),
+        ("DepoSiparisTalepleri","Talep başlığı kullanıcı/personel ve onay/teslim kullanıcılarıyla ilişkilidir. Kalemler ürün, tedarikçi ve UrunTedarikcileri kaydına bağlanır."),
+        ("StokHareketleri","Ürün giriş ve çıkışlarının iz kaydıdır. Satış çıkışı, iade girişi ve depo sipariş teslimi gibi işlemler bu tabloyu besler."),
+        ("Proje Yönetimi","Projeler; ProjeGorevleri, ProjeEkipUyeleri ve ProjeButceKalemleri ile ilişkilidir. ProjeGorevBagimliliklari kritik yol hesabının öncül ilişkilerini tutar.")
+    })
+    {
+        <div class="col-lg-6"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h6 fw-bold">@item.Item1</h2><p class="text-muted mb-0">@item.Item2</p></div></div></div>
+    }
+    </div>
+    <div class="alert alert-primary border-primary mt-4 mb-0 shadow-sm">
+        Mermaid ER diyagramı proje içinde <strong>Docs/ER_Diyagrami.md</strong> dosyasında teslim edilmiştir.
+    </div>
+</div>

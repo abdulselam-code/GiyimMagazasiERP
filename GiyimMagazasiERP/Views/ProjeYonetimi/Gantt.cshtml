@@ -1,0 +1,74 @@
+@model GiyimMagazasiERP.ViewModels.ProjeGanttViewModel
+@{
+    ViewData["Title"] = Model.Baslik;
+    var tarihIsaretleri = new List<DateTime>();
+    for (var tarih = Model.Baslangic; tarih <= Model.Bitis; tarih = tarih.AddDays(5))
+    {
+        tarihIsaretleri.Add(tarih);
+    }
+    if (tarihIsaretleri.Count == 0 || tarihIsaretleri[^1] != Model.Bitis)
+    {
+        tarihIsaretleri.Add(Model.Bitis);
+    }
+}
+
+<div class="container py-4 project-management-page">
+    <div class="project-page-heading">
+        <h1>@Model.Baslik</h1>
+        <p>Görevlerin başlangıç, bitiş, durum ve tamamlanma bilgilerini proje takvimi üzerinde izleyin.</p>
+    </div>
+
+    <partial name="_ProjeMenu" />
+
+    <div class="project-panel">
+        <div class="project-legend">
+            <span><i class="bg-success"></i>Tamamlandı</span>
+            <span><i class="bg-primary"></i>Devam Ediyor</span>
+            <span><i class="bg-warning"></i>Test Ediliyor</span>
+            <span><i class="bg-danger"></i>Kritik</span>
+        </div>
+
+        <div class="project-gantt-scroll">
+            <div class="project-gantt" style="min-width:1100px">
+                <div class="project-gantt-header">
+                    <div class="project-gantt-label">Görev / Ekip</div>
+                    <div class="project-gantt-timeline">
+                        @for (var i = 0; i < tarihIsaretleri.Count; i++)
+                        {
+                            var tarih = tarihIsaretleri[i];
+                            var toplamGun = Math.Max(1, (Model.Bitis - Model.Baslangic).Days);
+                            var sol = Math.Clamp((tarih - Model.Baslangic).Days / (decimal)toplamGun * 100m, 0, 100);
+                            var donusum = i == 0 ? "translateX(0)" : i == tarihIsaretleri.Count - 1 ? "translateX(-100%)" : "translateX(-50%)";
+                            <span style="left:@sol.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%; transform:@donusum">
+                                @tarih.ToString("dd.MM")
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                @foreach (var x in Model.Satirlar)
+                {
+                    var sinif = x.Oncelik == "Kritik" && x.Durum != "Tamamlandı"
+                        ? "kritik"
+                        : x.Durum == "Tamamlandı"
+                            ? "tamam"
+                            : x.Durum == "Test Ediliyor" ? "test" : "devam";
+
+                    <div class="project-gantt-row">
+                        <div class="project-gantt-label">
+                            <strong>@x.Baslik</strong>
+                            <small>@x.AltBaslik</small>
+                        </div>
+                        <div class="project-gantt-timeline project-gantt-track">
+                            <div class="project-gantt-bar @sinif"
+                                 title="@x.Baslangic.ToString("dd.MM.yyyy") - @x.Bitis.ToString("dd.MM.yyyy")"
+                                 style="left:@x.SolYuzde.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%; width:@x.GenislikYuzde.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                                <span>%@x.TamamlanmaYuzdesi</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

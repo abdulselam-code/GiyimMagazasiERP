@@ -52,6 +52,11 @@ public class AppDbContext : DbContext
         => Set<PersonelMesaiKaydi>();
     public DbSet<DepoSiparisTalebi> DepoSiparisTalepleri => Set<DepoSiparisTalebi>();
     public DbSet<DepoSiparisTalepKalemi> DepoSiparisTalepKalemleri => Set<DepoSiparisTalepKalemi>();
+    public DbSet<Proje> Projeler => Set<Proje>();
+    public DbSet<ProjeGorevi> ProjeGorevleri => Set<ProjeGorevi>();
+    public DbSet<ProjeEkipUyesi> ProjeEkipUyeleri => Set<ProjeEkipUyesi>();
+    public DbSet<ProjeButceKalemi> ProjeButceKalemleri => Set<ProjeButceKalemi>();
+    public DbSet<ProjeGorevBagimliligi> ProjeGorevBagimliliklari => Set<ProjeGorevBagimliligi>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -850,6 +855,76 @@ modelBuilder.Entity<IadeDegisimYeniUrunDetayi>(entity =>
             entity.HasOne(x => x.Urun).WithMany().HasForeignKey(x => x.UrunId).OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(x => x.Tedarikci).WithMany().HasForeignKey(x => x.TedarikciId).OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(x => x.UrunTedarikci).WithMany().HasForeignKey(x => x.UrunTedarikciId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Proje>(entity =>
+        {
+            entity.ToTable("Projeler");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ProjeAdi).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.Durum).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.BaslangicTarihi).HasColumnType("date");
+            entity.Property(x => x.PlanlananBitisTarihi).HasColumnType("date");
+            entity.Property(x => x.PlanlananButce).HasPrecision(18, 2);
+            entity.HasIndex(x => x.ProjeAdi).IsUnique();
+        });
+
+        modelBuilder.Entity<ProjeEkipUyesi>(entity =>
+        {
+            entity.ToTable("ProjeEkipUyeleri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.AdSoyad).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Rol).HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => new { x.ProjeId, x.AdSoyad }).IsUnique();
+            entity.HasOne(x => x.Proje).WithMany(x => x.EkipUyeleri)
+                .HasForeignKey(x => x.ProjeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ProjeGorevi>(entity =>
+        {
+            entity.ToTable("ProjeGorevleri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.GorevAdi).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.Aciklama).HasMaxLength(500);
+            entity.Property(x => x.ModulAdi).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Durum).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Oncelik).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.BaslangicTarihi).HasColumnType("date");
+            entity.Property(x => x.BitisTarihi).HasColumnType("date");
+            entity.Property(x => x.PlanlananSaat).HasPrecision(8, 2);
+            entity.Property(x => x.GerceklesenSaat).HasPrecision(8, 2);
+            entity.HasIndex(x => new { x.ProjeId, x.GorevAdi }).IsUnique();
+            entity.HasOne(x => x.Proje).WithMany(x => x.Gorevler)
+                .HasForeignKey(x => x.ProjeId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.SorumluEkipUyesi).WithMany(x => x.Gorevler)
+                .HasForeignKey(x => x.SorumluEkipUyesiId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ProjeButceKalemi>(entity =>
+        {
+            entity.ToTable("ProjeButceKalemleri");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.KalemAdi).HasMaxLength(150).IsRequired();
+            entity.Property(x => x.KalemTuru).HasMaxLength(20).IsRequired();
+            entity.Property(x => x.Kategori).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.PlanlananTutar).HasPrecision(18, 2);
+            entity.Property(x => x.GerceklesenTutar).HasPrecision(18, 2);
+            entity.Property(x => x.Aciklama).HasMaxLength(300);
+            entity.HasIndex(x => new { x.ProjeId, x.KalemAdi }).IsUnique();
+            entity.HasOne(x => x.Proje).WithMany(x => x.ButceKalemleri)
+                .HasForeignKey(x => x.ProjeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ProjeGorevBagimliligi>(entity =>
+        {
+            entity.ToTable("ProjeGorevBagimliliklari");
+            entity.HasKey(x => x.Id);
+            entity.HasIndex(x => new { x.GorevId, x.BagimliOlduguGorevId }).IsUnique();
+            entity.HasOne(x => x.Gorev).WithMany(x => x.Bagimliliklar)
+                .HasForeignKey(x => x.GorevId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.BagimliOlduguGorev).WithMany(x => x.BagimliGorevler)
+                .HasForeignKey(x => x.BagimliOlduguGorevId).OnDelete(DeleteBehavior.NoAction);
         });
     }
 }

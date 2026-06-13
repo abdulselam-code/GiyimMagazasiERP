@@ -1,0 +1,52 @@
+@model GiyimMagazasiERP.ViewModels.ProjeButceViewModel
+@{ ViewData["Title"] = "Proje Bütçesi"; }
+
+<div class="container py-4 project-management-page">
+    <div class="project-page-heading">
+        <h1>Proje Bütçesi</h1>
+        <p>İşletme finansından bağımsız geliştirme bütçesi görünümü.</p>
+    </div>
+    <partial name="_ProjeMenu" />
+
+    <div class="row g-3 mb-4">
+        @foreach (var kart in new[]
+        {
+            ("Toplam Proje Geliri", Model.ToplamGelir.ToString("N2") + " TL", "success"),
+            ("Toplam Proje Gideri", Model.ToplamGider.ToString("N2") + " TL", "danger"),
+            ("Net Bütçe", Model.NetButce.ToString("N2") + " TL", Model.NetButce >= 0 ? "primary" : "danger"),
+            ("Bütçe Kullanım Oranı", "%" + Math.Clamp(Model.ButceKullanimOrani, 0, 100).ToString("N1"), "warning")
+        })
+        {
+            <div class="col-sm-6 col-xl-3">
+                <div class="project-stat-card accent-@kart.Item3">
+                    <span>@kart.Item1</span>
+                    <strong class="text-@kart.Item3">@kart.Item2</strong>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="project-panel">
+        <h2 class="project-panel-title">Bütçe Kalemleri</h2>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 project-table">
+                <thead><tr><th>Kalem</th><th>Tür</th><th>Kategori</th><th>Planlanan</th><th>Gerçekleşen</th><th>Fark</th><th>Açıklama</th></tr></thead>
+                <tbody>
+                @foreach (var x in Model.Kalemler)
+                {
+                    var fark = x.PlanlananTutar - x.GerceklesenTutar;
+                    <tr>
+                        <td class="fw-semibold">@x.KalemAdi</td>
+                        <td><span class="badge text-bg-@(x.KalemTuru == "Gelir" ? "success" : "danger")">@x.KalemTuru</span></td>
+                        <td>@x.Kategori</td>
+                        <td>@x.PlanlananTutar.ToString("N2") TL</td>
+                        <td>@x.GerceklesenTutar.ToString("N2") TL</td>
+                        <td class="@(fark < 0 ? "text-danger" : "text-success") fw-semibold">@fark.ToString("N2") TL</td>
+                        <td>@x.Aciklama</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

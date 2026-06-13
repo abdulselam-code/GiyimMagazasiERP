@@ -200,3 +200,23 @@
 - [ ] Muhasebe talepleri yalnız görüntüleyebiliyor.
 - [ ] Kasiyer, Personel ve InsanKaynaklari modüle erişemiyor.
 - [ ] Satış, kasa kapanışı, iade, finans, mesai ve puantaj ekranlarında regresyon oluşmuyor.
+
+## Proje Yönetimi ve Dokümantasyon Testleri
+
+- [ ] `024_create_proje_yonetimi.sql` ilk ve tekrar çalıştırmada hata vermiyor.
+- [ ] Genel Bakış ekranı proje tarihlerini `21.05.2026 - 20.06.2026` gösteriyor.
+- [ ] Kritik Yol ekranı takvim süresini 31 gün gösteriyor ve 91 gün gibi proje
+  aralığını aşan bir değer üretmiyor.
+- [ ] Admin, Yonetici, InsanKaynaklari ve Muhasebe Proje Yönetimi ekranını açabiliyor.
+- [ ] Kasiyer, Personel ve Depo Proje Yönetimi menüsünü görmüyor ve adrese erişemiyor.
+- [ ] Proje tamamlanma oranı efor ağırlıklı hesaplanıp progress bar üzerinde görünüyor.
+- [ ] Göreve göre Gantt ekranı görev başlangıç/bitiş aralıklarını gösteriyor.
+- [ ] Ekip üyesine göre Gantt ekranı ekip çalışma aralıklarını gösteriyor.
+- [ ] Gantt ekranlarında yatay kaydırma ve sabit görev/ekip sütunu çalışıyor.
+- [ ] Kritik Yol ekranında erken/geç başlangıç, erken/geç bitiş ve bolluk süresi görünüyor.
+- [ ] Bolluk süresi sıfır olan görevler kritik olarak işaretleniyor.
+- [ ] Ekip raporunda görev, planlanan saat, gerçekleşen saat ve iş yükü doğru görünüyor.
+- [ ] Proje bütçesi gelir, gider, net bütçe ve kullanım oranını gösteriyor.
+- [ ] Veri tabanı dokümantasyon ekranı ana tablo ilişkilerini açıklıyor.
+- [ ] `Docs/ER_Diyagrami.md` Mermaid ER diyagramı görüntülenebiliyor.
+- [ ] README içinde `019-024` script sırası ve ER diyagramı bağlantısı güncel.
